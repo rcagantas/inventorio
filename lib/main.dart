@@ -1,10 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'package:simple_permissions/simple_permissions.dart';
+import 'package:barcode_scan/barcode_scan.dart';
+import 'package:flutter/services.dart';
 
 void main() => runApp(new MyApp());
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
+
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
@@ -32,22 +38,55 @@ class MyHomePage extends StatefulWidget {
 }
 
 class InventoryItem {
-  final uuid, label, expirationDate;
-  InventoryItem(this.uuid, this.label, this.expirationDate);
+  static final uuidGenerator = new Uuid();
+  final String uuid = uuidGenerator.v4();
+  var label, expirationDate, barCode;
+  InventoryItem({this.label = '', this.expirationDate = '', this.barCode = ''});
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final uuidGenerator = new Uuid();
   final List<InventoryItem> inventoryItems = new List();
 
   @override
-  Widget build(BuildContext context) {
-    void _addItem() {
-      setState(() {
-        inventoryItems.add(new InventoryItem(uuidGenerator.v4(), "Optional Label", "Expiration Date"));
-      });
+  void initState() {
+    super.initState();
+    requestAndSetPermissions();
+  }
+
+  void requestAndSetPermissions() async {
+    bool res = await SimplePermissions.checkPermission(Permission.Camera);
+    if (!res) await SimplePermissions.requestPermission(Permission.Camera);
+  }
+
+  void _addItem(BuildContext context) async {
+    String snack = 'Adding new item';
+    String barCode = '';
+    try {
+      barCode = await BarcodeScanner.scan();
+    } on PlatformException catch(e) {
+      snack = 'Unknown error: $e';
+      if (e.code == BarcodeScanner.CameraAccessDenied) {
+        snack = 'User did not grant camera access permission';
+      }
+    } on FormatException {
+      snack = 'User returned using back-button';
+    } catch (e) {
+      snack = 'Unknown error: $e';
     }
 
+    setState(() {
+      inventoryItems.add(new InventoryItem(
+          label: 'Optional Label',
+          expirationDate: 'Expiration Date',
+          barCode: barCode,
+      ));
+
+      Scaffold.of(context).showSnackBar(new SnackBar(content: new Text(snack)));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // This method is rerun every time setState is called.
     return new Scaffold(
       appBar: new AppBar(title: new Text(widget.title),),
@@ -60,10 +99,14 @@ class _MyHomePageState extends State<MyHomePage> {
           trailing: new Text(inventoryItems[index].expirationDate),
         ),
       ),
-      floatingActionButton: new FloatingActionButton(
-        onPressed: _addItem,
-        tooltip: 'Add new inventory ite,',
-        child: new Icon(Icons.add),
+      floatingActionButton: new Builder(
+        builder: (BuildContext context) {
+          return new FloatingActionButton(
+            onPressed: () { _addItem(context); },
+            tooltip: 'Add new inventory item',
+            child: new Icon(Icons.add),
+          );
+        }
       ),
     );
   }
