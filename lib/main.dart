@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:simple_permissions/simple_permissions.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:barcode_scan/barcode_scan.dart';
 
 
 void requestAndSetPermissions() async {
@@ -55,11 +56,8 @@ class InventoryListItem extends StatelessWidget {
           new FileImage(inventoryItem.image): null
       ),
       title: new Text(inventoryItem.label),
-      subtitle: new Text(inventoryItem.uuid),
-      trailing: new Text(
-        inventoryItem.expirationDate == null? '':
-          inventoryItem.expirationDate.toIso8601String().substring(0, 10)
-      ),
+      subtitle: new Text(inventoryItem.barCode != null? inventoryItem.barCode: inventoryItem.uuid),
+      trailing: new Text(inventoryItem.expirationDate?.toIso8601String()?.substring(0, 10) ?? ''),
     );
   }
 }
@@ -89,8 +87,8 @@ class _MyHomePageState extends State<MyHomePage> {
           return new FloatingActionButton(
             onPressed: () async {
               InventoryItem inventoryItem = await Navigator.push(
-                  context,
-                  new MaterialPageRoute(builder: (context) => new _AddItemPage()));
+                context,
+                new MaterialPageRoute(builder: (context) => new _AddItemPage()));
               setState(() {
                 if (inventoryItem != null) inventoryItems.add(inventoryItem);
               });
@@ -138,7 +136,7 @@ class _AddItemPageState extends State<_AddItemPage> {
                     )
                   ),
                 ),
-              )
+              ),
             ),
           ),
           new ListTile(
@@ -151,9 +149,9 @@ class _AddItemPageState extends State<_AddItemPage> {
               ),
               onPressed: () async {
                 var expirationDate = await showDatePicker(context: context,
-                    initialDate: lastPickedDate,
-                    firstDate: lastPickedDate,
-                    lastDate: lastPickedDate.add(const Duration(days: 365*5)));
+                  initialDate: lastPickedDate,
+                  firstDate: lastPickedDate,
+                  lastDate: lastPickedDate.add(const Duration(days: 365*5)));
                 setState(() {
                   inventoryItem.expirationDate = expirationDate;
                 });
@@ -168,6 +166,16 @@ class _AddItemPageState extends State<_AddItemPage> {
                 setState(() { inventoryItem.label = value; });
               },
             )
+          ),
+          new ListTile(
+            leading: const Icon(Icons.confirmation_number),
+            title: new RaisedButton(
+              child: new Text(inventoryItem?.barCode ?? 'Barcode'),
+              onPressed: () async {
+                var barCode = await BarcodeScanner.scan();
+                setState(() { inventoryItem.barCode = barCode; });
+              },
+            ),
           ),
         ],
       ),
