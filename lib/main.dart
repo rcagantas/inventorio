@@ -6,7 +6,6 @@ import 'package:simple_permissions/simple_permissions.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:barcode_scan/barcode_scan.dart';
 
-
 void requestAndSetPermissions() async {
   bool res = await SimplePermissions.checkPermission(Permission.Camera);
   if (!res) await SimplePermissions.requestPermission(Permission.Camera);
@@ -39,10 +38,14 @@ class InventoryItem {
   final String uuid = uuidGenerator.v4();
   String label, barCode;
   DateTime expirationDate;
-  File image;
-  InventoryItem({this.label, this.expirationDate, this.barCode, this.image}) {
-    label = label == null? this.uuid: this.label;
-  }
+  Image image;
+  InventoryItem({this.label, this.expirationDate, this.barCode, this.image});
+
+  String get expirationDateString => expirationDate?.toIso8601String()?.substring(0, 10) ?? '';
+  String get title => this.label?.toString() ?? this.uuid;
+  String get subTitle => this.barCode?.toString() ?? this.uuid;
+
+  Image get displayImage => image == null? Image.asset('resources/images/milo.jpg'): image;
 }
 
 class InventoryListItem extends StatelessWidget {
@@ -51,13 +54,32 @@ class InventoryListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return new ListTile(
-      leading: new CircleAvatar(
-        backgroundImage: inventoryItem.image != null?
-          new FileImage(inventoryItem.image): null
+//      leading: new CircleAvatar(backgroundImage: inventoryItem.displayImage.image,),
+//      title: new Text(inventoryItem.title),
+//      subtitle: new Text(inventoryItem.subTitle),
+//      trailing: new Text(inventoryItem.expirationDateString),
+      title: new Row(
+        children: <Widget>[
+          new Container(
+            height: 100.0, width: 100.0,
+            decoration: new BoxDecoration(
+              image: new DecorationImage(
+                image: inventoryItem.displayImage.image,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          new Expanded(
+            child: new Column(
+              children: <Widget>[
+                new Text(inventoryItem.title, textScaleFactor: 1.2,),
+                new Text(inventoryItem.subTitle, textScaleFactor: 0.5,),
+              ],
+            ),
+          ),
+        ],
       ),
-      title: new Text(inventoryItem.label),
-      subtitle: new Text(inventoryItem.barCode != null? inventoryItem.barCode: inventoryItem.uuid),
-      trailing: new Text(inventoryItem.expirationDate?.toIso8601String()?.substring(0, 10) ?? ''),
+      trailing: new Text(inventoryItem.expirationDateString),
     );
   }
 }
@@ -120,8 +142,8 @@ class _AddItemPageState extends State<_AddItemPage> {
             leading: const Icon(Icons.add_a_photo),
             title: new FlatButton(
               onPressed: () async {
-                var image = await ImagePicker.pickImage(source: ImageSource.camera);
-                setState(() { inventoryItem.image = image; });
+                var file = await ImagePicker.pickImage(source: ImageSource.camera);
+                setState(() { inventoryItem.image = new Image.file(file); });
               },
               child: new AspectRatio(
                 aspectRatio: 16.0/9.0,
@@ -130,9 +152,7 @@ class _AddItemPageState extends State<_AddItemPage> {
                     image: new DecorationImage(
                       fit: BoxFit.fitWidth,
                       alignment: FractionalOffset.center,
-                      image: inventoryItem.image == null?
-                        new AssetImage('resources/images/milo.jpg'):
-                        new FileImage(inventoryItem.image)
+                      image: inventoryItem.displayImage.image
                     )
                   ),
                 ),
