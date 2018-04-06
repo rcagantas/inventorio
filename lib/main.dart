@@ -5,16 +5,9 @@ import 'package:uuid/uuid.dart';
 import 'package:simple_permissions/simple_permissions.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:barcode_scan/barcode_scan.dart';
+import 'package:path_provider/path_provider.dart';
 
-void requestAndSetPermissions() async {
-  bool res = await SimplePermissions.checkPermission(Permission.Camera);
-  if (!res) await SimplePermissions.requestPermission(Permission.Camera);
-}
-
-void main() {
-  requestAndSetPermissions();
-  runApp(new MyApp());
-}
+void main() => runApp(new MyApp());
 
 class MyApp extends StatelessWidget {
   @override
@@ -44,42 +37,37 @@ class InventoryItem {
   String get expirationDateString => expirationDate?.toIso8601String()?.substring(0, 10) ?? '';
   String get title => this.label?.toString() ?? this.uuid;
   String get subTitle => this.barCode?.toString() ?? this.uuid;
-
   Image get displayImage => image == null? Image.asset('resources/images/milo.jpg'): image;
 }
 
 class InventoryListItem extends StatelessWidget {
   final InventoryItem inventoryItem;
   InventoryListItem(this.inventoryItem): super();
+
   @override
   Widget build(BuildContext context) {
-    return new ListTile(
-//      leading: new CircleAvatar(backgroundImage: inventoryItem.displayImage.image,),
-//      title: new Text(inventoryItem.title),
-//      subtitle: new Text(inventoryItem.subTitle),
-//      trailing: new Text(inventoryItem.expirationDateString),
-      title: new Row(
-        children: <Widget>[
-          new Container(
-            height: 100.0, width: 100.0,
-            decoration: new BoxDecoration(
-              image: new DecorationImage(
-                image: inventoryItem.displayImage.image,
-                fit: BoxFit.cover,
-              ),
+    return new Row(
+      children: <Widget>[
+        new Container(
+          margin: new EdgeInsets.all(0.5),
+          height: 100.0, width: 100.0,
+          decoration: new BoxDecoration(
+            image: new DecorationImage(
+              image: inventoryItem.displayImage.image,
+              fit: BoxFit.cover,
             ),
           ),
-          new Expanded(
-            child: new Column(
-              children: <Widget>[
-                new Text(inventoryItem.title, textScaleFactor: 1.2,),
-                new Text(inventoryItem.subTitle, textScaleFactor: 0.5,),
-              ],
-            ),
+        ),
+        new Expanded(
+          child: new Column(
+            children: <Widget>[
+              new Text(inventoryItem.title, textScaleFactor: 1.2,),
+              new Text(inventoryItem.subTitle, textScaleFactor: 0.5,),
+            ],
           ),
-        ],
-      ),
-      trailing: new Text(inventoryItem.expirationDateString),
+        ),
+        new Text(inventoryItem.expirationDateString),
+      ],
     );
   }
 }
@@ -88,6 +76,33 @@ class _MyHomePageState extends State<MyHomePage> {
   DateTime lastPickedDate = new DateTime.now();
   final List<InventoryItem> inventoryItems = new List();
 
+  void requestAndSetPermissions() async {
+    bool res = await SimplePermissions.checkPermission(Permission.Camera);
+    if (!res) await SimplePermissions.requestPermission(Permission.Camera);
+  }
+
+  void cleanupImageDirectory() async {
+    try {
+      final Directory appDocumentDir = await getApplicationDocumentsDirectory();
+      final Directory tmpDirectory = new Directory(appDocumentDir.parent.path + '/tmp');
+      tmpDirectory.list(recursive: false)
+          .where((f) => f.path.contains('image_picker'))
+          .forEach((f) {
+        print('deleting $f');
+        f.delete(recursive: false);
+      });
+    } catch(e) {
+      print('$e');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    requestAndSetPermissions();
+    cleanupImageDirectory();
+  }
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called.
@@ -95,14 +110,13 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: new AppBar(title: new Text(widget.title),),
       body: new ListView.builder(
         itemCount: inventoryItems.length,
-        itemBuilder: (BuildContext context, int index) =>
-          new Dismissible(
-            key: new ObjectKey(inventoryItems[index].uuid),
-            child: new InventoryListItem(inventoryItems[index]),
-            onDismissed: (direction) {
-              setState(() => inventoryItems.remove(inventoryItems[index]));
-            },
-          ),
+        itemBuilder: (BuildContext context, int index) => new Dismissible(
+          key: new ObjectKey(inventoryItems[index].uuid),
+          child: new InventoryListItem(inventoryItems[index]),
+          onDismissed: (direction) {
+            setState(() => inventoryItems.remove(inventoryItems[index]));
+          },
+        ),
       ),
       floatingActionButton: new Builder(
         builder: (BuildContext context) {
@@ -116,9 +130,9 @@ class _MyHomePageState extends State<MyHomePage> {
               });
             },
             tooltip: 'Add new inventory item',
-            child: new Icon(Icons.add),
+            child: new Icon(Icons.add_a_photo),
           );
-        }
+        },
       ),
     );
   }
@@ -143,6 +157,7 @@ class _AddItemPageState extends State<_AddItemPage> {
             title: new FlatButton(
               onPressed: () async {
                 var file = await ImagePicker.pickImage(source: ImageSource.camera);
+                print('image directory $file');
                 setState(() { inventoryItem.image = new Image.file(file); });
               },
               child: new AspectRatio(
@@ -163,9 +178,9 @@ class _AddItemPageState extends State<_AddItemPage> {
             leading: const Icon(Icons.today),
             title: new RaisedButton(
               child: new Text(
-                inventoryItem.expirationDate != null?
-                inventoryItem.expirationDate.toIso8601String().substring(0, 10):
-                'Expiration Date',
+                  inventoryItem.expirationDate == null ?
+                      'Expiration Date':
+                      inventoryItem.expirationDateString
               ),
               onPressed: () async {
                 var expirationDate = await showDatePicker(context: context,
@@ -173,6 +188,7 @@ class _AddItemPageState extends State<_AddItemPage> {
                   firstDate: lastPickedDate,
                   lastDate: lastPickedDate.add(const Duration(days: 365*5)));
                 setState(() {
+                  lastPickedDate = expirationDate;
                   inventoryItem.expirationDate = expirationDate;
                 });
               }
@@ -201,7 +217,7 @@ class _AddItemPageState extends State<_AddItemPage> {
       ),
       floatingActionButton: new FloatingActionButton(
         onPressed: () { Navigator.of(context).pop(inventoryItem); },
-        child: new Icon(Icons.add_circle_outline),
+        child: new Icon(Icons.add),
       ),
     );
   }
