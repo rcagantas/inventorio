@@ -1,223 +1,120 @@
-import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-import 'package:simple_permissions/simple_permissions.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:barcode_scan/barcode_scan.dart';
-import 'package:path_provider/path_provider.dart';
 
-void main() => runApp(new MyApp());
+void main() => runApp(new StateManagerWidget(new MyApp()));
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
-      title: 'Inventorio', // Doesn't seem to do anything - RC
-      theme: new ThemeData(primarySwatch: Colors.blue,),
-      home: new MyHomePage(title: 'Inventorio'), // This sets the header - RC
+        title: 'Inventorio', // Doesn't seem to do anything - RC
+        theme: new ThemeData(primarySwatch: Colors.blue,),
+        home: new ListingsPage(),
+        routes: <String, WidgetBuilder> {
+          '/listings': (context) => new ListingsPage(),
+          '/add/inventoryItem': (context) => new AddNewInventoryItemPage(),
+        }
     );
   }
-}
-
-class MyHomePage extends StatefulWidget {
-  final String title;
-  MyHomePage({Key key, this.title}) : super(key: key);
-  @override _MyHomePageState createState() => new _MyHomePageState();
 }
 
 class InventoryItem {
-  static final uuidGenerator = new Uuid();
-  final String uuid = uuidGenerator.v4();
-  String label, barCode;
-  DateTime expirationDate;
-  Image image;
-  InventoryItem({this.label, this.expirationDate, this.barCode, this.image});
-
-  String get expirationDateString => expirationDate?.toIso8601String()?.substring(0, 10) ?? '';
-  String get title => this.label?.toString() ?? this.uuid;
-  String get subTitle => this.barCode?.toString() ?? this.uuid;
-  Image get displayImage => image == null? Image.asset('resources/images/milo.jpg'): image;
+  static Uuid uuidGen = new Uuid();
+  String uuid = uuidGen.v4();
+  String code;
+  DateTime expiryDate;
+  InventoryItem() { print('adding $uuid'); }
 }
 
-class InventoryListItem extends StatelessWidget {
-  final InventoryItem inventoryItem;
-  InventoryListItem(this.inventoryItem): super();
-
-  @override
-  Widget build(BuildContext context) {
-    return new Row(
-      children: <Widget>[
-        new Container(
-          margin: new EdgeInsets.all(0.5),
-          height: 100.0, width: 100.0,
-          decoration: new BoxDecoration(
-            image: new DecorationImage(
-              image: inventoryItem.displayImage.image,
-              fit: BoxFit.cover,
-            ),
-          ),
-        ),
-        new Expanded(
-          child: new Column(
-            children: <Widget>[
-              new Text(inventoryItem.title, textScaleFactor: 1.2,),
-              new Text(inventoryItem.subTitle, textScaleFactor: 0.5,),
-            ],
-          ),
-        ),
-        new Text(inventoryItem.expirationDateString),
-      ],
-    );
-  }
+class AppState {
+  List<InventoryItem> inventoryItems = new List();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  DateTime lastPickedDate = new DateTime.now();
-  final List<InventoryItem> inventoryItems = new List();
+/// the only purpose is to propagate changes to entire tree
+class AppStateWidget extends InheritedWidget {
+  final StateManager stateManager;
+  AppStateWidget({this.stateManager, child}): super(child: child);
+  @override bool updateShouldNotify(InheritedWidget oldWidget) => true;
+}
 
-  void requestAndSetPermissions() async {
-    bool res = await SimplePermissions.checkPermission(Permission.Camera);
-    if (!res) await SimplePermissions.requestPermission(Permission.Camera);
+/// the only purpose is to contain the entire widget tree
+class StateManagerWidget extends StatefulWidget {
+  final Widget child;
+  StateManagerWidget(this.child);
+  @override State<StateManagerWidget> createState() => new StateManager();
+}
+
+/// holds and manages the app state
+class StateManager extends State<StateManagerWidget> {
+  final AppState appState = new AppState();
+  InventoryItem stagingItem = new InventoryItem();
+
+  void addItem(InventoryItem item) {
+    setState(() { appState.inventoryItems.add(item); });
   }
 
-  void cleanupImageDirectory() async {
-    try {
-      final Directory appDocumentDir = await getApplicationDocumentsDirectory();
-      final Directory tmpDirectory = new Directory(appDocumentDir.parent.path + '/tmp');
-      tmpDirectory.list(recursive: false)
-          .where((f) => f.path.contains('image_picker'))
-          .forEach((f) {
-        print('deleting $f');
-        f.delete(recursive: false);
-      });
-    } catch(e) {
-      print('$e');
-    }
+  void removeItemAtIndex(int index) {
+    setState(() { appState.inventoryItems.removeAt(index); });
   }
 
-  @override
-  void initState() {
-    super.initState();
-    requestAndSetPermissions();
-    cleanupImageDirectory();
+  Future<String> scanBarcode() async {
+    String code = await BarcodeScanner.scan();
+    stagingItem.code = code;
+    return code;
   }
 
+  static StateManager of(BuildContext context) {
+    return (context.inheritFromWidgetOfExactType(AppStateWidget) as AppStateWidget).stateManager;
+  }
+
+  @override Widget build(BuildContext context) => new AppStateWidget(stateManager: this, child: widget.child);
+}
+
+class ListingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called.
+    final StateManager state = StateManager.of(context);
+
     return new Scaffold(
-      appBar: new AppBar(title: new Text(widget.title),),
-      body: new ListView.builder(
-        itemCount: inventoryItems.length,
-        itemBuilder: (BuildContext context, int index) => new Dismissible(
-          key: new ObjectKey(inventoryItems[index].uuid),
-          child: new InventoryListItem(inventoryItems[index]),
-          onDismissed: (direction) {
-            setState(() => inventoryItems.remove(inventoryItems[index]));
-          },
-        ),
-      ),
-      floatingActionButton: new Builder(
-        builder: (BuildContext context) {
-          return new FloatingActionButton(
-            onPressed: () async {
-              InventoryItem inventoryItem = await Navigator.push(
-                context,
-                new MaterialPageRoute(builder: (context) => new _AddItemPage()));
-              setState(() {
-                if (inventoryItem != null) inventoryItems.add(inventoryItem);
-              });
-            },
-            tooltip: 'Add new inventory item',
-            child: new Icon(Icons.add_a_photo),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _AddItemPage extends StatefulWidget {
-  @override _AddItemPageState createState() => new _AddItemPageState();
-}
-
-class _AddItemPageState extends State<_AddItemPage> {
-  DateTime lastPickedDate = new DateTime.now();
-  InventoryItem inventoryItem = new InventoryItem();
-
-  @override
-  Widget build(BuildContext context) {
-    return new Scaffold(
-      appBar: new AppBar(title: new Text('Add new item')),
-      body: new ListView(
-        children: <Widget>[
-          new ListTile(
-            leading: const Icon(Icons.add_a_photo),
-            title: new FlatButton(
-              onPressed: () async {
-                var file = await ImagePicker.pickImage(source: ImageSource.camera);
-                print('image directory $file');
-                setState(() { inventoryItem.image = new Image.file(file); });
-              },
-              child: new AspectRatio(
-                aspectRatio: 16.0/9.0,
-                child: new Container(
-                  decoration: new BoxDecoration(
-                    image: new DecorationImage(
-                      fit: BoxFit.fitWidth,
-                      alignment: FractionalOffset.center,
-                      image: inventoryItem.displayImage.image
-                    )
-                  ),
-                ),
-              ),
-            ),
+      appBar: new AppBar(title: new Text('Inventorio'),),
+      body: ListView.builder(
+        itemCount: state.appState.inventoryItems.length,
+        itemBuilder: (BuildContext context, int index) =>
+          new Dismissible(
+            key: new ObjectKey(state.appState.inventoryItems[index].uuid),
+            child: new ListTile(title: new Text(state.appState.inventoryItems[index].uuid)),
+            onDismissed: (direction) { state.removeItemAtIndex(index); },
           ),
-          new ListTile(
-            leading: const Icon(Icons.today),
-            title: new RaisedButton(
-              child: new Text(
-                  inventoryItem.expirationDate == null ?
-                      'Expiration Date':
-                      inventoryItem.expirationDateString
-              ),
-              onPressed: () async {
-                var expirationDate = await showDatePicker(context: context,
-                  initialDate: lastPickedDate,
-                  firstDate: lastPickedDate,
-                  lastDate: lastPickedDate.add(const Duration(days: 365*5)));
-                setState(() {
-                  lastPickedDate = expirationDate;
-                  inventoryItem.expirationDate = expirationDate;
-                });
-              }
-            ),
-          ),
-          new ListTile(
-            leading: const Icon(Icons.label),
-            title: new TextField(
-              decoration: new InputDecoration(hintText: 'Label'),
-              onChanged: (value) {
-                setState(() { inventoryItem.label = value; });
-              },
-            )
-          ),
-          new ListTile(
-            leading: const Icon(Icons.confirmation_number),
-            title: new RaisedButton(
-              child: new Text(inventoryItem?.barCode ?? 'Barcode'),
-              onPressed: () async {
-                var barCode = await BarcodeScanner.scan();
-                setState(() { inventoryItem.barCode = barCode; });
-              },
-            ),
-          ),
-        ],
       ),
       floatingActionButton: new FloatingActionButton(
-        onPressed: () { Navigator.of(context).pop(inventoryItem); },
-        child: new Icon(Icons.add),
+        onPressed: () async {
+          Navigator.of(context).pushNamed('/add/inventoryItem');
+        },
+        child: new Icon(Icons.add_a_photo),
+      ),
+    );
+  }
+}
+
+class AddNewInventoryItemPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final StateManager state = StateManager.of(context);
+    return new Scaffold(
+      appBar: new AppBar(title: new Text('Add New Inventory Item')),
+      body: new FlatButton(
+        onPressed: () { state.scanBarcode(); },
+        child: new Container(
+          decoration: new BoxDecoration(
+            image: new DecorationImage(
+              image: AssetImage('resources/images/barcode.png'),
+              fit: BoxFit.fitWidth,
+            ),
+          ),
+        ),
       ),
     );
   }
