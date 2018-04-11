@@ -103,10 +103,7 @@ class StateManager extends State<StateManagerWidget> {
   }
 
   void addProduct(BuildContext context, String code, Product product) {
-    setState(() {
-      print('Adding product [$product]');
-      products.putIfAbsent(code, () => product);
-    });
+    setState(() { products[code] = product; });
   }
 
   void addItem(InventoryItem item) {
@@ -213,9 +210,10 @@ class InventoryItemTile extends StatelessWidget {
           default: Navigator.push(
             context,
             new MaterialPageRoute(
-              builder: (context) => new ProductPage(code: item.code),
+              builder: (context) => new ProductPage(code: item.code, product: product),
             )
           );
+          item.uuid = InventoryItem.uuidGen.v4();
         }
       },
       key: new ObjectKey(item.uuid),
@@ -261,19 +259,25 @@ class ListingsPage extends StatelessWidget {
 
 class ProductPage extends StatefulWidget {
   final String code;
-  ProductPage({this.code});
+  final Product product;
+  ProductPage({this.code, this.product});
   @override State<ProductPage> createState() => new ProductPageState();
 }
 
 class ProductPageState extends State<ProductPage> {
-  final Product product = new Product();
+  Product product = new Product();
 
   @override
   Widget build(BuildContext context) {
     final StateManager state = StateManager.of(context);
+    product = widget.product ?? product;
 
     return new Scaffold(
-      appBar: new AppBar(title: new Text('Add New Product')),
+      appBar: new AppBar(title:
+        new Text(
+          widget.product != null? 'Add New Product': 'Edit Product'
+        )
+      ),
       body: new Center(
         child: new ListView(
           children: <Widget>[
@@ -282,6 +286,7 @@ class ProductPageState extends State<ProductPage> {
             ),
             new ListTile(
               title: new TextField(
+                controller: new TextEditingController(text: product.name),
                 onChanged: (s) => product.name = s.trim(),
                 decoration: new InputDecoration(
                   hintText: 'Name'
@@ -290,6 +295,7 @@ class ProductPageState extends State<ProductPage> {
             ),
             new ListTile(
               title: new TextField(
+                controller: new TextEditingController(text: product.brand),
                 onChanged: (s) => product.brand = s.trim(),
                 decoration: new InputDecoration(
                   hintText: 'Brand'
