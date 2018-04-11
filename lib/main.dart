@@ -275,7 +275,7 @@ class ProductPageState extends State<ProductPage> {
     return new Scaffold(
       appBar: new AppBar(title:
         new Text(
-          widget.product != null? 'Add New Product': 'Edit Product'
+          widget.product == null? 'Add New Product': 'Edit Product'
         )
       ),
       body: new Center(
