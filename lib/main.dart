@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:simple_permissions/simple_permissions.dart';
 import 'package:barcode_scan/barcode_scan.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() => runApp(new StateManagerWidget(new MyApp()));
 
@@ -20,8 +22,8 @@ class MyApp extends StatelessWidget {
 }
 
 class Product {
-  String code, name, brand;
-  @override String toString() {return name; }
+  String code, name, brand, imageFileName;
+  @override String toString() { return '($code, $name, $brand, $imageFileName)'; }
 }
 
 class InventoryItem {
@@ -31,7 +33,7 @@ class InventoryItem {
   DateTime expiryDate;
   InventoryItem({this.code, this.expiryDate}) { print('adding $uuid'); }
   String get expiryDateString => expiryDate?.toIso8601String()?.substring(0, 10) ?? 'No Expiry Date';
-  @override String toString() { return '$code,$expiryDate'; }
+  @override String toString() { return '($code, $expiryDate)'; }
 }
 
 /// the only purpose is to propagate changes to entire tree
@@ -52,17 +54,32 @@ class StateManagerWidget extends StatefulWidget {
 class StateManager extends State<StateManagerWidget> {
   final List<InventoryItem> inventoryItems = new List();
   final Map<String, Product> products = new Map();
+  final Map<String, File> imageMap = new Map();
+
   DateTime lastSelectedDate = new DateTime.now();
 
   @override
   void initState() {
     _requestPermissions();
+    _cleanupTemporaryCameraFiles();
     super.initState();
   }
 
   void _requestPermissions() async {
     bool hasCameraPermission = await SimplePermissions.checkPermission(Permission.Camera);
     if (!hasCameraPermission) await SimplePermissions.requestPermission(Permission.Camera);
+  }
+
+  void _cleanupTemporaryCameraFiles() async {
+    Directory docDir = await getApplicationDocumentsDirectory();
+    Directory imagePickerTmpDir = new Directory(docDir.parent.path + '/tmp');
+    imagePickerTmpDir
+        .list()
+        .where((f) => f.path.contains('image_picker'))
+        .forEach((f) {
+          print('deleting ${f.path}');
+          f.delete();
+        });
   }
 
   void removeItemAtIndex(int index) {
@@ -78,7 +95,7 @@ class StateManager extends State<StateManagerWidget> {
           firstDate: lastSelectedDate,
           lastDate: lastSelectedDate.add(new Duration(days: 365 * 5))
       );
-      print('Expiry Date: $expiryDate');
+      print('Setting Expiry Date: [$expiryDate]');
     } catch (e) {
       print('Unknown exception $e');
     }
@@ -87,15 +104,15 @@ class StateManager extends State<StateManagerWidget> {
 
   void addProduct(BuildContext context, String code, Product product) {
     setState(() {
+      print('Adding product [$product]');
       products.putIfAbsent(code, () => product);
-      print('$products');
     });
   }
 
   void addItem(InventoryItem item) {
     setState(() {
+      print('Adding inventory [$item]');
       inventoryItems.add(item);
-      print('inventory items: $inventoryItems');
     });
   }
 
@@ -124,11 +141,40 @@ class StateManager extends State<StateManagerWidget> {
     return products[item.code];
   }
 
+  void addImage(File file) {
+    imageMap.putIfAbsent(file.path, () => file);
+  }
+
   static StateManager of(BuildContext context) {
     return (context.inheritFromWidgetOfExactType(AppStateWidget) as AppStateWidget).stateManager;
   }
 
   @override Widget build(BuildContext context) => new AppStateWidget(stateManager: this, child: widget.child);
+}
+
+class InventoryItemTile extends StatelessWidget {
+  final int index;
+  InventoryItemTile(this.index);
+
+  @override
+  Widget build(BuildContext context) {
+    final StateManager state = StateManager.of(context);
+    final InventoryItem item = state.inventoryItems[index];
+    final Product product = state.getAssociatedProduct(item);
+
+    return new Dismissible(
+      key: new ObjectKey(state.inventoryItems[index].uuid),
+      child: new ListTile(
+        leading: new CircleAvatar(
+          backgroundImage: new FileImage(state.imageMap[product.imageFileName]),
+        ),
+        title: new Text(product.name),
+        subtitle: new Text(product.brand),
+        trailing: new Text(item.expiryDateString),
+      ),
+      onDismissed: (direction) { state.removeItemAtIndex(index); },
+    );
+  }
 }
 
 class ListingsPage extends StatelessWidget {
@@ -140,16 +186,7 @@ class ListingsPage extends StatelessWidget {
       appBar: new AppBar(title: new Text('Inventorio'),),
       body: ListView.builder(
         itemCount: state.inventoryItems.length,
-        itemBuilder: (BuildContext context, int index) =>
-          new Dismissible(
-            key: new ObjectKey(state.inventoryItems[index].uuid),
-            child: new ListTile(
-              title: new Text(state.getAssociatedProduct(state.inventoryItems[index]).name),
-              subtitle: new Text(state.getAssociatedProduct(state.inventoryItems[index]).brand),
-              trailing: new Text(state.inventoryItems[index].expiryDateString),
-            ),
-            onDismissed: (direction) { state.removeItemAtIndex(index); },
-          ),
+        itemBuilder: (BuildContext context, int index) => new InventoryItemTile(index),
       ),
       floatingActionButton: new FloatingActionButton(
         onPressed: () async { state.addItemFlow(context); },
@@ -159,14 +196,19 @@ class ListingsPage extends StatelessWidget {
   }
 }
 
-class AddProductPage extends StatelessWidget {
+class AddProductPage extends StatefulWidget {
   final String code;
   AddProductPage({this.code});
+  @override State<AddProductPage> createState() =>
+      new AddProductPageStage();
+}
+
+class AddProductPageStage extends State<AddProductPage> {
+  final Product product = new Product();
 
   @override
   Widget build(BuildContext context) {
     final StateManager state = StateManager.of(context);
-    Product product = new Product();
 
     return new Scaffold(
       appBar: new AppBar(title: new Text('Add New Product')),
@@ -174,7 +216,7 @@ class AddProductPage extends StatelessWidget {
         child: new ListView(
           children: <Widget>[
             new ListTile(
-              title: new Text('$code'),
+              title: new Text('${widget.code}'),
             ),
             new ListTile(
               title: new TextField(
@@ -192,12 +234,25 @@ class AddProductPage extends StatelessWidget {
                 ),
               ),
             ),
+            new ListTile(
+              title: new RaisedButton(
+                onPressed: () async {
+                  File file  = await ImagePicker.pickImage(source: ImageSource.camera);
+                  print('Setting image file [$file]');
+                  product.imageFileName = file.path;
+                  state.addImage(file);
+                },
+                color: Theme.of(context).accentColor,
+                child: new Text('Add Image'),
+              ),
+            )
           ],
         )
       ),
       floatingActionButton: new FloatingActionButton(
         onPressed: () {
-          state.addProduct(context, code, product);
+          product.code = widget.code;
+          state.addProduct(context, widget.code, product);
           Navigator.pop(context, product);
         },
       ),
