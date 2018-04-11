@@ -31,7 +31,7 @@ class InventoryItem {
   String uuid = uuidGen.v4();
   String code;
   DateTime expiryDate;
-  InventoryItem({this.code, this.expiryDate}) { print('adding $uuid'); }
+  InventoryItem({this.code, this.expiryDate});
   String get expiryDateString => expiryDate?.toIso8601String()?.substring(0, 10) ?? 'No Expiry Date';
   @override String toString() { return '($code, $expiryDate)'; }
 }
@@ -124,10 +124,10 @@ class StateManager extends State<StateManagerWidget> {
 
     if (!products.containsKey(code)) {
       Product product = await Navigator.push(
-          context,
-          new MaterialPageRoute(
-            builder: (context) => new AddProductPage(code: code),
-          )
+        context,
+        new MaterialPageRoute(
+          builder: (context) => new ProductPage(code: code),
+        )
       );
       if (product == null) return null;
     }
@@ -152,6 +152,30 @@ class StateManager extends State<StateManagerWidget> {
   @override Widget build(BuildContext context) => new AppStateWidget(stateManager: this, child: widget.child);
 }
 
+class SquareImage extends StatelessWidget {
+  final double side;
+  final String imageFileName;
+  SquareImage({this.side = 100.0, this.imageFileName});
+
+  @override
+  Widget build(BuildContext context) {
+    final StateManager state = StateManager.of(context);
+    return !state.imageMap.containsKey(imageFileName)?
+      new Container() :
+      new Container(
+        width: side,
+        height: side,
+        decoration: new BoxDecoration(
+          image: new DecorationImage(
+            image: new FileImage(state.imageMap[imageFileName]),
+            fit: BoxFit.cover,
+          ),
+          border: new Border.all(color: Colors.white, width: 2.0),
+        ),
+      );
+  }
+}
+
 class InventoryItemTile extends StatelessWidget {
   final int index;
   InventoryItemTile(this.index);
@@ -163,25 +187,41 @@ class InventoryItemTile extends StatelessWidget {
     final Product product = state.getAssociatedProduct(item);
 
     return new Dismissible(
-      onDismissed: (direction) { state.removeItemAtIndex(index); },
+      background: new Container(
+        color: Colors.yellowAccent,
+        child: new Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+            new Icon(Icons.edit),
+            new Text('Edit Product', textScaleFactor: 1.0,),
+          ],
+        ),
+      ),
+      secondaryBackground: new Container(
+        color: Colors.redAccent,
+        child: new Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: <Widget>[
+            new Text('Remove', textScaleFactor: 1.0,),
+            new Icon(Icons.delete),
+          ],
+        ),
+      ),
+      onDismissed: (direction) {
+        switch(direction) {
+          case DismissDirection.endToStart: state.removeItemAtIndex(index); break;
+          default: Navigator.push(
+            context,
+            new MaterialPageRoute(
+              builder: (context) => new ProductPage(code: item.code),
+            )
+          );
+        }
+      },
       key: new ObjectKey(item.uuid),
       child: new Row(
         children: <Widget>[
-          new Container(
-            width: 100.0,
-            height: 100.0,
-            decoration: new BoxDecoration(
-              image: new DecorationImage(
-                image: new FileImage(state.imageMap[product.imageFileName]),
-                fit: BoxFit.cover,
-              ),
-              border: new Border(
-                top: new BorderSide(color: Colors.white, width: .5),
-                bottom: new BorderSide(color: Colors.white, width: .5),
-                left: new BorderSide(color: Colors.white, width: 1.0),
-              ),
-            ),
-          ),
+          new SquareImage(imageFileName: product.imageFileName,),
           new Expanded(
             flex: 2,
             child: new Column(
@@ -219,14 +259,13 @@ class ListingsPage extends StatelessWidget {
   }
 }
 
-class AddProductPage extends StatefulWidget {
+class ProductPage extends StatefulWidget {
   final String code;
-  AddProductPage({this.code});
-  @override State<AddProductPage> createState() =>
-      new AddProductPageStage();
+  ProductPage({this.code});
+  @override State<ProductPage> createState() => new ProductPageState();
 }
 
-class AddProductPageStage extends State<AddProductPage> {
+class ProductPageState extends State<ProductPage> {
   final Product product = new Product();
 
   @override
@@ -262,17 +301,25 @@ class AddProductPageStage extends State<AddProductPage> {
                 onPressed: () async {
                   File file  = await ImagePicker.pickImage(source: ImageSource.camera);
                   print('Setting image file [$file]');
-                  product.imageFileName = file.path;
+                  setState(() {
+                    product.imageFileName = file.path;
+                  });
                   state.addImage(file);
                 },
                 color: Theme.of(context).accentColor,
                 child: new Text('Add Image'),
+              ),
+            ),
+            new ListTile(
+              title: new Center(
+                child: new SquareImage(side: 200.0, imageFileName: product.imageFileName,)
               ),
             )
           ],
         )
       ),
       floatingActionButton: new FloatingActionButton(
+        child: new Icon(Icons.add),
         onPressed: () {
           product.code = widget.code;
           state.addProduct(context, widget.code, product);
