@@ -163,16 +163,39 @@ class InventoryItemTile extends StatelessWidget {
     final Product product = state.getAssociatedProduct(item);
 
     return new Dismissible(
-      key: new ObjectKey(state.inventoryItems[index].uuid),
-      child: new ListTile(
-        leading: new CircleAvatar(
-          backgroundImage: new FileImage(state.imageMap[product.imageFileName]),
-        ),
-        title: new Text(product.name),
-        subtitle: new Text(product.brand),
-        trailing: new Text(item.expiryDateString),
-      ),
       onDismissed: (direction) { state.removeItemAtIndex(index); },
+      key: new ObjectKey(item.uuid),
+      child: new Row(
+        children: <Widget>[
+          new Container(
+            width: 100.0,
+            height: 100.0,
+            decoration: new BoxDecoration(
+              image: new DecorationImage(
+                image: new FileImage(state.imageMap[product.imageFileName]),
+                fit: BoxFit.cover,
+              ),
+              border: new Border(
+                top: new BorderSide(color: Colors.white, width: .5),
+                bottom: new BorderSide(color: Colors.white, width: .5),
+                left: new BorderSide(color: Colors.white, width: 1.0),
+              ),
+            ),
+          ),
+          new Expanded(
+            flex: 2,
+            child: new Column(
+              children: <Widget>[
+                new Text(product.name, textScaleFactor: 1.2,),
+                new Text(product.brand),
+              ],
+            ),
+          ),
+          new Expanded(
+            child: new Text(item.expiryDateString, textScaleFactor: 1.01,),
+          )
+        ],
+      ),
     );
   }
 }
