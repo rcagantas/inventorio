@@ -201,7 +201,7 @@ class InventoryItemTile extends StatelessWidget {
 
     return new Dismissible(
       background: new Container(
-        color: Colors.redAccent,
+        color: Colors.deepOrangeAccent,
         child: new Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
@@ -211,7 +211,7 @@ class InventoryItemTile extends StatelessWidget {
         ),
       ),
       secondaryBackground: new Container(
-        color: Colors.yellowAccent,
+        color: Colors.lightBlueAccent,
         child: new Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: <Widget>[
