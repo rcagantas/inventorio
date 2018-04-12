@@ -8,6 +8,8 @@ import 'package:barcode_scan/barcode_scan.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
+const double TILE_HEIGHT = 80.0;
+
 void main() => runApp(new StateManagerWidget(new MyApp()));
 
 class MyApp extends StatelessWidget {
@@ -93,7 +95,7 @@ class StateManager extends State<StateManagerWidget> {
           context: context,
           initialDate: lastSelectedDate,
           firstDate: lastSelectedDate,
-          lastDate: lastSelectedDate.add(new Duration(days: 365 * 5))
+          lastDate: lastSelectedDate.add(new Duration(days: 365 * 10))
       );
       print('Setting Expiry Date: [$expiryDate]');
     } catch (e) {
@@ -110,14 +112,16 @@ class StateManager extends State<StateManagerWidget> {
     setState(() {
       print('Adding inventory [$item]');
       inventoryItems.add(item);
+      inventoryItems.sort((item1, item2) => item1.expiryDate.compareTo(item2.expiryDate));
     });
   }
 
   Future<InventoryItem> addItemFlow(BuildContext context) async {
-    String code = await BarcodeScanner.scan();
+    String code = await BarcodeScanner.scan(); setState(() {});
     if (code == null) return null;
 
     DateTime expiryDate = await getExpiryDate(context);
+    if (expiryDate == null) return null;
 
     if (!products.containsKey(code)) {
       Product product = await Navigator.push(
@@ -152,13 +156,17 @@ class StateManager extends State<StateManagerWidget> {
 class SquareImage extends StatelessWidget {
   final double side;
   final String imageFileName;
-  SquareImage({this.side = 100.0, this.imageFileName});
+  SquareImage({this.side = TILE_HEIGHT, this.imageFileName});
 
   @override
   Widget build(BuildContext context) {
     final StateManager state = StateManager.of(context);
-    return !state.imageMap.containsKey(imageFileName)?
-      new Container() :
+    return state.imageMap[imageFileName] == null?
+      new Container(
+        width: side,
+        height: side,
+        child: new FlutterLogo(),
+      ):
       new Container(
         width: side,
         height: side,
@@ -183,36 +191,45 @@ class InventoryItemTile extends StatelessWidget {
     final InventoryItem item = state.inventoryItems[index];
     final Product product = state.getAssociatedProduct(item);
 
+    Color expiryColorScale(InventoryItem item) {
+      DateTime today = new DateTime.now();
+      Duration duration = item.expiryDate?.difference(today) ?? new Duration(days: 0);
+      if (duration.inDays < 30) return Colors.redAccent;
+      else if (duration.inDays < 90) return Colors.yellowAccent;
+      return Colors.greenAccent;
+    }
+
     return new Dismissible(
       background: new Container(
-        color: Colors.yellowAccent,
+        color: Colors.redAccent,
         child: new Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-            new Icon(Icons.edit),
-            new Text('Edit Product', textScaleFactor: 1.0,),
+            new Icon(Icons.delete),
+            new Text('Remove', textScaleFactor: 1.0,),
           ],
         ),
       ),
       secondaryBackground: new Container(
-        color: Colors.redAccent,
+        color: Colors.yellowAccent,
         child: new Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: <Widget>[
-            new Text('Remove', textScaleFactor: 1.0,),
-            new Icon(Icons.delete),
+            new Text('Edit Product', textScaleFactor: 1.0,),
+            new Icon(Icons.edit),
           ],
         ),
       ),
       onDismissed: (direction) {
         switch(direction) {
-          case DismissDirection.endToStart: state.removeItemAtIndex(index); break;
+          case DismissDirection.startToEnd: state.removeItemAtIndex(index); break;
           default: Navigator.push(
             context,
             new MaterialPageRoute(
               builder: (context) => new ProductPage(code: item.code, product: product),
             )
           );
+          // need to change uuid so that dismiss works without actually dismissing
           item.uuid = InventoryItem.uuidGen.v4();
         }
       },
@@ -230,7 +247,22 @@ class InventoryItemTile extends StatelessWidget {
             ),
           ),
           new Expanded(
-            child: new Text(item.expiryDateString, textScaleFactor: 1.01,),
+            child: new Text(
+              item.expiryDateString,
+              style: new TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+              textScaleFactor: 1.0,
+            ),
+          ),
+          new Container(
+            height: TILE_HEIGHT,
+            width: 5.0,
+            color: expiryColorScale(item),
+          ),
+          new Container(
+            height: TILE_HEIGHT,
+            width: 2.0,
           )
         ],
       ),
