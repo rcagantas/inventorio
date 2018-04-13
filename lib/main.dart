@@ -97,7 +97,7 @@ class StateManager extends State<StateManagerWidget> {
        expiryDate = await showDatePicker(
           context: context,
           initialDate: lastSelectedDate,
-          firstDate: lastSelectedDate,
+          firstDate: lastSelectedDate.subtract(new Duration(days: 1)),
           lastDate: lastSelectedDate.add(new Duration(days: 365 * 10))
       );
       print('Setting Expiry Date: [$expiryDate]');
