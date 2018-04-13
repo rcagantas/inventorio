@@ -161,23 +161,19 @@ class SquareImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final StateManager state = StateManager.of(context);
-    return state.imageMap[imageFileName] == null?
-      new Container(
-        width: side,
-        height: side,
-        child: new FlutterLogo(),
-      ):
-      new Container(
-        width: side,
-        height: side,
-        decoration: new BoxDecoration(
-          image: new DecorationImage(
-            image: new FileImage(state.imageMap[imageFileName]),
-            fit: BoxFit.cover,
-          ),
-          border: new Border.all(color: Colors.white, width: 2.0),
+    return new Container(
+      width: side,
+      height: side,
+      decoration: !state.imageMap.containsKey(imageFileName)?
+        new FlutterLogoDecoration():
+        new BoxDecoration(
+        image: new DecorationImage(
+          image: new FileImage(state.imageMap[imageFileName]),
+          fit: BoxFit.cover,
         ),
-      );
+        border: new Border.all(color: Colors.white, width: 2.0),
+      ),
+    );
   }
 }
 
@@ -335,24 +331,23 @@ class ProductPageState extends State<ProductPage> {
               ),
             ),
             new ListTile(
-              title: new RaisedButton(
-                onPressed: () async {
-                  File file  = await ImagePicker.pickImage(source: ImageSource.camera);
-                  print('Setting image file [$file]');
-                  setState(() {
-                    product.imageFileName = file.path;
-                  });
-                  state.addImage(file);
-                },
-                color: Theme.of(context).accentColor,
-                child: new Text('Add Image'),
+              title: new Center(
+                child: new FlatButton(
+                  onPressed: () async {
+                    File file  = await ImagePicker.pickImage(source: ImageSource.camera);
+                    print('Setting image file [$file]');
+                    setState(() {
+                      product.imageFileName = file.path;
+                    });
+                    state.addImage(file);
+                  },
+                  child: new SquareImage(
+                    side: 200.0,
+                    imageFileName: product.imageFileName,
+                  ),
+                )
               ),
             ),
-            new ListTile(
-              title: new Center(
-                child: new SquareImage(side: 200.0, imageFileName: product.imageFileName,)
-              ),
-            )
           ],
         )
       ),
