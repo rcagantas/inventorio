@@ -84,8 +84,10 @@ class StateManager extends State<StateManagerWidget> {
         });
   }
 
-  void removeItemAtIndex(int index) {
-    setState(() { inventoryItems.removeAt(index); });
+  InventoryItem removeItemAtIndex(int index) {
+    InventoryItem item;
+    setState(() { item = inventoryItems.removeAt(index); });
+    return item;
   }
 
   Future<DateTime> getExpiryDate(BuildContext context) async {
@@ -218,7 +220,21 @@ class InventoryItemTile extends StatelessWidget {
       ),
       onDismissed: (direction) {
         switch(direction) {
-          case DismissDirection.startToEnd: state.removeItemAtIndex(index); break;
+          case DismissDirection.startToEnd:
+            InventoryItem item = state.removeItemAtIndex(index);
+            Scaffold.of(context).showSnackBar(
+              new SnackBar(
+                content: new Text('Removed item ${item.code}'),
+                action: new SnackBarAction(
+                  label: "UNDO",
+                  onPressed: () {
+                    item.uuid = InventoryItem.uuidGen.v4();
+                    state.addItem(item);
+                  },
+                )
+              )
+            );
+            break;
           default: Navigator.push(
             context,
             new MaterialPageRoute(
