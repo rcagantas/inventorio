@@ -87,6 +87,7 @@ class StateManager extends State<StateManagerWidget> {
   InventoryItem removeItemAtIndex(int index) {
     InventoryItem item;
     setState(() { item = inventoryItems.removeAt(index); });
+    print('Deleting inventory $item');
     return item;
   }
 
@@ -166,14 +167,24 @@ class SquareImage extends StatelessWidget {
     return new Container(
       width: side,
       height: side,
+      child: !state.imageMap.containsKey(imageFileName)?
+        new Icon(
+          Icons.camera_alt,
+          size: side,
+          color: Theme.of(context).buttonColor,
+        ):
+        null,
       decoration: !state.imageMap.containsKey(imageFileName)?
-        new FlutterLogoDecoration():
+        null :
         new BoxDecoration(
         image: new DecorationImage(
           image: new FileImage(state.imageMap[imageFileName]),
           fit: BoxFit.cover,
         ),
-        border: new Border.all(color: Colors.white, width: 2.0),
+        border: new Border.all(
+          color: Theme.of(context).canvasColor,
+          width: 2.0,
+        )
       ),
     );
   }
@@ -224,7 +235,7 @@ class InventoryItemTile extends StatelessWidget {
             InventoryItem item = state.removeItemAtIndex(index);
             Scaffold.of(context).showSnackBar(
               new SnackBar(
-                content: new Text('Removed item ${item.code}'),
+                content: new Text('Removed item ${product.name}'),
                 action: new SnackBarAction(
                   label: "UNDO",
                   onPressed: () {
@@ -271,11 +282,8 @@ class InventoryItemTile extends StatelessWidget {
             height: TILE_HEIGHT,
             width: 5.0,
             color: expiryColorScale(item),
+            margin: new EdgeInsets.only(right: 2.0),
           ),
-          new Container(
-            height: TILE_HEIGHT,
-            width: 2.0,
-          )
         ],
       ),
     );
@@ -347,21 +355,24 @@ class ProductPageState extends State<ProductPage> {
               ),
             ),
             new ListTile(
-              title: new Center(
-                child: new FlatButton(
-                  onPressed: () async {
-                    File file  = await ImagePicker.pickImage(source: ImageSource.camera);
-                    print('Setting image file [$file]');
-                    setState(() {
-                      product.imageFileName = file.path;
-                    });
-                    state.addImage(file);
-                  },
-                  child: new SquareImage(
-                    side: 200.0,
-                    imageFileName: product.imageFileName,
-                  ),
-                )
+              title: new Container(
+                margin: new EdgeInsets.only(top: 20.0),
+                child: new Center(
+                  child: new FlatButton(
+                    onPressed: () async {
+                      File file  = await ImagePicker.pickImage(source: ImageSource.camera);
+                      print('Setting image file [$file]');
+                      setState(() {
+                        product.imageFileName = file.path;
+                      });
+                      state.addImage(file);
+                    },
+                    child: new SquareImage(
+                      side: 200.0,
+                      imageFileName: product.imageFileName,
+                    ),
+                  )
+                ),
               ),
             ),
           ],
