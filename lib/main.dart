@@ -8,8 +8,6 @@ import 'package:barcode_scan/barcode_scan.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
-const double TILE_HEIGHT = 80.0;
-
 void main() => runApp(new StateManagerWidget(new MyApp()));
 
 class MyApp extends StatelessWidget {
@@ -21,6 +19,11 @@ class MyApp extends StatelessWidget {
       home: new ListingsPage(),
     );
   }
+}
+
+class AppPreferences {
+  static const double TILE_HEIGHT = 80.0;
+  static const double MARGIN = 2.0;
 }
 
 class Product {
@@ -159,7 +162,7 @@ class StateManager extends State<StateManagerWidget> {
 class SquareImage extends StatelessWidget {
   final double side;
   final String imageFileName;
-  SquareImage({this.side = TILE_HEIGHT, this.imageFileName});
+  SquareImage({this.side = AppPreferences.TILE_HEIGHT, this.imageFileName});
 
   @override
   Widget build(BuildContext context) {
@@ -183,7 +186,7 @@ class SquareImage extends StatelessWidget {
         ),
         border: new Border.all(
           color: Theme.of(context).canvasColor,
-          width: 2.0,
+          width: AppPreferences.MARGIN,
         )
       ),
     );
@@ -279,10 +282,10 @@ class InventoryItemTile extends StatelessWidget {
             ),
           ),
           new Container(
-            height: TILE_HEIGHT,
+            height: AppPreferences.TILE_HEIGHT,
             width: 5.0,
             color: expiryColorScale(item),
-            margin: new EdgeInsets.only(right: 2.0),
+            margin: new EdgeInsets.only(right: AppPreferences.MARGIN),
           ),
         ],
       ),
@@ -340,18 +343,14 @@ class ProductPageState extends State<ProductPage> {
               title: new TextField(
                 controller: new TextEditingController(text: product.name),
                 onChanged: (s) => product.name = s.trim(),
-                decoration: new InputDecoration(
-                  hintText: 'Name'
-                ),
+                decoration: new InputDecoration(hintText: 'Name'),
               ),
             ),
             new ListTile(
               title: new TextField(
                 controller: new TextEditingController(text: product.brand),
                 onChanged: (s) => product.brand = s.trim(),
-                decoration: new InputDecoration(
-                  hintText: 'Brand'
-                ),
+                decoration: new InputDecoration(hintText: 'Brand'),
               ),
             ),
             new ListTile(
@@ -368,7 +367,7 @@ class ProductPageState extends State<ProductPage> {
                       state.addImage(file);
                     },
                     child: new SquareImage(
-                      side: 200.0,
+                      side: 250.0,
                       imageFileName: product.imageFileName,
                     ),
                   )
