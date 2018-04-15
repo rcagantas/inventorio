@@ -28,8 +28,8 @@ class AppPreferences {
 }
 
 class Product {
-  String code, name, brand, imageFileName;
-  @override String toString() { return '($code, $name, $brand, $imageFileName)'; }
+  String code, name, brand;
+  @override String toString() { return '($code, $name, $brand)'; }
 }
 
 class InventoryItem {
