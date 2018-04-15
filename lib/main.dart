@@ -7,6 +7,7 @@ import 'package:simple_permissions/simple_permissions.dart';
 import 'package:barcode_scan/barcode_scan.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart';
 
 void main() => runApp(new StateManagerWidget(new MyApp()));
 
@@ -59,9 +60,9 @@ class StateManagerWidget extends StatefulWidget {
 class StateManager extends State<StateManagerWidget> {
   final List<InventoryItem> inventoryItems = new List();
   final Map<String, Product> products = new Map();
-  final Map<String, File> imageMap = new Map();
 
-  DateTime lastSelectedDate = new DateTime.now();
+  final Map<String, File> _imageMap = new Map();
+  DateTime _lastSelectedDate = new DateTime.now();
 
   @override
   void initState() {
@@ -80,10 +81,14 @@ class StateManager extends State<StateManagerWidget> {
     Directory imagePickerTmpDir = new Directory(docDir.parent.path + '/tmp');
     imagePickerTmpDir
         .list()
-        .where((f) => f.path.contains('image_picker'))
         .forEach((f) {
-          print('deleting ${f.path}');
-          f.delete();
+          if (f.path.contains('image_picker')) {
+            print('Deleting ${f.path}');
+            f.delete();
+          } else if (f.path.endsWith('.jpg')) {
+            print('Loading ${f.path}');
+            _imageMap.putIfAbsent(basenameWithoutExtension(f.path), () => f);
+          }
         });
   }
 
@@ -95,13 +100,13 @@ class StateManager extends State<StateManagerWidget> {
   }
 
   Future<DateTime> getExpiryDate(BuildContext context) async {
-    DateTime expiryDate = lastSelectedDate;
+    DateTime expiryDate = _lastSelectedDate;
     try {
        expiryDate = await showDatePicker(
           context: context,
-          initialDate: lastSelectedDate,
-          firstDate: lastSelectedDate.subtract(new Duration(days: 1)),
-          lastDate: lastSelectedDate.add(new Duration(days: 365 * 10))
+          initialDate: _lastSelectedDate,
+          firstDate: _lastSelectedDate.subtract(new Duration(days: 1)),
+          lastDate: _lastSelectedDate.add(new Duration(days: 365 * 10))
       );
       print('Setting Expiry Date: [$expiryDate]');
     } catch (e) {
@@ -110,8 +115,8 @@ class StateManager extends State<StateManagerWidget> {
     return expiryDate;
   }
 
-  void addProduct(BuildContext context, String code, Product product) {
-    setState(() { products[code] = product; });
+  void addProduct(BuildContext context, Product product) {
+    setState(() { products[product.code] = product; });
   }
 
   void addItem(InventoryItem item) {
@@ -148,8 +153,19 @@ class StateManager extends State<StateManagerWidget> {
     return products[item.code];
   }
 
-  void addImage(File file) {
-    imageMap.putIfAbsent(file.path, () => file);
+  void addProductImage(Product product, File file) async {
+    if ('${product.code}.jpg' != basename(file.path)) {
+      file = await file.rename('${dirname(file.path)}/${product.code}.jpg');
+      print('Renamed to ${file.path}');
+    }
+    setState(() {
+      _imageMap.putIfAbsent(product.code, () => file);
+    });
+  }
+
+  File getProductImage(Product product) {
+    print('Trying ${product.code}: ${_imageMap[product.code]}');
+    return _imageMap[product.code];
   }
 
   static StateManager of(BuildContext context) {
@@ -161,27 +177,26 @@ class StateManager extends State<StateManagerWidget> {
 
 class SquareImage extends StatelessWidget {
   final double side;
-  final String imageFileName;
-  SquareImage({this.side = AppPreferences.TILE_HEIGHT, this.imageFileName});
+  final File imageFile;
+  SquareImage({this.side = AppPreferences.TILE_HEIGHT, this.imageFile});
 
   @override
   Widget build(BuildContext context) {
-    final StateManager state = StateManager.of(context);
     return new Container(
       width: side,
       height: side,
-      child: !state.imageMap.containsKey(imageFileName)?
+      child: imageFile == null?
         new Icon(
           Icons.camera_alt,
           size: side,
           color: Theme.of(context).buttonColor,
         ):
         null,
-      decoration: !state.imageMap.containsKey(imageFileName)?
+      decoration: imageFile == null?
         null :
         new BoxDecoration(
         image: new DecorationImage(
-          image: new FileImage(state.imageMap[imageFileName]),
+          image: new FileImage(imageFile),
           fit: BoxFit.cover,
         ),
         border: new Border.all(
@@ -262,7 +277,7 @@ class InventoryItemTile extends StatelessWidget {
       key: new ObjectKey(item.uuid),
       child: new Row(
         children: <Widget>[
-          new SquareImage(imageFileName: product.imageFileName,),
+          new SquareImage(imageFile: state.getProductImage(product),),
           new Expanded(
             flex: 2,
             child: new Column(
@@ -326,6 +341,7 @@ class ProductPageState extends State<ProductPage> {
   Widget build(BuildContext context) {
     final StateManager state = StateManager.of(context);
     product = widget.product ?? product;
+    product.code = widget.code ?? product.code;
 
     return new Scaffold(
       appBar: new AppBar(title:
@@ -337,7 +353,7 @@ class ProductPageState extends State<ProductPage> {
         child: new ListView(
           children: <Widget>[
             new ListTile(
-              title: new Text('${widget.code}'),
+              title: new Text('${product.code}'),
             ),
             new ListTile(
               title: new TextField(
@@ -360,15 +376,11 @@ class ProductPageState extends State<ProductPage> {
                   child: new FlatButton(
                     onPressed: () async {
                       File file  = await ImagePicker.pickImage(source: ImageSource.camera);
-                      print('Setting image file [$file]');
-                      setState(() {
-                        product.imageFileName = file.path;
-                      });
-                      state.addImage(file);
+                      state.addProductImage(product, file);
                     },
                     child: new SquareImage(
                       side: 250.0,
-                      imageFileName: product.imageFileName,
+                      imageFile: state.getProductImage(product),
                     ),
                   )
                 ),
@@ -381,7 +393,7 @@ class ProductPageState extends State<ProductPage> {
         child: new Icon(Icons.add),
         onPressed: () {
           product.code = widget.code;
-          state.addProduct(context, widget.code, product);
+          state.addProduct(context, product);
           Navigator.pop(context, product);
         },
       ),
