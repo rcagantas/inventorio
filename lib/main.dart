@@ -30,6 +30,13 @@ class AppPreferences {
 class Product {
   String code, name, brand;
   @override String toString() { return '($code, $name, $brand)'; }
+  Map<String, String> toMap() {
+    return {
+      "code": code,
+      "name": name,
+      "brand": brand
+    };
+  }
 }
 
 class InventoryItem {
@@ -40,6 +47,13 @@ class InventoryItem {
   InventoryItem({this.code, this.expiryDate});
   String get expiryDateString => expiryDate?.toIso8601String()?.substring(0, 10) ?? 'No Expiry Date';
   @override String toString() { return '($code, $expiryDate)'; }
+  Map<String, String> toMap() {
+    return {
+      "uuid": uuid,
+      "code": code,
+      "expiryDate": expiryDateString
+    };
+  }
 }
 
 /// the only purpose is to propagate changes to entire tree
@@ -80,16 +94,16 @@ class StateManager extends State<StateManagerWidget> {
     Directory docDir = await getApplicationDocumentsDirectory();
     Directory imagePickerTmpDir = new Directory(docDir.parent.path + '/tmp');
     imagePickerTmpDir
-        .list()
-        .forEach((f) {
-          if (f.path.contains('image_picker')) {
-            print('Deleting ${f.path}');
-            f.delete();
-          } else if (f.path.endsWith('.jpg')) {
-            print('Loading ${f.path}');
-            _imageMap.putIfAbsent(basenameWithoutExtension(f.path), () => f);
-          }
-        });
+      .list()
+      .forEach((f) {
+        if (f.path.contains('image_picker')) {
+          print('Deleting ${f.path}');
+          f.delete();
+        } else if (f.path.endsWith('.jpg')) {
+          print('Loading ${f.path}');
+          _imageMap.putIfAbsent(basenameWithoutExtension(f.path), () => f);
+        }
+      });
   }
 
   InventoryItem removeItemAtIndex(int index) {
