@@ -62,8 +62,14 @@ class StateManagerWidget extends StatefulWidget {
 
 /// holds and manages the app state
 class StateManager extends State<StateManagerWidget> {
-  final List<InventoryItem> inventoryItems = new List();
-  final Map<String, Product> products = new Map();
+  final Map<String, InventoryItem> _inventoryItems = new Map();
+  final Map<String, Product> _products = new Map();
+
+  List<InventoryItem> get inventoryItems {
+    List<InventoryItem> toSort = _inventoryItems.values.toList();
+    toSort.sort((item1, item2) => item1.expiryDate.compareTo(item2.expiryDate));
+    return toSort;
+  }
 
   final Map<String, File> _imageMap = new Map();
   DateTime _lastSelectedDate = new DateTime.now();
@@ -97,7 +103,7 @@ class StateManager extends State<StateManagerWidget> {
   }
 
   void removeItem(InventoryItem item) {
-    setState(() { inventoryItems.remove(item); });
+    setState(() { _inventoryItems.remove(item); });
     print('Deleting inventory $item');
   }
 
@@ -118,15 +124,11 @@ class StateManager extends State<StateManagerWidget> {
   }
 
   void addProduct(BuildContext context, Product product) {
-    setState(() { products[product.code] = product; });
+    setState(() { _products[product.code] = product; });
   }
 
   void addItem(InventoryItem item) {
-    setState(() {
-      print('Adding inventory [$item]');
-      inventoryItems.add(item);
-      inventoryItems.sort((item1, item2) => item1.expiryDate.compareTo(item2.expiryDate));
-    });
+    setState(() { _inventoryItems[item.uuid] = item; });
   }
 
   Future<InventoryItem> addItemFlow(BuildContext context) async {
@@ -136,7 +138,7 @@ class StateManager extends State<StateManagerWidget> {
     DateTime expiryDate = await getExpiryDate(context);
     if (expiryDate == null) return null;
 
-    if (!products.containsKey(code)) {
+    if (!_products.containsKey(code)) {
       Product product = await Navigator.push(
         context,
         new MaterialPageRoute(
@@ -152,7 +154,7 @@ class StateManager extends State<StateManagerWidget> {
   }
 
   Product getAssociatedProduct(InventoryItem item) {
-    return products[item.code];
+    return _products[item.code];
   }
 
   void addProductImage(Product product, File file) async {
