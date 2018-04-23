@@ -296,8 +296,9 @@ class InventoryItemTile extends StatelessWidget {
             flex: 2,
             child: new Column(
               children: <Widget>[
-                new Text(product.name, textScaleFactor: 1.2,),
                 new Text(product.brand),
+                new Text(product.name, textScaleFactor: 1.2,),
+                new Text(item.uuid, textScaleFactor: 0.5,)
               ],
             ),
           ),
@@ -371,16 +372,16 @@ class ProductPageState extends State<ProductPage> {
             ),
             new ListTile(
               title: new TextField(
-                controller: new TextEditingController(text: product.name),
-                onChanged: (s) => product.name = s.trim(),
-                decoration: new InputDecoration(hintText: 'Name'),
+                controller: new TextEditingController(text: product.brand),
+                onChanged: (s) => product.brand = s.trim(),
+                decoration: new InputDecoration(hintText: 'Brand'),
               ),
             ),
             new ListTile(
               title: new TextField(
-                controller: new TextEditingController(text: product.brand),
-                onChanged: (s) => product.brand = s.trim(),
-                decoration: new InputDecoration(hintText: 'Brand'),
+                controller: new TextEditingController(text: product.name),
+                onChanged: (s) => product.name = s.trim(),
+                decoration: new InputDecoration(hintText: 'Name'),
               ),
             ),
             new ListTile(
