@@ -9,6 +9,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
 
+final Uuid uuidGenerator = new Uuid();
+
 void main() => runApp(new StateManagerWidget(new MyApp()));
 
 class MyApp extends StatelessWidget {
@@ -29,31 +31,19 @@ class AppPreferences {
 
 class Product {
   String code, name, brand;
+  Map<String, String> toMap() => { "code": code, "name": name, "brand": brand };
   @override String toString() { return '($code, $name, $brand)'; }
-  Map<String, String> toMap() {
-    return {
-      "code": code,
-      "name": name,
-      "brand": brand
-    };
-  }
 }
 
 class InventoryItem {
-  static Uuid uuidGen = new Uuid();
-  String uuid = uuidGen.v4();
-  String code;
+  String uuid, code;
   DateTime expiryDate;
-  InventoryItem({this.code, this.expiryDate});
+  InventoryItem(this.uuid, { this.code, this.expiryDate });
+
   String get expiryDateString => expiryDate?.toIso8601String()?.substring(0, 10) ?? 'No Expiry Date';
+
+  Map<String, String> toMap() => { "uuid": uuid, "code": code, "expiryDate": expiryDate.toIso8601String() };
   @override String toString() { return '($code, $expiryDate)'; }
-  Map<String, String> toMap() {
-    return {
-      "uuid": uuid,
-      "code": code,
-      "expiryDate": expiryDateString
-    };
-  }
 }
 
 /// the only purpose is to propagate changes to entire tree
@@ -106,11 +96,9 @@ class StateManager extends State<StateManagerWidget> {
       });
   }
 
-  InventoryItem removeItemAtIndex(int index) {
-    InventoryItem item;
-    setState(() { item = inventoryItems.removeAt(index); });
+  void removeItem(InventoryItem item) {
+    setState(() { inventoryItems.remove(item); });
     print('Deleting inventory $item');
-    return item;
   }
 
   Future<DateTime> getExpiryDate(BuildContext context) async {
@@ -158,7 +146,7 @@ class StateManager extends State<StateManagerWidget> {
       if (product == null) return null;
     }
 
-    InventoryItem inventoryItem = new InventoryItem(code: code, expiryDate: expiryDate,);
+    InventoryItem inventoryItem = new InventoryItem(uuidGenerator.v4(), code: code, expiryDate: expiryDate,);
     addItem(inventoryItem);
     return inventoryItem;
   }
@@ -223,13 +211,12 @@ class SquareImage extends StatelessWidget {
 }
 
 class InventoryItemTile extends StatelessWidget {
-  final int index;
-  InventoryItemTile(this.index);
+  final InventoryItem item;
+  InventoryItemTile(this.item);
 
   @override
   Widget build(BuildContext context) {
     final StateManager state = StateManager.of(context);
-    final InventoryItem item = state.inventoryItems[index];
     final Product product = state.getAssociatedProduct(item);
 
     Color expiryColorScale(InventoryItem item) {
@@ -264,14 +251,14 @@ class InventoryItemTile extends StatelessWidget {
       onDismissed: (direction) {
         switch(direction) {
           case DismissDirection.startToEnd:
-            InventoryItem item = state.removeItemAtIndex(index);
+            state.removeItem(item);
             Scaffold.of(context).showSnackBar(
               new SnackBar(
                 content: new Text('Removed item ${product.name}'),
                 action: new SnackBarAction(
                   label: "UNDO",
                   onPressed: () {
-                    item.uuid = InventoryItem.uuidGen.v4();
+                    item.uuid = uuidGenerator.v4();
                     state.addItem(item);
                   },
                 )
@@ -285,7 +272,7 @@ class InventoryItemTile extends StatelessWidget {
             )
           );
           // need to change uuid so that dismiss works without actually dismissing
-          item.uuid = InventoryItem.uuidGen.v4();
+          item.uuid = uuidGenerator.v4();
         }
       },
       key: new ObjectKey(item.uuid),
@@ -332,7 +319,7 @@ class ListingsPage extends StatelessWidget {
       appBar: new AppBar(title: new Text('Inventorio'),),
       body: ListView.builder(
         itemCount: state.inventoryItems.length,
-        itemBuilder: (BuildContext context, int index) => new InventoryItemTile(index),
+        itemBuilder: (BuildContext context, int index) => new InventoryItemTile(state.inventoryItems[index]),
       ),
       floatingActionButton: new FloatingActionButton(
         onPressed: () async { state.addItemFlow(context); },
