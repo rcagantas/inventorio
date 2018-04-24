@@ -57,6 +57,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.1.2+1"
+  cloud_firestore:
+    dependency: "direct main"
+    description:
+      name: cloud_firestore
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.6.2"
   collection:
     dependency: transitive
     description:
@@ -92,6 +99,34 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.1.2"
+  firebase_analytics:
+    dependency: "direct main"
+    description:
+      name: firebase_analytics
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.3.1"
+  firebase_auth:
+    dependency: "direct main"
+    description:
+      name: firebase_auth
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.5.4"
+  firebase_core:
+    dependency: transitive
+    description:
+      name: firebase_core
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.2.2"
+  firebase_storage:
+    dependency: "direct main"
+    description:
+      name: firebase_storage
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.2.2"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -116,6 +151,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.1.5"
+  google_sign_in:
+    dependency: "direct main"
+    description:
+      name: google_sign_in
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.0.1"
   html:
     dependency: transitive
     description:
@@ -430,5 +472,5 @@ packages:
     source: hosted
     version: "2.1.13"
 sdks:
-  dart: ">=2.0.0-dev.28.0 <=2.0.0-edge.c080951d45e79cd25df98036c4be835b284a269c"
-  flutter: ">=0.1.4 <2.0.0"
+  dart: ">=2.0.0-dev.28.0 <=2.0.0-edge.0d5cf900b021bf5c9fa593ffa12b15bcd1cc5fe0"
+  flutter: ">=0.2.4 <2.0.0"

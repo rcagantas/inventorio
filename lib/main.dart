@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:uuid/uuid.dart';
 import 'package:simple_permissions/simple_permissions.dart';
 import 'package:barcode_scan/barcode_scan.dart';
@@ -31,6 +33,9 @@ class AppPreferences {
 
 class Product {
   String code, name, brand;
+  Product({this.code, this.name, this.brand});
+  Product.from(Map<String, dynamic> data):
+      code = data['code'], name = data['name'], brand = data['brand'];
   Map<String, String> toMap() => { "code": code, "name": name, "brand": brand };
   @override String toString() { return '($code, $name, $brand)'; }
 }
@@ -39,10 +44,12 @@ class InventoryItem {
   String uuid, code;
   DateTime expiryDate;
   InventoryItem(this.uuid, { this.code, this.expiryDate });
+  InventoryItem.from(Map<String, dynamic> data):
+    uuid = data['uuid'], code = data['code'], expiryDate = DateTime.parse(data['expiryDate']);
 
   String get expiryDateString => expiryDate?.toIso8601String()?.substring(0, 10) ?? 'No Expiry Date';
 
-  Map<String, String> toMap() => { "uuid": uuid, "code": code, "expiryDate": expiryDate.toIso8601String() };
+  Map<String, String> toMap() => { "uuid": uuid, "code": code, "expiryDate": expiryDateString.replaceAll('-', '') };
   @override String toString() { return '($code, $expiryDate)'; }
 }
 
@@ -65,6 +72,12 @@ class StateManager extends State<StateManagerWidget> {
   final Map<String, InventoryItem> _inventoryItems = new Map();
   final Map<String, Product> _products = new Map();
 
+  static String _inventoryId;
+
+  Stream<QuerySnapshot> get inventoryStream => _inventoryItemCollection.snapshots;
+  CollectionReference get _productCollection => Firestore.instance.collection('inventory').document(_inventoryId).collection('products');
+  CollectionReference get _inventoryItemCollection => Firestore.instance.collection('inventory').document(_inventoryId).collection('inventoryItems');
+
   List<InventoryItem> get inventoryItems {
     List<InventoryItem> toSort = _inventoryItems.values.toList();
     toSort.sort((item1, item2) => item1.expiryDate.compareTo(item2.expiryDate));
@@ -78,6 +91,7 @@ class StateManager extends State<StateManagerWidget> {
   void initState() {
     _requestPermissions();
     _cleanupTemporaryCameraFiles();
+    _ensureSignIn();
     super.initState();
   }
 
@@ -102,8 +116,49 @@ class StateManager extends State<StateManagerWidget> {
       });
   }
 
+  void _ensureSignIn() async {
+    DocumentReference currentInventory;
+    GoogleSignIn googleSignIn = new GoogleSignIn();
+    GoogleSignInAccount user = googleSignIn.currentUser;
+    user = user == null ? await googleSignIn.signInSilently() : user;
+    user = user == null ? await googleSignIn.signIn() : user;
+    print('User: $user');
+
+    var userDocument = await Firestore.instance.collection('users').document(user.id).get();
+
+    if (!userDocument.exists) {
+      print('Adding user: $user');
+
+      currentInventory = Firestore.instance.collection('inventory').document();
+      currentInventory.setData({
+        "createdBy": user.id,
+        "createdOn": new DateTime.now().toIso8601String(),
+        "shared": false
+      });
+
+      Firestore.instance.collection('users').document(user.id).setData({
+        "currentInventory": currentInventory.documentID,
+        "knownInventory": [currentInventory.documentID]
+      });
+    } else {
+      String currentInventoryId = userDocument.data['currentInventory'];
+      currentInventory = Firestore.instance.collection('inventory').document(currentInventoryId);
+    }
+
+    _inventoryId = currentInventory.documentID;
+    print('Current inventory Id $_inventoryId');
+    _productCollection.getDocuments().then((snap) {
+      snap.documents.forEach((d) => _products[d.documentID] = new Product.from(d.data));
+      _inventoryItemCollection.getDocuments().then((snap) {
+        snap.documents.forEach((d) => _inventoryItems[d.documentID] = new InventoryItem.from(d.data));
+        setState(() {});
+      });
+    });
+  }
+
   void removeItem(InventoryItem item) {
-    setState(() { _inventoryItems.remove(item); });
+    _inventoryItemCollection.document(item.uuid).delete();
+    setState(() { _inventoryItems.remove(item.uuid); });
     print('Deleting inventory $item');
   }
 
@@ -125,10 +180,12 @@ class StateManager extends State<StateManagerWidget> {
 
   void addProduct(BuildContext context, Product product) {
     setState(() { _products[product.code] = product; });
+    _productCollection.document(product.code).setData(product.toMap());
   }
 
   void addItem(InventoryItem item) {
     setState(() { _inventoryItems[item.uuid] = item; });
+    _inventoryItemCollection.document(item.uuid).setData(item.toMap());
   }
 
   Future<InventoryItem> addItemFlow(BuildContext context) async {
@@ -167,9 +224,9 @@ class StateManager extends State<StateManagerWidget> {
     });
   }
 
-  File getProductImage(Product product) {
-    print('Trying ${product.code}: ${_imageMap[product.code]}');
-    return _imageMap[product.code];
+  File getImage(String code) {
+    print('Trying $code: ${_imageMap[code]}');
+    return _imageMap[code];
   }
 
   static StateManager of(BuildContext context) {
@@ -280,14 +337,14 @@ class InventoryItemTile extends StatelessWidget {
       key: new ObjectKey(item.uuid),
       child: new Row(
         children: <Widget>[
-          new SquareImage(imageFile: state.getProductImage(product),),
+          new SquareImage(imageFile: state.getImage(item.code),),
           new Expanded(
             flex: 2,
             child: new Column(
               children: <Widget>[
                 new Text(product.brand),
-                new Text(product.name, textScaleFactor: 1.2,),
-                new Text(item.uuid, textScaleFactor: 0.5,)
+                new Text(product.name, textScaleFactor: 1.3,),
+                new Text(item.uuid.substring(0, 8), textScaleFactor: 0.5,)
               ],
             ),
           ),
@@ -384,7 +441,7 @@ class ProductPageState extends State<ProductPage> {
                     },
                     child: new SquareImage(
                       side: 250.0,
-                      imageFile: state.getProductImage(product),
+                      imageFile: state.getImage(product.code),
                     ),
                   )
                 ),

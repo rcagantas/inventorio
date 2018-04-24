@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "603320845826",
+    "firebase_url": "https://inventorio-ee2fe.firebaseio.com",
+    "project_id": "inventorio-ee2fe",
+    "storage_bucket": "inventorio-ee2fe.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:603320845826:android:edc0433ea50b84f2",
+        "android_client_info": {
+          "package_name": "com.rcagantas.inventorio"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "603320845826-ffk04vv83fsm10ft7og43m1ui6olkofp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rcagantas.inventorio",
+            "certificate_hash": "c153eb392d960f8b56b9c75d3f1d755cf4d577fa"
+          }
+        },
+        {
+          "client_id": "603320845826-ll9g0pnrlh5to546h5lq1ld4ucmcccbc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_5G1Wz8yRVS-Kq46LQyYOVOaRhQnHmrc"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "603320845826-d8k3ofpnl094uf825ngj7bp3e2m550nd.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.rcagantas.inventorio"
+              }
+            },
+            {
+              "client_id": "603320845826-ll9g0pnrlh5to546h5lq1ld4ucmcccbc.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

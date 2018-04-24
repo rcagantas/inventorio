@@ -47,5 +47,19 @@
 	<false/>
 	<key>NSCameraUsageDescription</key>
     <string>Camera permission is required for barcode scanning.</string>
+    <key>CFBundleURLTypes</key>
+        <array>
+            <dict>
+                <key>CFBundleTypeRole</key>
+                <string>Editor</string>
+                <key>CFBundleURLSchemes</key>
+                <array>
+                    <!-- reverse url of your client id, for example: -->
+                    <string>com.googleusercontent.apps.603320845826-d8k3ofpnl094uf825ngj7bp3e2m550nd</string>
+                    <!-- bundle id, for example: -->
+                    <string>com.rcagantas.inventorio</string>
+                </array>
+            </dict>
+        </array>
 </dict>
 </plist>
