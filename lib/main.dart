@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:inventorio/model.dart';
 import 'package:scoped_model/scoped_model.dart';
 import 'package:image_picker/image_picker.dart';
@@ -237,6 +238,7 @@ class ProductPageState extends State<ProductPage> {
                 controller: new TextEditingController(text: product.brand),
                 onChanged: (s) => product.brand = s.trim(),
                 decoration: new InputDecoration(hintText: 'Brand'),
+                inputFormatters: [new AutoCapWordsInputFormatter()],
               ),
             ),
             new ListTile(
@@ -244,6 +246,7 @@ class ProductPageState extends State<ProductPage> {
                 controller: new TextEditingController(text: product.name),
                 onChanged: (s) => product.name = s.trim(),
                 decoration: new InputDecoration(hintText: 'Name'),
+                inputFormatters: [new AutoCapWordsInputFormatter()],
               ),
             ),
             new ListTile(
@@ -276,6 +279,24 @@ class ProductPageState extends State<ProductPage> {
         child: new Icon(Icons.add),
         onPressed: () { Navigator.pop(context, product); },
       ),
+    );
+  }
+}
+
+class AutoCapWordsInputFormatter extends TextInputFormatter {
+  final RegExp capWordsPattern = new RegExp(r'(\w)(\w*\s*)');
+
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    String newText = capWordsPattern
+        .allMatches(newValue.text)
+        .map((match) => match.group(1).toUpperCase() + match.group(2))
+        .join();
+
+    return new TextEditingValue(
+      text: newText,
+      selection: newValue.selection ?? const TextSelection.collapsed(offset: -1),
+      composing: newText == newValue.text ? newValue.composing : TextRange.empty,
     );
   }
 }
