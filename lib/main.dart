@@ -28,7 +28,7 @@ class MyAppState extends State<MyApp> {
       model: appModel,
       child: new MaterialApp(
         title: 'Inventorio',
-        theme: new ThemeData(primarySwatch: Colors.indigo,),
+        theme: new ThemeData(),
         home: new ListingsPage()
       )
     );
