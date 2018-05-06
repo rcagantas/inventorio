@@ -47,6 +47,12 @@ class AppModel extends Model {
     Directory docDir = await getApplicationDocumentsDirectory();
     Directory imagePickerTmpDir = new Directory(docDir.parent.path + '/tmp');
     _imagePath = imagePickerTmpDir.path;
+    imagePickerTmpDir.list().forEach((f) {
+      if (f.path.contains('image_picker')) {
+        print('Deleting ${f.path}');
+        f.delete();
+      }
+    });
   }
 
   Future<InventoryItem> addItemFlow(BuildContext context) async {
