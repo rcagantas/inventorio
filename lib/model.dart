@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -6,31 +7,49 @@ import 'package:scoped_model/scoped_model.dart';
 import 'package:uuid/uuid.dart';
 import 'package:barcode_scan/barcode_scan.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:json_annotation/json_annotation.dart';
 
-class InventoryItem {
+part 'model.g.dart';
+
+@JsonSerializable()
+class InventoryItem extends Object with _$InventoryItemSerializerMixin {
   String uuid, code;
   DateTime expiryDate;
   InventoryItem({this.uuid, this.code, this.expiryDate});
   String get expiryDateString => expiryDate?.toIso8601String()?.substring(0, 10) ?? 'No Expiry Date';
-  Map<String, String> toMap() => { "uuid": uuid, "code": code, "expiryDate": expiryDateString.replaceAll('-', '') };
+
+  factory InventoryItem.fromJson(Map<String, dynamic> json) => _$InventoryItemFromJson(json);
 }
 
-class Product {
+@JsonSerializable()
+class Product extends Object with _$ProductSerializerMixin {
   String code, name, brand;
   Product({this.code, this.name, this.brand});
-  Product.from(Map<String, dynamic> data):
-        code = data['code'], name = data['name'], brand = data['brand'];
-  Map<String, String> toMap() => { "code": code, "name": name, "brand": brand };
+
+  factory Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
 }
 
+@JsonSerializable()
+class Meta extends Object with _$MetaSerializerMixin {
+  List<String> knownInventories = new List();
+  String currentInventoryMapId, currentProductMapId;
+  Meta(this.currentInventoryMapId, this.currentProductMapId) {
+    knownInventories.add(this.currentInventoryMapId);
+  }
+
+  factory Meta.fromJson(Map<String, dynamic> json) => _$MetaFromJson(json);
+}
 
 class AppModel extends Model {
   final Uuid uuidGenerator = new Uuid();
   final Map<String, InventoryItem> _inventoryItems = new Map();
   final Map<String, Product> _products = new Map();
 
+  Directory _docDir;
   DateTime _lastSelectedDate = new DateTime.now();
   String _imagePath;
+  Meta _meta;
 
   List<InventoryItem> get inventoryItems {
     List<InventoryItem> toSort = _inventoryItems.values.toList();
@@ -39,8 +58,50 @@ class AppModel extends Model {
   }
 
   AppModel() {
+    _init();
+    _ensureSignIn();
     _initAsync();
     print('Item count: ${inventoryItems.length}');
+  }
+
+  void _init() async {
+    _docDir = await getApplicationDocumentsDirectory();
+    File metaFile = new File('${_docDir.path}/meta.json');
+
+    if (!metaFile.existsSync()) {
+      _meta = new Meta(uuidGenerator.v4(), uuidGenerator.v4());
+      String metaJson = json.encode(_meta);
+      metaFile.writeAsStringSync(metaJson);
+      _writeInventory();
+      _writeProducts();
+    } else {
+      print('Loading meta');
+      _meta = new Meta.fromJson(json.decode(metaFile.readAsStringSync()));
+
+      Map<String, dynamic> _inventoryJson = json.decode(new File('${_docDir.path}/${_meta.currentInventoryMapId}.json').readAsStringSync());
+      _inventoryJson.forEach((key, itemJson) => _inventoryItems[key] = new InventoryItem.fromJson(itemJson));
+
+      Map<String, dynamic> _productJson = json.decode(new File('${_docDir.path}/${_meta.currentProductMapId}.json').readAsStringSync());
+      _productJson.forEach((key, productJson) => _products[key] = new Product.fromJson(productJson));
+      notifyListeners();
+    }
+    print(_meta.toJson().toString());
+  }
+
+  void _writeInventory() {
+    new File('${_docDir.path}/${_meta.currentInventoryMapId}.json').writeAsString(json.encode(_inventoryItems));
+  }
+
+  void _writeProducts() {
+    new File('${_docDir.path}/${_meta.currentProductMapId}.json').writeAsString(json.encode(_products));
+  }
+
+  void _ensureSignIn() async {
+    GoogleSignIn googleSignIn = new GoogleSignIn();
+    GoogleSignInAccount user = googleSignIn.currentUser;
+    user = user == null ? await googleSignIn.signInSilently() : user;
+    user = user == null ? await googleSignIn.signIn() : user;
+    print('User: $user');
   }
 
   void _initAsync() async {
@@ -93,16 +154,20 @@ class AppModel extends Model {
   void removeItem(String uuid) {
     _inventoryItems.remove(uuid);
     notifyListeners();
+    _writeInventory();
   }
 
   void addItem(InventoryItem item) {
     _inventoryItems[item.uuid] = item;
+    print(json.encode(_inventoryItems));
     notifyListeners();
+    _writeInventory();
   }
 
   void addProduct(Product product) {
     _products[product.code] = product;
     notifyListeners();
+    _writeProducts();
   }
 
   Product getAssociatedProduct(InventoryItem item) {

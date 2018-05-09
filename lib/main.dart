@@ -56,12 +56,19 @@ class InventoryItemTile extends StatelessWidget {
         File imageFile = model.getImage(item.code);
         return new Dismissible(
           background: new Container(
-            color: Colors.deepOrangeAccent,
+            color: Colors.blueAccent,
             child: new Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[
-                new Icon(Icons.delete),
-                new Text('Remove', textScaleFactor: 1.0,),
+                new Icon(Icons.delete, color: Colors.white),
+                new Text('Remove',
+                  textScaleFactor: 1.0,
+                  style: new TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white
+                  ),
+                ),
               ],
             ),
           ),
@@ -70,7 +77,13 @@ class InventoryItemTile extends StatelessWidget {
             child: new Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
-                new Text('Edit Product', textScaleFactor: 1.0,),
+                new Text('Edit Product',
+                  textScaleFactor: 1.0,
+                  style: new TextStyle(
+                    fontFamily: 'Montserrat',
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 new Icon(Icons.edit),
               ],
             ),
@@ -133,13 +146,13 @@ class InventoryItemTile extends StatelessWidget {
                     new Text(
                       product?.brand ?? 'brand',
                       textScaleFactor: 1.0,
-                      style: new TextStyle(fontFamily: 'Roboto'),
+                      style: new TextStyle(fontFamily: 'Raleway'),
                       textAlign: TextAlign.center,
                     ),
                     new Text(
                       product?.name ?? 'name',
                       textScaleFactor: 1.3,
-                      style: new TextStyle(fontFamily: 'Raleway'),
+                      style: new TextStyle(fontFamily: 'Montserrat'),
                       textAlign: TextAlign.center,
                     ),
                     //new Text('${item.uuid}...', textScaleFactor: 0.5,)
@@ -173,7 +186,7 @@ class ListingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
-      appBar: new AppBar(title: new Text('Inventorio', style: new TextStyle(fontFamily: 'Raleway'),),),
+      appBar: new AppBar(title: new Text('Inventorio', style: new TextStyle(fontFamily: 'Montserrat'),),),
       body: new ScopedModelDescendant<AppModel>(
         builder: (context, child, model) => new ListView.builder(
           itemCount: model.inventoryItems.length,
