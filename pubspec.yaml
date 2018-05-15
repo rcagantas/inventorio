@@ -7,15 +7,14 @@ dependencies:
   scoped_model: ^0.2.0
   uuid: ^0.5.3
   barcode_scan: ^0.0.3
-  simple_permissions: ^0.1.1
   image_picker: ^0.4.0
   path_provider: ^0.4.0
   quiver_hashcode: ^1.0.0
   google_sign_in: ^3.0.1
   firebase_analytics: ^0.3.1
-  firebase_auth: ^0.5.4
-  cloud_firestore: ^0.6.2
-  firebase_storage: ^0.2.6
+  firebase_auth: ^0.5.10
+  cloud_firestore: ^0.7.1
+  firebase_storage: ^0.3.5
   json_annotation: ^0.2.3
 
   # The following adds the Cupertino Icons font to your application.
@@ -25,8 +24,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  build_runner: ^0.8.8
-  json_serializable: ^0.5.0
+  build_runner: ^0.8.9
+  json_serializable: ^0.5.2
 
 
 # For information on the generic Dart part of this file, see the
