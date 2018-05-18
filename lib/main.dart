@@ -138,7 +138,7 @@ class InventoryItemTile extends StatelessWidget {
                     ),
                   ),
                 ):
-                new Icon(Icons.camera_alt, size: 80.0,),
+                new Icon(Icons.camera_alt, color: Colors.grey, size: 80.0,),
               new Expanded(
                 flex: 2,
                 child: new Column(
@@ -271,7 +271,7 @@ class ProductPageState extends State<ProductPage> {
                   print('Image for ${product.code} in ${file.path}');
                   setState(() { imageFile = file; });
                 },
-                child: imageFile.existsSync() ?
+                child: imageFile.existsSync()?
                   new Container(
                     height: 200.0,
                     width: 200.0,
@@ -283,7 +283,7 @@ class ProductPageState extends State<ProductPage> {
                     ),
                     margin: const EdgeInsets.only(top: 20.0),
                   ):
-                  new Icon(Icons.camera_alt, size: 150.0,),
+                  new Icon(Icons.camera_alt, color: Colors.grey, size: 150.0,),
               ),
             ),
           ],

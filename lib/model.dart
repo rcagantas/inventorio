@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:connectivity/connectivity.dart';
 
 part 'model.g.dart';
 
@@ -74,23 +75,50 @@ class AppModel extends Model {
   }
 
   AppModel() {
-    _ensureSignIn();
+    _signIn();
     _initAsync();
     print('Item count: ${inventoryItems.length}');
   }
 
-  void _ensureSignIn() async {
-    GoogleSignIn googleSignIn = new GoogleSignIn();
-    GoogleSignInAccount user = googleSignIn.currentUser;
-    user = user == null ? await googleSignIn.signInSilently() : user;
-    user = user == null ? await googleSignIn.signIn() : user;
-    print('User: $user');
+  void _signIn() async {
+    ConnectivityResult connectivity = await (new Connectivity().checkConnectivity());
+    if (connectivity != ConnectivityResult.none) {
+      GoogleSignIn googleSignIn = new GoogleSignIn();
+      GoogleSignInAccount user = googleSignIn.currentUser;
+      user = user == null ? await googleSignIn.signInSilently() : user;
+      user = user == null ? await googleSignIn.signIn() : user;
+      _loadAllCollections(user.id);
+    } else {
+      Directory docDir = await getApplicationDocumentsDirectory();
+      File userAccountFile = new File('${docDir.path}/userAccount.json');
+      if (userAccountFile.existsSync()) {
+        print('Loading last known user from file.');
+        UserAccount account = new UserAccount.fromJson(json.decode(userAccountFile.readAsStringSync()));
+        _loadAllCollections(account.userId);
+      }
+    }
+  }
 
+  void _initAsync() async {
+    Directory docDir = await getApplicationDocumentsDirectory();
+    Directory imagePickerTmpDir = new Directory(docDir.parent.path + '/tmp');
+
+    print('Image Picker temp directory ${imagePickerTmpDir.path}');
+    _imagePath = imagePickerTmpDir.path;
+    imagePickerTmpDir.list().forEach((f) {
+      if (f.path.contains('image_picker')) {
+        print('Deleting ${f.path}');
+        f.delete();
+      }
+    });
+  }
+
+  void _loadAllCollections(String userId) async {
     _userCollection = Firestore.instance.collection('users');
-    var userDoc = await _userCollection.document(user.id).get();
+    var userDoc = await _userCollection.document(userId).get();
     if (!userDoc.exists) {
-      _userAccount = new UserAccount(user.id, uuidGenerator.v4());
-      _userCollection.document(user.id).setData(_userAccount.toJson());
+      _userAccount = new UserAccount(userId, uuidGenerator.v4());
+      _userCollection.document(userId).setData(_userAccount.toJson());
 
       Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).setData(new InventoryDetails(
         uuid: _userAccount.currentInventoryId,
@@ -102,6 +130,10 @@ class AppModel extends Model {
     } else {
       _userAccount = new UserAccount.fromJson(userDoc.data);
     }
+
+    Directory docDir = await getApplicationDocumentsDirectory();
+    File userAccountFile = new File('${docDir.path}/userAccount.json');
+    userAccountFile.writeAsString(json.encode(_userAccount));
 
     _productCollection = Firestore.instance.collection('productDictionary');
     _inventoryItemCollection = Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).collection('inventoryItems');
@@ -125,21 +157,6 @@ class AppModel extends Model {
     });
   }
 
-
-  void _initAsync() async {
-    Directory docDir = await getApplicationDocumentsDirectory();
-    Directory imagePickerTmpDir = new Directory(docDir.parent.path + '/tmp');
-
-    print('Image Picker temp directory ${imagePickerTmpDir.path}');
-    _imagePath = imagePickerTmpDir.path;
-    imagePickerTmpDir.list().forEach((f) {
-      if (f.path.contains('image_picker')) {
-        print('Deleting ${f.path}');
-        f.delete();
-      }
-    });
-  }
-
   Future<InventoryItem> addItemFlow(BuildContext context) async {
     print('Adding new item...');
 
@@ -157,6 +174,10 @@ class AppModel extends Model {
 
   Future<bool> isProductIdentified(String code) async {
     if (_products.containsKey(code)) return true;
+
+    ConnectivityResult connectivity = await (new Connectivity().checkConnectivity());
+    if (connectivity == ConnectivityResult.none) return false;
+
     var doc = await _productCollection.document(code).get();
     if (doc.exists) {
       _products[code] = new Product.fromJson(doc.data);
