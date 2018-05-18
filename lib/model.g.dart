@@ -38,37 +38,19 @@ abstract class _$ProductSerializerMixin {
       <String, dynamic>{'code': code, 'name': name, 'brand': brand};
 }
 
-InventoryContainer _$InventoryContainerFromJson(Map<String, dynamic> json) =>
-    new InventoryContainer(
+InventoryDetails _$InventoryDetailsFromJson(Map<String, dynamic> json) =>
+    new InventoryDetails(
         uuid: json['uuid'] as String,
         name: json['name'] as String,
         createdBy: json['createdBy'] as String,
-        createdOn: json['createdOn'] as String)
-      ..inventoryItems = json['inventoryItems'] == null
-          ? null
-          : new Map<String, InventoryItem>.fromIterables(
-              (json['inventoryItems'] as Map<String, dynamic>).keys,
-              (json['inventoryItems'] as Map).values.map((e) => e == null
-                  ? null
-                  : new InventoryItem.fromJson(e as Map<String, dynamic>)))
-      ..products = json['products'] == null
-          ? null
-          : new Map<String, Product>.fromIterables(
-              (json['products'] as Map<String, dynamic>).keys,
-              (json['products'] as Map).values.map((e) => e == null
-                  ? null
-                  : new Product.fromJson(e as Map<String, dynamic>)));
+        createdOn: json['createdOn'] as String);
 
-abstract class _$InventoryContainerSerializerMixin {
-  Map<String, InventoryItem> get inventoryItems;
-  Map<String, Product> get products;
+abstract class _$InventoryDetailsSerializerMixin {
   String get uuid;
   String get name;
   String get createdBy;
   String get createdOn;
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'inventoryItems': inventoryItems,
-        'products': products,
         'uuid': uuid,
         'name': name,
         'createdBy': createdBy,
@@ -77,9 +59,7 @@ abstract class _$InventoryContainerSerializerMixin {
 }
 
 UserAccount _$UserAccountFromJson(Map<String, dynamic> json) => new UserAccount(
-    json['userId'] as String,
-    json['currentInventoryId'] as String,
-    json['currentProductId'] as String)
+    json['userId'] as String, json['currentInventoryId'] as String)
   ..knownInventories =
       (json['knownInventories'] as List)?.map((e) => e as String)?.toList();
 
@@ -87,11 +67,9 @@ abstract class _$UserAccountSerializerMixin {
   List<String> get knownInventories;
   String get userId;
   String get currentInventoryId;
-  String get currentProductId;
   Map<String, dynamic> toJson() => <String, dynamic>{
         'knownInventories': knownInventories,
         'userId': userId,
-        'currentInventoryId': currentInventoryId,
-        'currentProductId': currentProductId
+        'currentInventoryId': currentInventoryId
       };
 }

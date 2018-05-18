@@ -9,6 +9,7 @@ import 'package:barcode_scan/barcode_scan.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 part 'model.g.dart';
 
@@ -32,15 +33,13 @@ class Product extends Object with _$ProductSerializerMixin {
 }
 
 @JsonSerializable()
-class InventoryContainer extends Object with _$InventoryContainerSerializerMixin {
-  Map<String, InventoryItem> inventoryItems = new Map();
-  Map<String, Product> products = new Map();
+class InventoryDetails extends Object with _$InventoryDetailsSerializerMixin {
   String uuid;
   String name;
   String createdBy;
   String createdOn;
-  InventoryContainer({this.uuid, this.name, this.createdBy, this.createdOn});
-  factory InventoryContainer.fromJson(Map<String, dynamic> json) => _$InventoryContainerFromJson(json);
+  InventoryDetails({this.uuid, this.name, this.createdBy, this.createdOn});
+  factory InventoryDetails.fromJson(Map<String, dynamic> json) => _$InventoryDetailsFromJson(json);
 }
 
 @JsonSerializable()
@@ -48,8 +47,7 @@ class UserAccount extends Object with _$UserAccountSerializerMixin {
   List<String> knownInventories = new List();
   String userId;
   String currentInventoryId;
-  String currentProductId;
-  UserAccount(this.userId, this.currentInventoryId, this.currentProductId) {
+  UserAccount(this.userId, this.currentInventoryId) {
     knownInventories.add(this.currentInventoryId);
   }
   factory UserAccount.fromJson(Map<String, dynamic> json) => _$UserAccountFromJson(json);
@@ -58,42 +56,79 @@ class UserAccount extends Object with _$UserAccountSerializerMixin {
 class AppModel extends Model {
   final Uuid uuidGenerator = new Uuid();
 
-  InventoryContainer _container = new InventoryContainer();
   UserAccount _userAccount;
+  Map<String, InventoryItem> _inventoryItems = new Map();
+  Map<String, Product> _products = new Map();
+
   DateTime _lastSelectedDate = new DateTime.now();
   String _imagePath;
-  Directory _appDir;
+
+  CollectionReference _userCollection;
+  CollectionReference _productCollection;
+  CollectionReference _inventoryItemCollection;
 
   List<InventoryItem> get inventoryItems {
-    List<InventoryItem> toSort = _container.inventoryItems.values.toList();
+    List<InventoryItem> toSort = _inventoryItems.values.toList();
     toSort.sort((item1, item2) => item1.expiryDate.compareTo(item2.expiryDate));
     return toSort;
   }
 
   AppModel() {
-    _initAsync();
     _ensureSignIn();
+    _initAsync();
     print('Item count: ${inventoryItems.length}');
   }
 
-  void _writeInventory() {
-    //new File('${_docDir.path}/${_meta.currentInventoryMapId}.json').writeAsString(json.encode(_inventoryItems));
+  void _ensureSignIn() async {
+    GoogleSignIn googleSignIn = new GoogleSignIn();
+    GoogleSignInAccount user = googleSignIn.currentUser;
+    user = user == null ? await googleSignIn.signInSilently() : user;
+    user = user == null ? await googleSignIn.signIn() : user;
+    print('User: $user');
+
+    _userCollection = Firestore.instance.collection('users');
+    var userDoc = await _userCollection.document(user.id).get();
+    if (!userDoc.exists) {
+      _userAccount = new UserAccount(user.id, uuidGenerator.v4());
+      _userCollection.document(user.id).setData(_userAccount.toJson());
+
+      Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).setData(new InventoryDetails(
+        uuid: _userAccount.currentInventoryId,
+        name: 'Default Inventory',
+        createdBy: _userAccount.userId,
+        createdOn: new DateTime.now().toIso8601String(),
+      ).toJson());
+
+    } else {
+      _userAccount = new UserAccount.fromJson(userDoc.data);
+    }
+
+    _productCollection = Firestore.instance.collection('productDictionary');
+    _inventoryItemCollection = Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).collection('inventoryItems');
+
+    print('Firestore: Trying to load inventory ${_userAccount.toJson()}');
+    _inventoryItemCollection.getDocuments().then((snap) {
+      print('Firestore: Trying to load last inventory snapshot $snap');
+      snap.documents.forEach((doc) {
+        InventoryItem item = new InventoryItem.fromJson(doc.data);
+        print('Loaded Firestore item ${item.toJson()}');
+        _inventoryItems[doc.documentID] = item;
+        if (!_products.containsKey(item.code)) {
+          _productCollection.document(item.code).get().then((doc) {
+            Product product = new Product.fromJson(doc.data);
+            _products[product.code] = product;
+            notifyListeners();
+          });
+        }
+        notifyListeners();
+      });
+    });
   }
 
-  void _writeProducts() {
-    //new File('${_docDir.path}/${_meta.currentProductMapId}.json').writeAsString(json.encode(_products));
-  }
 
   void _initAsync() async {
-    _appDir = await getApplicationDocumentsDirectory();
-    Directory imagePickerTmpDir = new Directory(_appDir.parent.path + '/tmp');
-    print('App directory ${_appDir.path}');
-
-    File userAccountFile = new File('${_appDir.path}/userAccount.json');
-    if (userAccountFile.existsSync()) {
-      _userAccount = new UserAccount.fromJson(json.decode(userAccountFile.readAsStringSync()));
-      print('Decoded user account: ${_userAccount.toJson()}');
-    }
+    Directory docDir = await getApplicationDocumentsDirectory();
+    Directory imagePickerTmpDir = new Directory(docDir.parent.path + '/tmp');
 
     print('Image Picker temp directory ${imagePickerTmpDir.path}');
     _imagePath = imagePickerTmpDir.path;
@@ -103,18 +138,6 @@ class AppModel extends Model {
         f.delete();
       }
     });
-  }
-
-  void _ensureSignIn() async {
-    GoogleSignIn googleSignIn = new GoogleSignIn();
-    GoogleSignInAccount user = googleSignIn.currentUser;
-    user = user == null ? await googleSignIn.signInSilently() : user;
-    user = user == null ? await googleSignIn.signIn() : user;
-    print('User: $user');
-    File userAccountFile = new File('${_appDir.path}/userAccount.json');
-    if (!userAccountFile.existsSync()) {
-      userAccountFile.writeAsString(json.encode(new UserAccount(user.id, uuidGenerator.v4(), uuidGenerator.v4())));
-    }
   }
 
   Future<InventoryItem> addItemFlow(BuildContext context) async {
@@ -132,8 +155,15 @@ class AppModel extends Model {
     return item;
   }
 
-  bool isProductIdentified(String code) {
-    return _container.products.containsKey(code);
+  Future<bool> isProductIdentified(String code) async {
+    if (_products.containsKey(code)) return true;
+    var doc = await _productCollection.document(code).get();
+    if (doc.exists) {
+      _products[code] = new Product.fromJson(doc.data);
+      notifyListeners();
+      return true;
+    }
+    return false;
   }
 
   Future<DateTime> getExpiryDate(BuildContext context) async {
@@ -153,26 +183,26 @@ class AppModel extends Model {
   }
 
   void removeItem(String uuid) {
-    _container.inventoryItems.remove(uuid);
+    _inventoryItems.remove(uuid);
     notifyListeners();
-    _writeInventory();
+    _inventoryItemCollection.document(uuid).delete();
   }
 
   void addItem(InventoryItem item) {
-    _container.inventoryItems[item.uuid] = item;
-    print(json.encode(_container.inventoryItems));
+    _inventoryItems[item.uuid] = item;
+    print(json.encode(_inventoryItems));
     notifyListeners();
-    _writeInventory();
+    _inventoryItemCollection.document(item.uuid).setData(item.toJson());
   }
 
   void addProduct(Product product) {
-    _container.products[product.code] = product;
+    _products[product.code] = product;
     notifyListeners();
-    _writeProducts();
+    _productCollection.document(product.code).setData(product.toJson());
   }
 
   Product getAssociatedProduct(InventoryItem item) {
-    return _container.products[item.code];
+    return _products[item.code];
   }
 
   File getImage(String code) {

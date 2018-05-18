@@ -144,13 +144,13 @@ class InventoryItemTile extends StatelessWidget {
                 child: new Column(
                   children: <Widget>[
                     new Text(
-                      product?.brand ?? 'brand',
+                      product?.brand ?? item.uuid,
                       textScaleFactor: 1.0,
                       style: new TextStyle(fontFamily: 'Raleway'),
                       textAlign: TextAlign.center,
                     ),
                     new Text(
-                      product?.name ?? 'name',
+                      product?.name ?? item.code,
                       textScaleFactor: 1.3,
                       style: new TextStyle(fontFamily: 'Montserrat'),
                       textAlign: TextAlign.center,
@@ -197,7 +197,8 @@ class ListingsPage extends StatelessWidget {
         builder: (context, child, model) => new FloatingActionButton(
           onPressed: () async {
             InventoryItem item = await model.addItemFlow(context);
-            if (!model.isProductIdentified(item.code)) {
+            bool isIdentified = await model.isProductIdentified(item.code);
+            if (!isIdentified) {
               Product product = await Navigator.push(
                 context,
                 new MaterialPageRoute(
