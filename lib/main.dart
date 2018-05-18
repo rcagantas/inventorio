@@ -144,7 +144,7 @@ class InventoryItemTile extends StatelessWidget {
                 child: new Column(
                   children: <Widget>[
                     new Text(
-                      product?.brand ?? item.uuid,
+                      product?.brand ?? '',
                       textScaleFactor: 1.0,
                       style: new TextStyle(fontFamily: 'Raleway'),
                       textAlign: TextAlign.center,
