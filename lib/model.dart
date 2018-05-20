@@ -81,22 +81,25 @@ class AppModel extends Model {
   }
 
   void _signIn() async {
+    String userId;
+    Directory docDir = await getApplicationDocumentsDirectory();
+    File userAccountFile = new File('${docDir.path}/userAccount.json');
+    if (userAccountFile.existsSync()) {
+      print('Loading last known user from file.');
+      UserAccount account = new UserAccount.fromJson(json.decode(userAccountFile.readAsStringSync()));
+      userId = account.userId;
+    }
+
     ConnectivityResult connectivity = await (new Connectivity().checkConnectivity());
     if (connectivity != ConnectivityResult.none) {
       GoogleSignIn googleSignIn = new GoogleSignIn();
       GoogleSignInAccount user = googleSignIn.currentUser;
       user = user == null ? await googleSignIn.signInSilently() : user;
       user = user == null ? await googleSignIn.signIn() : user;
-      _loadAllCollections(user.id);
-    } else {
-      Directory docDir = await getApplicationDocumentsDirectory();
-      File userAccountFile = new File('${docDir.path}/userAccount.json');
-      if (userAccountFile.existsSync()) {
-        print('Loading last known user from file.');
-        UserAccount account = new UserAccount.fromJson(json.decode(userAccountFile.readAsStringSync()));
-        _loadAllCollections(account.userId);
-      }
+      userId = user.id;
     }
+
+    _loadAllCollections(userId);
   }
 
   void _initAsync() async {
