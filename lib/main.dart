@@ -62,7 +62,6 @@ class InventoryItemTile extends StatelessWidget {
               children: <Widget>[
                 new Icon(Icons.delete, color: Colors.white),
                 new Text('Remove',
-                  textScaleFactor: 1.0,
                   style: new TextStyle(
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.bold,
@@ -78,7 +77,6 @@ class InventoryItemTile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
                 new Text('Edit Product',
-                  textScaleFactor: 1.0,
                   style: new TextStyle(
                     fontFamily: 'Montserrat',
                     fontWeight: FontWeight.bold,
