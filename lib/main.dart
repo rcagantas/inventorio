@@ -30,11 +30,7 @@ class MyAppState extends State<MyApp> {
         title: 'Inventorio',
         theme: new ThemeData(
           textTheme: new TextTheme(
-            display4: new TextStyle(fontFamily: 'Montserrat'),
-            display3: new TextStyle(fontFamily: 'Montserrat'),
-            display2: new TextStyle(fontFamily: 'Montserrat'),
-            display1: new TextStyle(fontFamily: 'Montserrat'),
-            headline: new TextStyle(fontFamily: 'Montserrat', color: Colors.white),
+            headline: new TextStyle(fontFamily: 'Montserrat', color: Colors.white, fontSize: 20.0),
             title: new TextStyle(fontFamily: 'Montserrat', fontSize: 15.0),
             subhead: new TextStyle(fontFamily: 'Raleway', fontSize: 20.0),
             body2: new TextStyle(fontFamily: 'Montserrat', fontSize: 20.0),
@@ -256,7 +252,7 @@ class ProductPageState extends State<ProductPage> {
                 onChanged: (s) => product.brand = s.trim(),
                 decoration: new InputDecoration(hintText: 'Brand'),
                 inputFormatters: [new AutoCapWordsInputFormatter()],
-                style: Theme.of(context).textTheme.subhead,
+                style: Theme.of(context).textTheme.body2,
               ),
             ),
             new ListTile(
@@ -265,7 +261,7 @@ class ProductPageState extends State<ProductPage> {
                 onChanged: (s) => product.name = s.trim(),
                 decoration: new InputDecoration(hintText: 'Name'),
                 inputFormatters: [new AutoCapWordsInputFormatter()],
-                style: Theme.of(context).textTheme.subhead,
+                style: Theme.of(context).textTheme.body2,
               ),
             ),
             new ListTile(
