@@ -38,13 +38,6 @@ flutter:
     - family: Raleway
       fonts:
         - asset: resources/fonts/Raleway/Raleway-Regular.ttf
-        - asset: resources/fonts/Raleway/Raleway-Italic.ttf
-          style: italic
-        - asset: resources/fonts/Raleway/Raleway-Bold.ttf
-          weight: 700
-        - asset: resources/fonts/Raleway/Raleway-BoldItalic.ttf
-          style: italic
-          weight: 700
     - family: Montserrat
       fonts:
         - asset: resources/fonts/Montserrat/Montserrat-Regular.ttf

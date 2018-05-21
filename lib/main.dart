@@ -28,7 +28,21 @@ class MyAppState extends State<MyApp> {
       model: appModel,
       child: new MaterialApp(
         title: 'Inventorio',
-        theme: new ThemeData(),
+        theme: new ThemeData(
+          textTheme: new TextTheme(
+            display4: new TextStyle(fontFamily: 'Montserrat'),
+            display3: new TextStyle(fontFamily: 'Montserrat'),
+            display2: new TextStyle(fontFamily: 'Montserrat'),
+            display1: new TextStyle(fontFamily: 'Montserrat'),
+            headline: new TextStyle(fontFamily: 'Montserrat', color: Colors.white),
+            title: new TextStyle(fontFamily: 'Montserrat', fontSize: 15.0),
+            subhead: new TextStyle(fontFamily: 'Raleway', fontSize: 20.0),
+            body2: new TextStyle(fontFamily: 'Montserrat', fontSize: 20.0),
+            body1: new TextStyle(fontFamily: 'Raleway', fontSize: 17.0),
+            caption: new TextStyle(fontFamily: 'Montserrat', fontSize: 12.0),
+            button: new TextStyle(fontFamily: 'Montserrat'),
+          ),
+        ),
         home: new ListingsPage()
       )
     );
@@ -61,13 +75,7 @@ class InventoryItemTile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[
                 new Icon(Icons.delete, color: Colors.white),
-                new Text('Remove',
-                  style: new TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white
-                  ),
-                ),
+                new Text('Remove', style: Theme.of(context).textTheme.body1.copyWith(color: Colors.white),),
               ],
             ),
           ),
@@ -76,12 +84,7 @@ class InventoryItemTile extends StatelessWidget {
             child: new Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
-                new Text('Edit Product',
-                  style: new TextStyle(
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                new Text('Edit Product',),
                 new Icon(Icons.edit),
               ],
             ),
@@ -143,15 +146,13 @@ class InventoryItemTile extends StatelessWidget {
                   children: <Widget>[
                     new Text(
                       product?.brand ?? '',
-                      textScaleFactor: 1.0,
-                      style: new TextStyle(fontFamily: 'Raleway'),
                       textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.body1,
                     ),
                     new Text(
                       product?.name ?? item.code,
-                      textScaleFactor: 1.3,
-                      style: new TextStyle(fontFamily: 'Montserrat'),
                       textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.body2,
                     ),
                     //new Text('${item.uuid}...', textScaleFactor: 0.5,)
                   ],
@@ -160,11 +161,7 @@ class InventoryItemTile extends StatelessWidget {
               new Expanded(
                 child: new Text(
                   item.expiryDateString,
-                  style: new TextStyle(
-                    fontFamily: 'Raleway',
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textScaleFactor: 1.0,
+                  style: Theme.of(context).textTheme.body1.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
               new SizedBox(
@@ -184,7 +181,12 @@ class ListingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
-      appBar: new AppBar(title: new Text('Inventorio', style: new TextStyle(fontFamily: 'Montserrat'),),),
+      appBar: new AppBar(
+        title: new Text(
+          'Inventorio',
+          style: Theme.of(context).textTheme.headline,
+        ),
+      ),
       body: new ScopedModelDescendant<AppModel>(
         builder: (context, child, model) => new ListView.builder(
           itemCount: model.inventoryItems.length,
@@ -229,9 +231,9 @@ class ProductPageState extends State<ProductPage> {
   @override
   void initState() {
     product = new Product(
-      code: widget.product.code,
-      name: widget.product.name,
-      brand: widget.product.brand);
+        code: widget.product.code,
+        name: widget.product.name,
+        brand: widget.product.brand);
     imageFile = widget.imageFile;
     super.initState();
   }
@@ -240,7 +242,10 @@ class ProductPageState extends State<ProductPage> {
   Widget build(BuildContext context) {
     return new Scaffold(
       appBar: new AppBar(
-        title: new Text(product.name == ''? 'Edit Product': 'Add New Product')
+        title: new Text(
+          product.name != ''? 'Edit Product': 'Add New Product',
+          style: Theme.of(context).textTheme.headline,
+        ),
       ),
       body: new Center(
         child: new ListView(
@@ -251,6 +256,7 @@ class ProductPageState extends State<ProductPage> {
                 onChanged: (s) => product.brand = s.trim(),
                 decoration: new InputDecoration(hintText: 'Brand'),
                 inputFormatters: [new AutoCapWordsInputFormatter()],
+                style: Theme.of(context).textTheme.subhead,
               ),
             ),
             new ListTile(
@@ -259,6 +265,7 @@ class ProductPageState extends State<ProductPage> {
                 onChanged: (s) => product.name = s.trim(),
                 decoration: new InputDecoration(hintText: 'Name'),
                 inputFormatters: [new AutoCapWordsInputFormatter()],
+                style: Theme.of(context).textTheme.subhead,
               ),
             ),
             new ListTile(
