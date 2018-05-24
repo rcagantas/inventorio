@@ -28,17 +28,6 @@ class MyAppState extends State<MyApp> {
       model: appModel,
       child: new MaterialApp(
         title: 'Inventorio',
-        theme: new ThemeData(
-          textTheme: new TextTheme(
-            headline: new TextStyle(fontFamily: 'Montserrat', color: Colors.white, fontSize: 20.0),
-            title: new TextStyle(fontFamily: 'Montserrat', fontSize: 15.0),
-            subhead: new TextStyle(fontFamily: 'Raleway', fontSize: 20.0),
-            body2: new TextStyle(fontFamily: 'Montserrat', fontSize: 20.0),
-            body1: new TextStyle(fontFamily: 'Raleway', fontSize: 17.0),
-            caption: new TextStyle(fontFamily: 'Montserrat', fontSize: 12.0),
-            button: new TextStyle(fontFamily: 'Montserrat'),
-          ),
-        ),
         home: new ListingsPage()
       )
     );
@@ -71,7 +60,12 @@ class InventoryItemTile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[
                 new Icon(Icons.delete, color: Colors.white),
-                new Text('Remove', style: Theme.of(context).textTheme.body1.copyWith(color: Colors.white),),
+                new Text('Remove',
+                  style: new TextStyle(
+                    fontFamily: 'Montserrat',
+                    color: Colors.white
+                  ),
+                ),
               ],
             ),
           ),
@@ -80,7 +74,11 @@ class InventoryItemTile extends StatelessWidget {
             child: new Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
-                new Text('Edit Product',),
+                new Text('Edit Product',
+                  style: new TextStyle(
+                    fontFamily: 'Montserrat',
+                  ),
+                ),
                 new Icon(Icons.edit),
               ],
             ),
@@ -143,12 +141,12 @@ class InventoryItemTile extends StatelessWidget {
                     new Text(
                       product?.brand ?? '',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.body1,
+                      style: new TextStyle(fontFamily: 'Raleway', fontSize: 17.0),
                     ),
                     new Text(
                       product?.name ?? item.code,
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.body2,
+                      style: new TextStyle(fontFamily: 'Montserrat', fontSize: 20.0),
                     ),
                     //new Text('${item.uuid}...', textScaleFactor: 0.5,)
                   ],
@@ -157,7 +155,7 @@ class InventoryItemTile extends StatelessWidget {
               new Expanded(
                 child: new Text(
                   item.expiryDateString,
-                  style: Theme.of(context).textTheme.body1.copyWith(fontWeight: FontWeight.bold),
+                  style: new TextStyle(fontFamily: 'Raleway', fontSize: 18.0, fontWeight: FontWeight.bold),
                 ),
               ),
               new SizedBox(
@@ -176,37 +174,40 @@ class InventoryItemTile extends StatelessWidget {
 class ListingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return new Scaffold(
-      appBar: new AppBar(
-        title: new Text(
-          'Inventorio',
-          style: Theme.of(context).textTheme.headline,
+    return new MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8),
+      child: new Scaffold(
+        appBar: new AppBar(
+          title: new Text(
+            'Inventorio',
+            style: new TextStyle(fontFamily: 'Montserrat'),
+          ),
         ),
-      ),
-      body: new ScopedModelDescendant<AppModel>(
-        builder: (context, child, model) => new ListView.builder(
-          itemCount: model.inventoryItems.length,
-          itemBuilder: (BuildContext context, int index) => new InventoryItemTile(model.inventoryItems[index])
+        body: new ScopedModelDescendant<AppModel>(
+          builder: (context, child, model) => new ListView.builder(
+            itemCount: model.inventoryItems.length,
+            itemBuilder: (BuildContext context, int index) => new InventoryItemTile(model.inventoryItems[index])
+          ),
         ),
-      ),
-      floatingActionButton: new ScopedModelDescendant<AppModel>(
-        builder: (context, child, model) => new FloatingActionButton(
-          onPressed: () async {
-            InventoryItem item = await model.addItemFlow(context);
-            bool isIdentified = await model.isProductIdentified(item.code);
-            if (!isIdentified) {
-              Product product = await Navigator.push(
-                context,
-                new MaterialPageRoute(
-                  builder: (context) => new ProductPage(new Product(code: item.code), model.getImage(item.code)),
-                )
-              );
-              if (product != null) model.addProduct(product);
-              else model.removeItem(item.uuid);
-            }
-          },
-          child: new Icon(Icons.add_a_photo),
-          backgroundColor: Theme.of(context).primaryColor,
+        floatingActionButton: new ScopedModelDescendant<AppModel>(
+          builder: (context, child, model) => new FloatingActionButton(
+            onPressed: () async {
+              InventoryItem item = await model.addItemFlow(context);
+              bool isIdentified = await model.isProductIdentified(item.code);
+              if (!isIdentified) {
+                Product product = await Navigator.push(
+                  context,
+                  new MaterialPageRoute(
+                    builder: (context) => new ProductPage(new Product(code: item.code), model.getImage(item.code)),
+                  )
+                );
+                if (product != null) model.addProduct(product);
+                else model.removeItem(item.uuid);
+              }
+            },
+            child: new Icon(Icons.add_a_photo),
+            backgroundColor: Theme.of(context).primaryColor,
+          ),
         ),
       ),
     );
@@ -236,63 +237,66 @@ class ProductPageState extends State<ProductPage> {
 
   @override
   Widget build(BuildContext context) {
-    return new Scaffold(
-      appBar: new AppBar(
-        title: new Text(
-          product.name != ''? 'Edit Product': 'Add New Product',
-          style: Theme.of(context).textTheme.headline,
+    return new MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8),
+      child: new Scaffold(
+        appBar: new AppBar(
+          title: new Text(
+            product.name != ''? 'Edit Product': 'Add New Product',
+            style: new TextStyle(fontFamily: 'Montserrat'),
+          ),
         ),
-      ),
-      body: new Center(
-        child: new ListView(
-          children: <Widget>[
-            new ListTile(
-              title: new TextField(
-                controller: new TextEditingController(text: product.brand),
-                onChanged: (s) => product.brand = s.trim(),
-                decoration: new InputDecoration(hintText: 'Brand'),
-                inputFormatters: [new AutoCapWordsInputFormatter()],
-                style: Theme.of(context).textTheme.body2,
+        body: new Center(
+          child: new ListView(
+            children: <Widget>[
+              new ListTile(
+                title: new TextField(
+                  controller: new TextEditingController(text: product.brand),
+                  onChanged: (s) => product.brand = s.trim(),
+                  decoration: new InputDecoration(hintText: 'Brand'),
+                  inputFormatters: [new AutoCapWordsInputFormatter()],
+                  //style: Theme.of(context).textTheme.body1.copyWith(fontFamily: 'Montserrat', fontSize: 16.0),
+                ),
               ),
-            ),
-            new ListTile(
-              title: new TextField(
-                controller: new TextEditingController(text: product.name),
-                onChanged: (s) => product.name = s.trim(),
-                decoration: new InputDecoration(hintText: 'Name'),
-                inputFormatters: [new AutoCapWordsInputFormatter()],
-                style: Theme.of(context).textTheme.body2,
+              new ListTile(
+                title: new TextField(
+                  controller: new TextEditingController(text: product.name),
+                  onChanged: (s) => product.name = s.trim(),
+                  decoration: new InputDecoration(hintText: 'Name'),
+                  inputFormatters: [new AutoCapWordsInputFormatter()],
+                  //style: Theme.of(context).textTheme.body1.copyWith(fontFamily: 'Montserrat', fontSize: 16.0),
+                ),
               ),
-            ),
-            new ListTile(
-              title: new FlatButton(
-                onPressed: () async {
-                  File file  = await ImagePicker.pickImage(source: ImageSource.camera);
-                  file = await file.rename('${dirname(file.path)}/${product.code}.jpg');
-                  print('Image for ${product.code} in ${file.path}');
-                  setState(() { imageFile = file; });
-                },
-                child: imageFile.existsSync()?
-                  new Container(
-                    height: 200.0,
-                    width: 200.0,
-                    decoration: new BoxDecoration(
-                      image: new DecorationImage(
-                        image: new FileImage(imageFile),
-                        fit: BoxFit.cover
+              new ListTile(
+                title: new FlatButton(
+                  onPressed: () async {
+                    File file  = await ImagePicker.pickImage(source: ImageSource.camera);
+                    file = await file.rename('${dirname(file.path)}/${product.code}.jpg');
+                    print('Image for ${product.code} in ${file.path}');
+                    setState(() { imageFile = file; });
+                  },
+                  child: imageFile.existsSync()?
+                    new Container(
+                      height: 200.0,
+                      width: 200.0,
+                      decoration: new BoxDecoration(
+                        image: new DecorationImage(
+                          image: new FileImage(imageFile),
+                          fit: BoxFit.cover
+                        ),
                       ),
-                    ),
-                    margin: const EdgeInsets.only(top: 20.0),
-                  ):
-                  new Icon(Icons.camera_alt, color: Colors.grey, size: 150.0,),
+                      margin: const EdgeInsets.only(top: 20.0),
+                    ):
+                    new Icon(Icons.camera_alt, color: Colors.grey, size: 150.0,),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: new FloatingActionButton(
-        child: new Icon(Icons.add),
-        onPressed: () { Navigator.pop(context, product); },
+        floatingActionButton: new FloatingActionButton(
+          child: new Icon(Icons.add),
+          onPressed: () { Navigator.pop(context, product); },
+        ),
       ),
     );
   }
