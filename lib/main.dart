@@ -59,7 +59,9 @@ class InventoryItemTile extends StatelessWidget {
             child: new Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[
-                new Icon(Icons.delete, color: Colors.white),
+                new Icon(
+                  Icons.delete,
+                  color: Colors.white),
                 new Text('Remove',
                   style: new TextStyle(
                     fontFamily: 'Montserrat',
@@ -133,7 +135,11 @@ class InventoryItemTile extends StatelessWidget {
                     ),
                   ),
                 ):
-                new Icon(Icons.camera_alt, color: Colors.grey, size: 80.0,),
+                new Icon(
+                  Icons.camera_alt,
+                  color: Colors.grey,
+                  size: 80.0,
+                ),
               new Expanded(
                 flex: 2,
                 child: new Column(
@@ -227,10 +233,7 @@ class ProductPageState extends State<ProductPage> {
 
   @override
   void initState() {
-    product = new Product(
-        code: widget.product.code,
-        name: widget.product.name,
-        brand: widget.product.brand);
+    product = widget.product;
     imageFile = widget.imageFile;
     super.initState();
   }
@@ -255,7 +258,7 @@ class ProductPageState extends State<ProductPage> {
                   onChanged: (s) => product.brand = s.trim(),
                   decoration: new InputDecoration(hintText: 'Brand'),
                   inputFormatters: [new AutoCapWordsInputFormatter()],
-                  //style: Theme.of(context).textTheme.body1.copyWith(fontFamily: 'Montserrat', fontSize: 16.0),
+                  style: new TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
                 ),
               ),
               new ListTile(
@@ -264,16 +267,17 @@ class ProductPageState extends State<ProductPage> {
                   onChanged: (s) => product.name = s.trim(),
                   decoration: new InputDecoration(hintText: 'Name'),
                   inputFormatters: [new AutoCapWordsInputFormatter()],
-                  //style: Theme.of(context).textTheme.body1.copyWith(fontFamily: 'Montserrat', fontSize: 16.0),
+                  style: new TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
                 ),
               ),
               new ListTile(
                 title: new FlatButton(
-                  onPressed: () async {
-                    File file  = await ImagePicker.pickImage(source: ImageSource.camera);
-                    file = await file.rename('${dirname(file.path)}/${product.code}.jpg');
-                    print('Image for ${product.code} in ${file.path}');
-                    setState(() { imageFile = file; });
+                  onPressed: () {
+                    ImagePicker.pickImage(source: ImageSource.camera).then((file) {
+                      file = file.renameSync('${dirname(file.path)}/${product.code}.jpg');
+                      print('Image for ${product.code} in ${file.path} with hash ${file.hashCode}');
+                      setState(() { imageFile = file; });
+                    });
                   },
                   child: imageFile.existsSync()?
                     new Container(
@@ -287,7 +291,11 @@ class ProductPageState extends State<ProductPage> {
                       ),
                       margin: const EdgeInsets.only(top: 20.0),
                     ):
-                    new Icon(Icons.camera_alt, color: Colors.grey, size: 150.0,),
+                    new Icon(
+                      Icons.camera_alt,
+                      color: Colors.grey,
+                      size: 150.0,
+                    ),
                 ),
               ),
             ],
