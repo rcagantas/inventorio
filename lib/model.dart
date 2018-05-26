@@ -77,7 +77,6 @@ class AppModel extends Model {
   AppModel() {
     _signIn();
     _initAsync();
-    print('Item count: ${inventoryItems.length}');
   }
 
   void _signIn() async {
