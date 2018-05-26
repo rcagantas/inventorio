@@ -111,6 +111,8 @@ class AppModel extends Model {
       if (f.path.contains('image_picker')) {
         print('Deleting ${f.path}');
         f.delete();
+      } else if (f.path.endsWith('.jpg')) {
+        print('Found ${f.path}');
       }
     });
   }
@@ -229,6 +231,7 @@ class AppModel extends Model {
   }
 
   File getImage(String code) {
-    return new File('$_imagePath/$code.jpg');
+    File imageFile = new File('$_imagePath/$code.jpg');
+    return imageFile.existsSync()? imageFile: null;
   }
 }

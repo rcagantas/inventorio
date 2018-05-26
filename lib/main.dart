@@ -120,8 +120,13 @@ class InventoryItemTile extends StatelessWidget {
           key: new ObjectKey(item.uuid),
           child: new Row(
             children: <Widget>[
-              imageFile.existsSync()?
-                new Container(
+              imageFile == null?
+              new Icon(
+                Icons.camera_alt,
+                color: Colors.grey,
+                size: 80.0,
+              ):
+              new Container(
                   height: 80.0,
                   width: 80.0,
                   decoration: new BoxDecoration(
@@ -134,11 +139,6 @@ class InventoryItemTile extends StatelessWidget {
                       fit: BoxFit.cover
                     ),
                   ),
-                ):
-                new Icon(
-                  Icons.camera_alt,
-                  color: Colors.grey,
-                  size: 80.0,
                 ),
               new Expanded(
                 flex: 2,
@@ -204,7 +204,7 @@ class ListingsPage extends StatelessWidget {
                 Product product = await Navigator.push(
                   context,
                   new MaterialPageRoute(
-                    builder: (context) => new ProductPage(new Product(code: item.code), model.getImage(item.code)),
+                    builder: (context) => new ProductPage(new Product(code: item.code), null),
                   )
                 );
                 if (product != null) model.addProduct(product);
@@ -274,13 +274,19 @@ class ProductPageState extends State<ProductPage> {
                 title: new FlatButton(
                   onPressed: () {
                     ImagePicker.pickImage(source: ImageSource.camera).then((file) {
-                      file = file.renameSync('${dirname(file.path)}/${product.code}.jpg');
-                      print('Image for ${product.code} in ${file.path} with hash ${file.hashCode}');
-                      setState(() { imageFile = file; });
+                      setState(() {
+                        imageFile = file;
+                        print('Saving image ${product.code}:${imageFile.hashCode} in ${imageFile.path}');
+                      });
                     });
                   },
-                  child: imageFile.existsSync()?
-                    new Container(
+                  child: imageFile == null?
+                  new Icon(
+                    Icons.camera_alt,
+                    color: Colors.grey,
+                    size: 150.0,
+                  ):
+                  new Container(
                       height: 200.0,
                       width: 200.0,
                       decoration: new BoxDecoration(
@@ -290,11 +296,6 @@ class ProductPageState extends State<ProductPage> {
                         ),
                       ),
                       margin: const EdgeInsets.only(top: 20.0),
-                    ):
-                    new Icon(
-                      Icons.camera_alt,
-                      color: Colors.grey,
-                      size: 150.0,
                     ),
                 ),
               ),
@@ -303,7 +304,12 @@ class ProductPageState extends State<ProductPage> {
         ),
         floatingActionButton: new FloatingActionButton(
           child: new Icon(Icons.add),
-          onPressed: () { Navigator.pop(context, product); },
+          onPressed: () {
+            String filePath = '${dirname(imageFile.path)}/${product.code}.jpg';
+            print('Renaming from ${imageFile.path} to $filePath');
+            imageFile.renameSync(filePath);
+            Navigator.pop(context, product);
+          },
         ),
       ),
     );
