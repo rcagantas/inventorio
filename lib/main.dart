@@ -316,9 +316,9 @@ class AutoCapWordsInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     String newText = capWordsPattern
-        .allMatches(newValue.text)
-        .map((match) => match.group(1).toUpperCase() + match.group(2))
-        .join();
+      .allMatches(newValue.text)
+      .map((match) => match.group(1).toUpperCase() + match.group(2))
+      .join();
 
     return new TextEditingValue(
       text: newText,
