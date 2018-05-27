@@ -166,9 +166,9 @@ class InventoryItemTile extends StatelessWidget {
                 ),
               ),
               new SizedBox(
-                  width: 5.0,
-                  height: 80.0,
-                  child: new Container(color: expiryColorScale(item),)
+                width: 5.0,
+                height: 80.0,
+                child: new Container(color: expiryColorScale(item),)
               ),
             ],
           ),
@@ -278,22 +278,7 @@ class ProductPageState extends State<ProductPage> {
                     ImagePicker.pickImage(source: ImageSource.camera).then((file) {
                       String uuid = uuidGenerator.v4();
                       String filePath = '${dirname(file.path)}/${product.code}_$uuid.jpg';
-                      print('Renaming from ${file.path} to $filePath');
-
-                      Directory imagePickerTmpDir = new Directory(dirname(file.path));
-                      imagePickerTmpDir.list()
-                        .where((f) => f.path != filePath)
-                        .forEach((f) {
-                        if (f.path.contains('${product.code}_')) {
-                          print('Deleting ${f.path}');
-                          f.delete();
-                        }
-                      });
-
-                      setState(() {
-                        imageFile = file.renameSync(filePath);
-                        print('Saving image ${product.code}:${imageFile.hashCode} in ${imageFile.path}');
-                      });
+                      setState(() { imageFile = file.renameSync(filePath); });
                     });
                   },
                   child: imageFile == null?

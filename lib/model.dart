@@ -64,7 +64,6 @@ class AppModel extends Model {
   Map<String, File> _productImage = new Map();
 
   DateTime _lastSelectedDate = new DateTime.now();
-  String _imagePath;
 
   CollectionReference _userCollection;
   CollectionReference _masterProductDictionary;
@@ -79,7 +78,7 @@ class AppModel extends Model {
 
   AppModel() {
     _signIn();
-    _initAsync();
+    _reloadImages();
   }
 
   void _signIn() async {
@@ -104,27 +103,31 @@ class AppModel extends Model {
     _loadAllCollections(userId);
   }
 
-  void _initAsync() async {
+  void _reloadImages() async {
     Directory docDir = await getApplicationDocumentsDirectory();
-    _imagePath = docDir.parent.path + '/tmp';
-    _reloadImages();
-  }
-
-  void _reloadImages() {
-    Directory imagePickerTmpDir = new Directory(_imagePath);
+    Directory imagePickerTmpDir = new Directory(docDir.parent.path + '/tmp');
     print('Image Picker temp directory ${imagePickerTmpDir.path}');
+    _productImage.clear();
     imagePickerTmpDir.list()
-      .forEach((f) {
-      if (f.path.contains('image_picker')) {
-        print('Deleting ${f.path}');
-        f.delete();
-      } else if (f.path.contains('_')) {
-        String code = basenameWithoutExtension(f.path).split('_')[0];
-        print('Setting $code with ${f.path}');
-        _productImage[code] = f;
-        notifyListeners();
-      }
-    });
+      .where((e) => e is File)
+      .map((e) => e as File)
+      .toList()
+      .then((list) {
+        list.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+        list.forEach((f) {
+          if (f.path.contains('image_picker')) {
+            f.delete();
+          } else if (f.path.contains('_')) {
+            String code = basenameWithoutExtension(f.path).split('_')[0];
+            if (_productImage.containsKey(code)) {
+              f.delete();
+            } else {
+              _productImage[code] = f;
+              notifyListeners();
+            }
+          }
+        });
+      });
   }
 
   void _loadAllCollections(String userId) async {
