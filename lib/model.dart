@@ -12,6 +12,7 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:path/path.dart';
+import 'package:quiver/core.dart';
 
 part 'model.g.dart';
 
@@ -32,6 +33,17 @@ class Product extends Object with _$ProductSerializerMixin {
   String brand;
   Product({this.code, this.name, this.brand});
   factory Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
+
+  @override
+  bool operator ==(other) {
+    return other is Product &&
+        code == other.code &&
+        name == other.name &&
+        brand == other.brand;
+  }
+
+  @override
+  int get hashCode => hash3(code.hashCode, name.hashCode, brand.hashCode);
 }
 
 @JsonSerializable()
@@ -106,7 +118,7 @@ class AppModel extends Model {
   void _reloadImages() async {
     Directory docDir = await getApplicationDocumentsDirectory();
     Directory imagePickerTmpDir = new Directory(docDir.parent.path + '/tmp');
-    print('Image Picker temp directory ${imagePickerTmpDir.path}');
+    print('Reloading images from directory ${imagePickerTmpDir.path}');
     _productImage.clear();
     imagePickerTmpDir.list()
       .where((e) => e is File)
@@ -235,16 +247,24 @@ class AppModel extends Model {
     _inventoryItemCollection.document(item.uuid).setData(item.toJson());
   }
 
-  void addProduct(Product product) async {
+  void addProduct(Product product) {
     _products[product.code] = product;
     _reloadImages();
     notifyListeners();
 
-    var masterDoc = await _masterProductDictionary.document(product.code).get();
-    if (masterDoc.exists && masterDoc.data != product.toJson()) {
-      _productDictionary.document(product.code).setData(product.toJson());
-    }
-    _masterProductDictionary.document(product.code).setData(product.toJson());
+    _masterProductDictionary.document(product.code).get().then((masterDoc) {
+      if (masterDoc.exists) {
+        Product masterProduct = Product.fromJson(masterDoc.data);
+        // don't override if only photo changed.
+        if (masterProduct != product) {
+          print('Overriding product dictionary for ${product.code}');
+          _productDictionary.document(product.code).setData(product.toJson());
+          _masterProductDictionary.document(product.code).setData(product.toJson());
+        }
+      } else {
+        _masterProductDictionary.document(product.code).setData(product.toJson());
+      }
+    });
   }
 
   Product getAssociatedProduct(InventoryItem item) {
