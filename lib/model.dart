@@ -153,23 +153,14 @@ class AppModel extends Model {
     userAccountFile.writeAsString(json.encode(_userAccount));
 
     _masterProductDictionary = Firestore.instance.collection('productDictionary');
-
     _productDictionary = Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).collection('productDictionary');
-    _productDictionary.getDocuments().then((snap) {
-      snap.documents.forEach((doc) {
-        Product product = new Product.fromJson(doc.data);
-        _products[doc.documentID] = product;
-        notifyListeners();
-      });
-    });
-
-
     _inventoryItemCollection = Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).collection('inventoryItems');
     _inventoryItemCollection.getDocuments().then((snap) {
       snap.documents.forEach((doc) {
         InventoryItem item = new InventoryItem.fromJson(doc.data);
         _inventoryItems[doc.documentID] = item;
         notifyListeners();
+        isProductIdentified(item.code);
       });
     });
   }
@@ -208,7 +199,6 @@ class AppModel extends Model {
     if (masterDoc.exists) {
       Product product = new Product.fromJson(masterDoc.data);
       _products[code] = product;
-      _productDictionary.document(product.code).setData(product.toJson());
       notifyListeners();
       return true;
     }
@@ -245,11 +235,16 @@ class AppModel extends Model {
     _inventoryItemCollection.document(item.uuid).setData(item.toJson());
   }
 
-  void addProduct(Product product) {
+  void addProduct(Product product) async {
     _products[product.code] = product;
     _reloadImages();
     notifyListeners();
-    _productDictionary.document(product.code).setData(product.toJson());
+
+    var masterDoc = await _masterProductDictionary.document(product.code).get();
+    if (masterDoc.exists && masterDoc.data != product.toJson()) {
+      _productDictionary.document(product.code).setData(product.toJson());
+    }
+    _masterProductDictionary.document(product.code).setData(product.toJson());
   }
 
   Product getAssociatedProduct(InventoryItem item) {
