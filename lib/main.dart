@@ -6,6 +6,7 @@ import 'package:inventorio/model.dart';
 import 'package:scoped_model/scoped_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart';
+import 'package:uuid/uuid.dart';
 
 void main() => runApp(new MyApp());
 
@@ -230,6 +231,7 @@ class ProductPage extends StatefulWidget {
 class ProductPageState extends State<ProductPage> {
   Product product;
   File imageFile;
+  Uuid uuidGenerator = new Uuid();
 
   @override
   void initState() {
@@ -274,8 +276,22 @@ class ProductPageState extends State<ProductPage> {
                 title: new FlatButton(
                   onPressed: () {
                     ImagePicker.pickImage(source: ImageSource.camera).then((file) {
+                      String uuid = uuidGenerator.v4();
+                      String filePath = '${dirname(file.path)}/${product.code}_$uuid.jpg';
+                      print('Renaming from ${file.path} to $filePath');
+
+                      Directory imagePickerTmpDir = new Directory(dirname(file.path));
+                      imagePickerTmpDir.list()
+                        .where((f) => f.path != filePath)
+                        .forEach((f) {
+                        if (f.path.contains('${product.code}_')) {
+                          print('Deleting ${f.path}');
+                          f.delete();
+                        }
+                      });
+
                       setState(() {
-                        imageFile = file;
+                        imageFile = file.renameSync(filePath);
                         print('Saving image ${product.code}:${imageFile.hashCode} in ${imageFile.path}');
                       });
                     });
@@ -304,12 +320,7 @@ class ProductPageState extends State<ProductPage> {
         ),
         floatingActionButton: new FloatingActionButton(
           child: new Icon(Icons.add),
-          onPressed: () {
-            String filePath = '${dirname(imageFile.path)}/${product.code}.jpg';
-            print('Renaming from ${imageFile.path} to $filePath');
-            imageFile.renameSync(filePath);
-            Navigator.pop(context, product);
-          },
+          onPressed: () { Navigator.pop(context, product); },
         ),
       ),
     );

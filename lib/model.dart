@@ -11,6 +11,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity/connectivity.dart';
+import 'package:path/path.dart';
 
 part 'model.g.dart';
 
@@ -60,12 +61,14 @@ class AppModel extends Model {
   UserAccount _userAccount;
   Map<String, InventoryItem> _inventoryItems = new Map();
   Map<String, Product> _products = new Map();
+  Map<String, File> _productImage = new Map();
 
   DateTime _lastSelectedDate = new DateTime.now();
   String _imagePath;
 
   CollectionReference _userCollection;
-  CollectionReference _productCollection;
+  CollectionReference _masterProductDictionary;
+  CollectionReference _productDictionary;
   CollectionReference _inventoryItemCollection;
 
   List<InventoryItem> get inventoryItems {
@@ -103,16 +106,23 @@ class AppModel extends Model {
 
   void _initAsync() async {
     Directory docDir = await getApplicationDocumentsDirectory();
-    Directory imagePickerTmpDir = new Directory(docDir.parent.path + '/tmp');
+    _imagePath = docDir.parent.path + '/tmp';
+    _reloadImages();
+  }
 
+  void _reloadImages() {
+    Directory imagePickerTmpDir = new Directory(_imagePath);
     print('Image Picker temp directory ${imagePickerTmpDir.path}');
-    _imagePath = imagePickerTmpDir.path;
-    imagePickerTmpDir.list().forEach((f) {
+    imagePickerTmpDir.list()
+      .forEach((f) {
       if (f.path.contains('image_picker')) {
         print('Deleting ${f.path}');
         f.delete();
-      } else if (f.path.endsWith('.jpg')) {
-        print('Found ${f.path}');
+      } else if (f.path.contains('_')) {
+        String code = basenameWithoutExtension(f.path).split('_')[0];
+        print('Setting $code with ${f.path}');
+        _productImage[code] = f;
+        notifyListeners();
       }
     });
   }
@@ -139,23 +149,23 @@ class AppModel extends Model {
     File userAccountFile = new File('${docDir.path}/userAccount.json');
     userAccountFile.writeAsString(json.encode(_userAccount));
 
-    _productCollection = Firestore.instance.collection('productDictionary');
-    _inventoryItemCollection = Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).collection('inventoryItems');
+    _masterProductDictionary = Firestore.instance.collection('productDictionary');
 
-    print('Firestore: Trying to load inventory ${_userAccount.toJson()}');
+    _productDictionary = Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).collection('productDictionary');
+    _productDictionary.getDocuments().then((snap) {
+      snap.documents.forEach((doc) {
+        Product product = new Product.fromJson(doc.data);
+        _products[doc.documentID] = product;
+        notifyListeners();
+      });
+    });
+
+
+    _inventoryItemCollection = Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).collection('inventoryItems');
     _inventoryItemCollection.getDocuments().then((snap) {
-      print('Firestore: Trying to load last inventory snapshot $snap');
       snap.documents.forEach((doc) {
         InventoryItem item = new InventoryItem.fromJson(doc.data);
-        print('Loaded Firestore item ${item.toJson()}');
         _inventoryItems[doc.documentID] = item;
-        if (!_products.containsKey(item.code)) {
-          _productCollection.document(item.code).get().then((doc) {
-            Product product = new Product.fromJson(doc.data);
-            _products[product.code] = product;
-            notifyListeners();
-          });
-        }
         notifyListeners();
       });
     });
@@ -182,12 +192,24 @@ class AppModel extends Model {
     ConnectivityResult connectivity = await (new Connectivity().checkConnectivity());
     if (connectivity == ConnectivityResult.none) return false;
 
-    var doc = await _productCollection.document(code).get();
+    print('Checking remote dictionary for $code');
+    var doc = await _productDictionary.document(code).get();
     if (doc.exists) {
       _products[code] = new Product.fromJson(doc.data);
       notifyListeners();
       return true;
     }
+
+    print('Checking remote master dictionary for $code');
+    var masterDoc = await _masterProductDictionary.document(code).get();
+    if (masterDoc.exists) {
+      Product product = new Product.fromJson(masterDoc.data);
+      _products[code] = product;
+      _productDictionary.document(product.code).setData(product.toJson());
+      notifyListeners();
+      return true;
+    }
+
     return false;
   }
 
@@ -222,8 +244,9 @@ class AppModel extends Model {
 
   void addProduct(Product product) {
     _products[product.code] = product;
+    _reloadImages();
     notifyListeners();
-    _productCollection.document(product.code).setData(product.toJson());
+    _productDictionary.document(product.code).setData(product.toJson());
   }
 
   Product getAssociatedProduct(InventoryItem item) {
@@ -231,7 +254,6 @@ class AppModel extends Model {
   }
 
   File getImage(String code) {
-    File imageFile = new File('$_imagePath/$code.jpg');
-    return imageFile.existsSync()? imageFile: null;
+    return _productImage[code];
   }
 }
