@@ -169,7 +169,9 @@ class AppModel extends Model {
     _masterProductDictionary = Firestore.instance.collection('productDictionary');
     _productDictionary = Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).collection('productDictionary');
     _inventoryItemCollection = Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).collection('inventoryItems');
-    _inventoryItemCollection.getDocuments().asStream().listen((snap) {
+    _inventoryItemCollection.snapshots().listen((snap) {
+      print('Snapshot received');
+      _inventoryItems.clear();
       snap.documents.forEach((doc) {
         InventoryItem item = new InventoryItem.fromJson(doc.data);
         _inventoryItems[doc.documentID] = item;
