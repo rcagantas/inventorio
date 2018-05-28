@@ -144,6 +144,14 @@ class AppModel extends Model {
       });
   }
 
+  void _syncProduct(DocumentSnapshot doc) {
+    if (_products.containsKey(doc.documentID)) {
+      Product product = new Product.fromJson(doc.data);
+      _products[product.code] = product;
+      notifyListeners();
+    }
+  }
+
   void _loadAllCollections(String userId) async {
     _userCollection = Firestore.instance.collection('users');
     var userDoc = await _userCollection.document(userId).get();
@@ -167,10 +175,11 @@ class AppModel extends Model {
     userAccountFile.writeAsString(json.encode(_userAccount));
 
     _masterProductDictionary = Firestore.instance.collection('productDictionary');
+    _masterProductDictionary.snapshots().listen((snap) => snap.documents.forEach((doc) => _syncProduct(doc)));
     _productDictionary = Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).collection('productDictionary');
+    _productDictionary.snapshots().listen((snap) => snap.documents.forEach((doc) => _syncProduct(doc)));
     _inventoryItemCollection = Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).collection('inventoryItems');
     _inventoryItemCollection.snapshots().listen((snap) {
-      print('Snapshot received');
       _inventoryItems.clear();
       snap.documents.forEach((doc) {
         InventoryItem item = new InventoryItem.fromJson(doc.data);
