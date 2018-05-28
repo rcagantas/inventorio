@@ -160,9 +160,17 @@ class InventoryItemTile extends StatelessWidget {
                 ),
               ),
               new Expanded(
-                child: new Text(
-                  item.expiryDateString,
-                  style: new TextStyle(fontFamily: 'Raleway', fontSize: 18.0, fontWeight: FontWeight.bold),
+                child: Column(
+                  children: <Widget>[
+                    new Text(
+                      item.expiryDateString.substring(0, 4),
+                      style: new TextStyle(fontFamily: 'Raleway', fontSize: 15.0, fontWeight: FontWeight.bold),
+                    ),
+                    new Text(
+                      item.expiryDateString.substring(5),
+                      style: new TextStyle(fontFamily: 'Raleway', fontSize: 18.0, fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ),
               ),
               new SizedBox(
