@@ -131,9 +131,11 @@ class InventoryItemTile extends StatelessWidget {
                   height: 80.0,
                   width: 80.0,
                   decoration: new BoxDecoration(
-                    border: new Border.all(
-                      color: Theme.of(context).canvasColor,
-                      width: 5.0,
+                    border: new Border(
+                      top:    BorderSide(width: 1.0, color: Theme.of(context).canvasColor),
+                      bottom: BorderSide(width: 1.0, color: Theme.of(context).canvasColor),
+                      left:   BorderSide(width: 2.0, color: Theme.of(context).canvasColor),
+                      right:  BorderSide(width: 2.0, color: Theme.of(context).canvasColor),
                     ),
                     image: new DecorationImage(
                       image: new FileImage(imageFile),
