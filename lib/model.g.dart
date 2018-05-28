@@ -28,14 +28,20 @@ abstract class _$InventoryItemSerializerMixin {
 Product _$ProductFromJson(Map<String, dynamic> json) => new Product(
     code: json['code'] as String,
     name: json['name'] as String,
-    brand: json['brand'] as String);
+    brand: json['brand'] as String,
+    variant: json['variant'] as String);
 
 abstract class _$ProductSerializerMixin {
   String get code;
   String get name;
   String get brand;
-  Map<String, dynamic> toJson() =>
-      <String, dynamic>{'code': code, 'name': name, 'brand': brand};
+  String get variant;
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'code': code,
+        'name': name,
+        'brand': brand,
+        'variant': variant
+      };
 }
 
 InventoryDetails _$InventoryDetailsFromJson(Map<String, dynamic> json) =>

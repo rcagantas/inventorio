@@ -142,7 +142,7 @@ class InventoryItemTile extends StatelessWidget {
                   ),
                 ),
               new Expanded(
-                flex: 2,
+                flex: 3,
                 child: new Column(
                   children: <Widget>[
                     new Text(
@@ -155,11 +155,17 @@ class InventoryItemTile extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: new TextStyle(fontFamily: 'Montserrat', fontSize: 20.0),
                     ),
+                    new Text(
+                      product?.variant ?? '',
+                      textAlign: TextAlign.center,
+                      style: new TextStyle(fontFamily: 'Montserrat', fontSize: 17.0),
+                    ),
                     //new Text('${item.uuid}...', textScaleFactor: 0.5,)
                   ],
                 ),
               ),
               new Expanded(
+                flex: 1,
                 child: Column(
                   children: <Widget>[
                     new Text(
@@ -276,6 +282,15 @@ class ProductPageState extends State<ProductPage> {
                   controller: new TextEditingController(text: product.name),
                   onChanged: (s) => product.name = s.trim(),
                   decoration: new InputDecoration(hintText: 'Name'),
+                  inputFormatters: [new AutoCapWordsInputFormatter()],
+                  style: new TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
+                ),
+              ),
+              new ListTile(
+                title: new TextField(
+                  controller: new TextEditingController(text: product.variant),
+                  onChanged: (s) => product.variant = s.trim(),
+                  decoration: new InputDecoration(hintText: 'Variant'),
                   inputFormatters: [new AutoCapWordsInputFormatter()],
                   style: new TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
                 ),

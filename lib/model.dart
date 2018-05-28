@@ -31,19 +31,21 @@ class Product extends Object with _$ProductSerializerMixin {
   String code;
   String name;
   String brand;
-  Product({this.code, this.name, this.brand});
+  String variant;
+  Product({this.code, this.name, this.brand, this.variant});
   factory Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
 
   @override
   bool operator ==(other) {
     return other is Product &&
-        code == other.code &&
-        name == other.name &&
-        brand == other.brand;
+      code == other.code &&
+      name == other.name &&
+      brand == other.brand &&
+      variant == other.variant;
   }
 
   @override
-  int get hashCode => hash3(code.hashCode, name.hashCode, brand.hashCode);
+  int get hashCode => hash4(code.hashCode, name.hashCode, brand.hashCode, variant.hashCode);
 }
 
 @JsonSerializable()
