@@ -121,27 +121,30 @@ class InventoryItemTile extends StatelessWidget {
           key: new ObjectKey(item.uuid),
           child: new Row(
             children: <Widget>[
-              imageFile == null?
-              new Icon(
-                Icons.camera_alt,
-                color: Colors.grey,
-                size: 80.0,
-              ):
-              new Container(
-                height: 80.0,
-                width: 80.0,
-                decoration: new BoxDecoration(
-                  border: new Border(
-                    top:    BorderSide(width: 2.0, color: Theme.of(context).canvasColor),
-                    left:   BorderSide(width: 2.0, color: Theme.of(context).canvasColor),
-                    right:  BorderSide(width: 2.0, color: Theme.of(context).canvasColor),
-                  ),
-                  image: new DecorationImage(
-                    image: new FileImage(imageFile),
-                    fit: BoxFit.cover
+              new Expanded(
+                flex: 1,
+                child: imageFile == null?
+                new Icon(
+                  Icons.camera_alt,
+                  color: Colors.grey,
+                  size: 80.0,
+                ):
+                new Container(
+                  height: 80.0,
+                  width: 80.0,
+                  decoration: new BoxDecoration(
+                    border: new Border(
+                      top:    BorderSide(width: 2.0, color: Theme.of(context).canvasColor),
+                      left:   BorderSide(width: 2.0, color: Theme.of(context).canvasColor),
+                      right:  BorderSide(width: 2.0, color: Theme.of(context).canvasColor),
+                    ),
+                    image: new DecorationImage(
+                        image: new FileImage(imageFile),
+                        fit: BoxFit.cover
+                    ),
                   ),
                 ),
-                ),
+              ),
               new Expanded(
                 flex: 3,
                 child: new Column(
