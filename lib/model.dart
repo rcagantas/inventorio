@@ -208,13 +208,14 @@ class AppModel extends Model {
   }
 
   void _setProductImage(Product product) {
-    if (product.imageFileName == null || _productImage.containsKey(product.code)) {
+    if (product.imageFileName == null) { return; }
+
+    if (_productImage.containsKey(product.code) &&
+        _productImage[product.code].path.contains(product.imageFileName)) {
       return;
     }
 
-    print('Checking image for ${product.code}');
-    String imageFileName = product.imageFileName + '_' + product.imageFileName;
-    File localFile = new File(_appDir.parent.path + '/tmp/' + imageFileName + '.jpg');
+    File localFile = new File(_appDir.parent.path + '/tmp/' + product.imageFileName + '.jpg');
     if (!localFile.existsSync()) {
       print('Checking image ${product.code} from remote file');
       FirebaseStorage.instance.ref().child('images').child(product.imageFileName)
@@ -251,7 +252,7 @@ class AppModel extends Model {
 
     if (product != null) {
       _products[code] = product;
-      _setProductImage(_products[code]);
+      _setProductImage(product);
       notifyListeners();
     }
 
@@ -309,7 +310,7 @@ class AppModel extends Model {
       print('Uploading ${product.imageFileName}...');
       _cleanupOldImages(product.imageFileName);
       var ref = FirebaseStorage.instance.ref().child('images').child(product.imageFileName);
-      ref.putFile(new File(_appDir.parent.path + '/tmp' + product.imageFileName + '.jpg'));
+      ref.putFile(_productImage[product.code]);
     }
   }
 
