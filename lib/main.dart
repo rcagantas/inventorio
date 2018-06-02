@@ -305,7 +305,10 @@ class ProductPageState extends State<ProductPage> {
                     ImagePicker.pickImage(source: ImageSource.camera).then((file) {
                       String uuid = uuidGenerator.v4();
                       String filePath = '${dirname(file.path)}/${product.code}_$uuid.jpg';
-                      setState(() { imageFile = file.renameSync(filePath); });
+                      setState(() {
+                        imageFile = file.renameSync(filePath);
+                        product.imageFileName = "${product.code}_$uuid";
+                      });
                     });
                   },
                   child: imageFile == null?

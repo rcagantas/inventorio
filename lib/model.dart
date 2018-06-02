@@ -10,9 +10,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:connectivity/connectivity.dart';
-import 'package:path/path.dart';
 import 'package:quiver/core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:http/http.dart' as http;
 
 part 'model.g.dart';
 
@@ -32,7 +34,8 @@ class Product extends Object with _$ProductSerializerMixin {
   String name;
   String brand;
   String variant;
-  Product({this.code, this.name, this.brand, this.variant});
+  String imageFileName;
+  Product({this.code, this.name, this.brand, this.variant, this.imageFileName});
   factory Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
 
   @override
@@ -41,11 +44,12 @@ class Product extends Object with _$ProductSerializerMixin {
       code == other.code &&
       name == other.name &&
       brand == other.brand &&
-      variant == other.variant;
+      variant == other.variant &&
+      imageFileName == other.imageFileName;
   }
 
   @override
-  int get hashCode => hash4(code.hashCode, name.hashCode, brand.hashCode, variant.hashCode);
+  int get hashCode => hashObjects(toJson().values);
 }
 
 @JsonSerializable()
@@ -77,6 +81,7 @@ class AppModel extends Model {
   Map<String, Product> _products = new Map();
   Map<String, File> _productImage = new Map();
 
+  Directory _appDir;
   DateTime _lastSelectedDate = new DateTime.now();
 
   CollectionReference _userCollection;
@@ -91,14 +96,15 @@ class AppModel extends Model {
   }
 
   AppModel() {
-    _signIn();
-    _reloadImages();
+    getApplicationDocumentsDirectory().then((dir) {
+      _appDir = dir;
+      _signIn();
+    });
   }
 
   void _signIn() async {
     String userId;
-    Directory docDir = await getApplicationDocumentsDirectory();
-    File userAccountFile = new File('${docDir.path}/userAccount.json');
+    File userAccountFile = new File('${_appDir.path}/userAccount.json');
     if (userAccountFile.existsSync()) {
       print('Loading last known user from file.');
       UserAccount account = new UserAccount.fromJson(json.decode(userAccountFile.readAsStringSync()));
@@ -112,35 +118,30 @@ class AppModel extends Model {
       user = user == null ? await googleSignIn.signInSilently() : user;
       user = user == null ? await googleSignIn.signIn() : user;
       userId = user.id;
+      user.authentication.then((auth) =>
+        FirebaseAuth.instance.signInWithGoogle(
+          idToken: auth.idToken,
+          accessToken: auth.accessToken
+        )
+      );
     }
 
     _loadAllCollections(userId);
   }
 
-  void _reloadImages() async {
-    Directory docDir = await getApplicationDocumentsDirectory();
-    Directory imagePickerTmpDir = new Directory(docDir.parent.path + '/tmp');
-    print('Reloading images from directory ${imagePickerTmpDir.path}');
-    _productImage.clear();
+  void _cleanupOldImages(String fileName) async {
+    String code = fileName.split('_')[0];
+    String uuid = fileName.split('_')[1];
+    Directory imagePickerTmpDir = new Directory(_appDir.parent.path + '/tmp');
     imagePickerTmpDir.list()
-      .where((e) => e is File)
+      .where((e) => e is File &&
+        e.path.endsWith('jpg') &&
+        e.path.contains(code) &&
+        !e.path.contains(uuid))
       .map((e) => e as File)
-      .toList()
-      .then((list) {
-        list.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
-        list.forEach((f) {
-          if (f.path.contains('image_picker')) {
-            f.delete();
-          } else if (f.path.contains('_')) {
-            String code = basenameWithoutExtension(f.path).split('_')[0];
-            if (_productImage.containsKey(code)) {
-              f.delete();
-            } else {
-              _productImage[code] = f;
-              notifyListeners();
-            }
-          }
-        });
+      .forEach((f) {
+        print('Deleting ${f.path}');
+        f.delete();
       });
   }
 
@@ -148,6 +149,7 @@ class AppModel extends Model {
     if (_products.containsKey(doc.documentID)) {
       Product product = new Product.fromJson(doc.data);
       _products[product.code] = product;
+      _setProductImage(product);
       notifyListeners();
     }
   }
@@ -205,30 +207,55 @@ class AppModel extends Model {
     return item;
   }
 
+  void _setProductImage(Product product) {
+    if (product.imageFileName == null || _productImage.containsKey(product.code)) {
+      return;
+    }
+
+    print('Checking image for ${product.code}');
+    String imageFileName = product.imageFileName + '_' + product.imageFileName;
+    File localFile = new File(_appDir.parent.path + '/tmp/' + imageFileName + '.jpg');
+    if (!localFile.existsSync()) {
+      print('Checking image ${product.code} from remote file');
+      FirebaseStorage.instance.ref().child('images').child(product.imageFileName)
+        .getDownloadURL().then((url) {
+          print('Downloaded image ${product.code} from $url');
+          http.get(url).then((response) {
+            localFile.writeAsBytes(response.bodyBytes).then((f) {
+              _productImage[product.code] = f;
+              notifyListeners();
+            });
+          });
+        });
+    } else {
+      print('Checking image ${product.code} from local file ${localFile.path}');
+      _productImage[product.code] = localFile;
+      notifyListeners();
+    }
+  }
+
   Future<bool> isProductIdentified(String code) async {
     if (_products.containsKey(code)) return true;
 
     ConnectivityResult connectivity = await (new Connectivity().checkConnectivity());
     if (connectivity == ConnectivityResult.none) return false;
 
+    Product product;
     print('Checking remote dictionary for $code');
     var doc = await _productDictionary.document(code).get();
-    if (doc.exists) {
-      _products[code] = new Product.fromJson(doc.data);
-      notifyListeners();
-      return true;
-    }
+    if (doc.exists) product = new Product.fromJson(doc.data);
 
     print('Checking remote master dictionary for $code');
     var masterDoc = await _masterProductDictionary.document(code).get();
-    if (masterDoc.exists) {
-      Product product = new Product.fromJson(masterDoc.data);
+    if (!doc.exists && masterDoc.exists) product = new Product.fromJson(masterDoc.data);
+
+    if (product != null) {
       _products[code] = product;
+      _setProductImage(_products[code]);
       notifyListeners();
-      return true;
     }
 
-    return false;
+    return product != null;
   }
 
   Future<DateTime> getExpiryDate(BuildContext context) async {
@@ -262,13 +289,12 @@ class AppModel extends Model {
 
   void addProduct(Product product) {
     _products[product.code] = product;
-    _reloadImages();
+    _setProductImage(product);
     notifyListeners();
 
     _masterProductDictionary.document(product.code).get().then((masterDoc) {
       if (masterDoc.exists) {
         Product masterProduct = Product.fromJson(masterDoc.data);
-        // don't override if only photo changed.
         if (masterProduct != product) {
           print('Overriding product dictionary for ${product.code}');
           _productDictionary.document(product.code).setData(product.toJson());
@@ -278,6 +304,13 @@ class AppModel extends Model {
         _masterProductDictionary.document(product.code).setData(product.toJson());
       }
     });
+
+    if (_productImage[product.code] != null) {
+      print('Uploading ${product.imageFileName}...');
+      _cleanupOldImages(product.imageFileName);
+      var ref = FirebaseStorage.instance.ref().child('images').child(product.imageFileName);
+      ref.putFile(new File(_appDir.parent.path + '/tmp' + product.imageFileName + '.jpg'));
+    }
   }
 
   Product getAssociatedProduct(InventoryItem item) {
