@@ -170,11 +170,11 @@ class InventoryItemTile extends StatelessWidget {
             children: <Widget>[
               new Expanded(
                 flex: 1,
-                child: imageFile == null?
-                new Icon(
-                  Icons.camera_alt,
-                  color: Colors.grey,
-                  size: 80.0,
+                child:
+                imageFile == null?
+                new Container(
+                  height: 80.0,
+                  width: 80.0,
                 ):
                 new Container(
                   height: 80.0,
@@ -313,7 +313,6 @@ class ProductPageState extends State<ProductPage> {
                   controller: new TextEditingController(text: product.brand),
                   onChanged: (s) => product.brand = s.trim(),
                   decoration: new InputDecoration(hintText: 'Brand'),
-                  inputFormatters: [new AutoCapWordsInputFormatter()],
                   style: new TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
                 ),
               ),
@@ -322,7 +321,6 @@ class ProductPageState extends State<ProductPage> {
                   controller: new TextEditingController(text: product.name),
                   onChanged: (s) => product.name = s.trim(),
                   decoration: new InputDecoration(hintText: 'Name'),
-                  inputFormatters: [new AutoCapWordsInputFormatter()],
                   style: new TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
                 ),
               ),
@@ -331,7 +329,6 @@ class ProductPageState extends State<ProductPage> {
                   controller: new TextEditingController(text: product.variant),
                   onChanged: (s) => product.variant = s.trim(),
                   decoration: new InputDecoration(hintText: 'Variant'),
-                  inputFormatters: [new AutoCapWordsInputFormatter()],
                   style: new TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
                 ),
               ),
@@ -374,24 +371,6 @@ class ProductPageState extends State<ProductPage> {
           onPressed: () { Navigator.pop(context, product); },
         ),
       ),
-    );
-  }
-}
-
-class AutoCapWordsInputFormatter extends TextInputFormatter {
-  final RegExp capWordsPattern = new RegExp(r'(\w)(\w*\s*)');
-
-  @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    String newText = capWordsPattern
-      .allMatches(newValue.text)
-      .map((match) => match.group(1).toUpperCase() + match.group(2))
-      .join();
-
-    return new TextEditingValue(
-      text: newText,
-      selection: newValue.selection ?? const TextSelection.collapsed(offset: -1),
-      composing: newText == newValue.text ? newValue.composing : TextRange.empty,
     );
   }
 }

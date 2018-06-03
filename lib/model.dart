@@ -289,8 +289,19 @@ class AppModel extends Model {
     _inventoryItemCollection.document(item.uuid).setData(item.toJson());
   }
 
+  String _capitalizeWord(String sentence) {
+    return sentence.split(' ').map((w) => '${w[0].toUpperCase()}${w.substring(1)}').join(' ').trim();
+  }
+
+  Product _capitalize(Product product) {
+    product.brand = _capitalizeWord(product.brand);
+    product.name = _capitalizeWord(product.name);
+    product.variant = _capitalizeWord(product.variant);
+    return product;
+  }
+
   void addProduct(Product product) {
-    _products[product.code] = product;
+    _products[product.code] = _capitalize(product);
     _setProductImage(product);
     notifyListeners();
 
