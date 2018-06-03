@@ -48,6 +48,53 @@ class InventoryItemTile extends StatelessWidget {
     return Colors.greenAccent;
   }
 
+  List<Widget> buildProductIdentifier(Product product, InventoryItem item) {
+    List<Widget> identifiers = new List();
+
+    if (product == null) {
+      identifiers.add(
+        new Text(
+          item.code,
+          textAlign: TextAlign.center,
+          style: new TextStyle(fontFamily: 'Montserrat', fontSize: 15.0),
+        ),
+      );
+      return identifiers;
+    }
+
+    if (product.brand != null) {
+      identifiers.add(
+        new Text(
+          product.brand,
+          textAlign: TextAlign.center,
+          style: new TextStyle(fontFamily: 'Raleway', fontSize: 17.0),
+        )
+      );
+    }
+
+    if (product.name != null) {
+      identifiers.add(
+        new Text(
+          product.name,
+          textAlign: TextAlign.center,
+          style: new TextStyle(fontFamily: 'Montserrat', fontSize: 20.0),
+        ),
+      );
+    }
+
+    if (product.variant != null) {
+      identifiers.add(
+        new Text(
+          product.variant,
+          textAlign: TextAlign.center,
+          style: new TextStyle(fontFamily: 'Montserrat', fontSize: 17.0),
+        ),
+      );
+    }
+
+    return identifiers;
+  }
+
   @override
   Widget build(BuildContext context) {
     return new ScopedModelDescendant<AppModel>(
@@ -147,26 +194,7 @@ class InventoryItemTile extends StatelessWidget {
               ),
               new Expanded(
                 flex: 3,
-                child: new Column(
-                  children: <Widget>[
-                    new Text(
-                      product?.brand ?? '',
-                      textAlign: TextAlign.center,
-                      style: new TextStyle(fontFamily: 'Raleway', fontSize: 17.0),
-                    ),
-                    new Text(
-                      product?.name ?? item.code,
-                      textAlign: TextAlign.center,
-                      style: new TextStyle(fontFamily: 'Montserrat', fontSize: 20.0),
-                    ),
-                    new Text(
-                      product?.variant ?? '',
-                      textAlign: TextAlign.center,
-                      style: new TextStyle(fontFamily: 'Montserrat', fontSize: 17.0),
-                    ),
-                    //new Text('${item.uuid}...', textScaleFactor: 0.5,)
-                  ],
-                ),
+                child: new Column(children: buildProductIdentifier(product, item),),
               ),
               new Expanded(
                 flex: 1,
@@ -272,6 +300,14 @@ class ProductPageState extends State<ProductPage> {
         body: new Center(
           child: new ListView(
             children: <Widget>[
+              new ListTile(
+                dense: true,
+                title: new Text(
+                  product.code,
+                  textAlign: TextAlign.center,
+                  style: new TextStyle(fontFamily: 'Montserrat'),
+                ),
+              ),
               new ListTile(
                 title: new TextField(
                   controller: new TextEditingController(text: product.brand),

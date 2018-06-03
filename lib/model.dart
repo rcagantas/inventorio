@@ -182,6 +182,7 @@ class AppModel extends Model {
     _productDictionary.snapshots().listen((snap) => snap.documents.forEach((doc) => _syncProduct(doc)));
     _inventoryItemCollection = Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).collection('inventoryItems');
     _inventoryItemCollection.snapshots().listen((snap) {
+      print('New item snapshot. Clearing inventory');
       _inventoryItems.clear();
       snap.documents.forEach((doc) {
         InventoryItem item = new InventoryItem.fromJson(doc.data);
