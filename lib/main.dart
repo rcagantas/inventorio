@@ -230,6 +230,29 @@ class ListingsPage extends StatelessWidget {
       builder: (context, child, model) => new MediaQuery(
         data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8),
         child: new Scaffold(
+          drawer: new Drawer(
+            child: new ListView(
+              padding: EdgeInsets.zero,
+              children: <Widget>[
+                new DrawerHeader(
+                  decoration: new BoxDecoration(color: Theme.of(context).primaryColor),
+                  child: new ListTile(
+                    leading: new CircleAvatar(
+                      backgroundImage: NetworkImage(model.userImageUrl),
+                    ),
+                    title: new Text(
+                      model.userDisplayName,
+                      style: new TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 18.0,
+                        color: Colors.white
+                      ),
+                    ),
+                  ),
+                )
+              ],
+            ),
+          ),
           appBar: new AppBar(
             title: new Text(
               'Inventorio',

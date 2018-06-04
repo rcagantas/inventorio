@@ -88,6 +88,7 @@ class AppModel extends Model {
   CollectionReference _masterProductDictionary;
   CollectionReference _productDictionary;
   CollectionReference _inventoryItemCollection;
+  GoogleSignInAccount _gUser;
 
   List<InventoryItem> get inventoryItems {
     List<InventoryItem> toSort = _inventoryItems.values.toList();
@@ -114,11 +115,12 @@ class AppModel extends Model {
     ConnectivityResult connectivity = await (new Connectivity().checkConnectivity());
     if (connectivity != ConnectivityResult.none) {
       GoogleSignIn googleSignIn = new GoogleSignIn();
-      GoogleSignInAccount user = googleSignIn.currentUser;
-      user = user == null ? await googleSignIn.signInSilently() : user;
-      user = user == null ? await googleSignIn.signIn() : user;
-      userId = user.id;
-      user.authentication.then((auth) =>
+      _gUser = googleSignIn.currentUser;
+      _gUser = _gUser == null ? await googleSignIn.signInSilently() : _gUser;
+      _gUser = _gUser == null ? await googleSignIn.signIn() : _gUser;
+      userId = _gUser.id;
+      notifyListeners();
+      _gUser.authentication.then((auth) =>
         FirebaseAuth.instance.signInWithGoogle(
           idToken: auth.idToken,
           accessToken: auth.accessToken
@@ -333,4 +335,7 @@ class AppModel extends Model {
   File getImage(String code) {
     return _productImage[code];
   }
+
+  String get userDisplayName => _gUser?.displayName ?? '';
+  String get userImageUrl => _gUser?.photoUrl ?? '';
 }
