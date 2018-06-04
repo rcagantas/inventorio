@@ -227,23 +227,21 @@ class InventoryItemTile extends StatelessWidget {
 class ListingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return new MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8),
-      child: new Scaffold(
-        appBar: new AppBar(
-          title: new Text(
-            'Inventorio',
-            style: new TextStyle(fontFamily: 'Montserrat'),
+    return ScopedModelDescendant<AppModel>(
+      builder: (context, child, model) => new MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8),
+        child: new Scaffold(
+          appBar: new AppBar(
+            title: new Text(
+              'Inventorio',
+              style: new TextStyle(fontFamily: 'Montserrat'),
+            ),
           ),
-        ),
-        body: new ScopedModelDescendant<AppModel>(
-          builder: (context, child, model) => new ListView.builder(
+          body:  new ListView.builder(
             itemCount: model.inventoryItems.length,
             itemBuilder: (BuildContext context, int index) => new InventoryItemTile(model.inventoryItems[index])
           ),
-        ),
-        floatingActionButton: new ScopedModelDescendant<AppModel>(
-          builder: (context, child, model) => new FloatingActionButton(
+          floatingActionButton: new FloatingActionButton(
             onPressed: () async {
               InventoryItem item = await model.addItemFlow(context);
               bool isIdentified = await model.isProductIdentified(item.code);
