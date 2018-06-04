@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:inventorio/model.dart';
 import 'package:scoped_model/scoped_model.dart';
 import 'package:image_picker/image_picker.dart';
@@ -186,8 +185,8 @@ class InventoryItemTile extends StatelessWidget {
                       right:  BorderSide(width: 2.0, color: Theme.of(context).canvasColor),
                     ),
                     image: new DecorationImage(
-                        image: new FileImage(imageFile),
-                        fit: BoxFit.cover
+                      image: new FileImage(imageFile),
+                      fit: BoxFit.cover
                     ),
                   ),
                 ),
@@ -349,15 +348,15 @@ class ProductPageState extends State<ProductPage> {
                     size: 150.0,
                   ):
                   new Container(
-                      height: 200.0,
-                      width: 200.0,
-                      decoration: new BoxDecoration(
-                        image: new DecorationImage(
-                          image: new FileImage(imageFile),
-                          fit: BoxFit.cover
-                        ),
+                    height: 200.0,
+                    width: 200.0,
+                    decoration: new BoxDecoration(
+                      image: new DecorationImage(
+                        image: new FileImage(imageFile),
+                        fit: BoxFit.cover
                       ),
-                      margin: const EdgeInsets.only(top: 20.0),
+                    ),
+                    margin: const EdgeInsets.only(top: 20.0),
                     ),
                 ),
               ),
