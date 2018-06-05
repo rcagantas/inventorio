@@ -76,12 +76,10 @@ class UserAccount extends Object with _$UserAccountSerializerMixin {
 class AppModel extends Model {
   final Uuid uuidGenerator = new Uuid();
 
-  UserAccount _userAccount;
   Map<String, InventoryItem> _inventoryItems = new Map();
   Map<String, Product> _products = new Map();
   Map<String, File> _productImage = new Map();
 
-  Directory _appDir;
   DateTime _lastSelectedDate = new DateTime.now();
 
   CollectionReference _userCollection;
@@ -97,20 +95,11 @@ class AppModel extends Model {
   }
 
   AppModel() {
-    getApplicationDocumentsDirectory().then((dir) {
-      _appDir = dir;
-      _signIn();
-    });
+    _signIn().then((id) => _loadCollections(id));
   }
 
-  void _signIn() async {
+  Future<String> _signIn() async {
     String userId;
-    File userAccountFile = new File('${_appDir.path}/userAccount.json');
-    if (userAccountFile.existsSync()) {
-      print('Loading last known user from file.');
-      UserAccount account = new UserAccount.fromJson(json.decode(userAccountFile.readAsStringSync()));
-      userId = account.userId;
-    }
 
     ConnectivityResult connectivity = await (new Connectivity().checkConnectivity());
     if (connectivity != ConnectivityResult.none) {
@@ -126,63 +115,52 @@ class AppModel extends Model {
           accessToken: auth.accessToken
         )
       );
-    }
-
-    _loadAllCollections(userId);
-  }
-
-  void _cleanupOldImages(String fileName) async {
-    String code = fileName.split('_')[0];
-    String uuid = fileName.split('_')[1];
-    Directory imagePickerTmpDir = new Directory(_appDir.parent.path + '/tmp');
-    imagePickerTmpDir.list()
-      .where((e) => e is File &&
-        e.path.endsWith('jpg') &&
-        e.path.contains(code) &&
-        !e.path.contains(uuid))
-      .map((e) => e as File)
-      .forEach((f) {
-        print('Deleting ${f.path}');
-        f.delete();
-      });
-  }
-
-  void _syncProduct(DocumentSnapshot doc) {
-    if (_products.containsKey(doc.documentID)) {
-      Product product = new Product.fromJson(doc.data);
-      _products[product.code] = product;
-      _setProductImage(product);
-      notifyListeners();
-    }
-  }
-
-  void _loadAllCollections(String userId) async {
-    _userCollection = Firestore.instance.collection('users');
-    var userDoc = await _userCollection.document(userId).get();
-    if (!userDoc.exists) {
-      _userAccount = new UserAccount(userId, uuidGenerator.v4());
-      _userCollection.document(userId).setData(_userAccount.toJson());
-
-      Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).setData(new InventoryDetails(
-        uuid: _userAccount.currentInventoryId,
-        name: 'Default Inventory',
-        createdBy: _userAccount.userId,
-        createdOn: new DateTime.now().toIso8601String(),
-      ).toJson());
-
     } else {
-      _userAccount = new UserAccount.fromJson(userDoc.data);
+      Directory appDir = await getApplicationDocumentsDirectory();
+      File userAccountFile = new File('${appDir.path}/userAccount.json');
+      if (userAccountFile.existsSync()) {
+        print('Loading last known user from file.');
+        UserAccount account = new UserAccount.fromJson(json.decode(userAccountFile.readAsStringSync()));
+        userId = account.userId;
+      }
     }
 
-    Directory docDir = await getApplicationDocumentsDirectory();
-    File userAccountFile = new File('${docDir.path}/userAccount.json');
-    userAccountFile.writeAsString(json.encode(_userAccount));
+    return userId;
+  }
 
+  void _createNewUserAccount(String userId) {
+    UserAccount userAccount = new UserAccount(userId, uuidGenerator.v4());
+    _userCollection.document(userId).setData(userAccount.toJson());
+
+    Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).setData(new InventoryDetails(
+      uuid: userAccount.currentInventoryId,
+      name: 'Default Inventory',
+      createdBy: userAccount.userId,
+      createdOn: new DateTime.now().toIso8601String(),
+    ).toJson());
+  }
+
+  void _loadCollections(String userId) {
+    _userCollection = Firestore.instance.collection('users');
+    _userCollection.document(userId).snapshots().listen((userDoc) {
+      if (!userDoc.exists) _createNewUserAccount(userId);
+
+      UserAccount userAccount = new UserAccount.fromJson(userDoc.data);
+      _loadData(userAccount);
+
+      getApplicationDocumentsDirectory().then((appDir) {
+        File userAccountFile = new File('${appDir.path}/userAccount.json');
+        userAccountFile.writeAsString(json.encode(userAccount));
+      });
+    });
+  }
+
+  void _loadData(UserAccount userAccount) async {
     _masterProductDictionary = Firestore.instance.collection('productDictionary');
     _masterProductDictionary.snapshots().listen((snap) => snap.documents.forEach((doc) => _syncProduct(doc)));
-    _productDictionary = Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).collection('productDictionary');
+    _productDictionary = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('productDictionary');
     _productDictionary.snapshots().listen((snap) => snap.documents.forEach((doc) => _syncProduct(doc)));
-    _inventoryItemCollection = Firestore.instance.collection('inventory').document(_userAccount.currentInventoryId).collection('inventoryItems');
+    _inventoryItemCollection = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('inventoryItems');
     _inventoryItemCollection.snapshots().listen((snap) {
       print('New item snapshot. Clearing inventory');
       _inventoryItems.clear();
@@ -210,6 +188,32 @@ class AppModel extends Model {
     return item;
   }
 
+  void _cleanupOldImages(String fileName) async {
+    Directory appDir = await getApplicationDocumentsDirectory();
+    String code = fileName.split('_')[0];
+    String uuid = fileName.split('_')[1];
+    Directory imagePickerTmpDir = new Directory(appDir.parent.path + '/tmp');
+    imagePickerTmpDir.list()
+        .where((e) => e is File &&
+        e.path.endsWith('jpg') &&
+        e.path.contains(code) &&
+        !e.path.contains(uuid))
+        .map((e) => e as File)
+        .forEach((f) {
+      print('Deleting ${f.path}');
+      f.delete();
+    });
+  }
+
+  void _syncProduct(DocumentSnapshot doc) {
+    if (_products.containsKey(doc.documentID)) {
+      Product product = new Product.fromJson(doc.data);
+      _products[product.code] = product;
+      _setProductImage(product);
+      notifyListeners();
+    }
+  }
+
   void _setProductImage(Product product) {
     if (product.imageFileName == null) { return; }
 
@@ -218,11 +222,12 @@ class AppModel extends Model {
       return;
     }
 
-    File localFile = new File(_appDir.parent.path + '/tmp/' + product.imageFileName + '.jpg');
-    if (!localFile.existsSync()) {
-      print('Checking image ${product.code} from remote file');
-      FirebaseStorage.instance.ref().child('images').child(product.imageFileName)
-        .getDownloadURL().then((url) {
+    getApplicationDocumentsDirectory().then((dir) {
+      File localFile = new File(dir.parent.path + '/tmp/' + product.imageFileName + '.jpg');
+      if (!localFile.existsSync()) {
+        print('Checking image ${product.code} from remote file');
+        FirebaseStorage.instance.ref().child('images').child(product.imageFileName)
+            .getDownloadURL().then((url) {
           print('Downloaded image ${product.code} from $url');
           http.get(url).then((response) {
             localFile.writeAsBytes(response.bodyBytes).then((f) {
@@ -231,11 +236,12 @@ class AppModel extends Model {
             });
           });
         });
-    } else {
-      print('Checking image ${product.code} from local file ${localFile.path}');
-      _productImage[product.code] = localFile;
-      notifyListeners();
-    }
+      } else {
+        print('Checking image ${product.code} from local file ${localFile.path}');
+        _productImage[product.code] = localFile;
+        notifyListeners();
+      }
+    });
   }
 
   Future<bool> isProductIdentified(String code) async {
@@ -271,6 +277,7 @@ class AppModel extends Model {
           firstDate: _lastSelectedDate.subtract(new Duration(days: 1)),
           lastDate: _lastSelectedDate.add(new Duration(days: 365 * 10))
       );
+      _lastSelectedDate = expiryDate;
       print('Setting Expiry Date: [$expiryDate]');
     } catch (e) {
       print('Unknown exception $e');
@@ -322,9 +329,9 @@ class AppModel extends Model {
 
     if (_productImage[product.code] != null) {
       print('Uploading ${product.imageFileName}...');
-      _cleanupOldImages(product.imageFileName);
       var ref = FirebaseStorage.instance.ref().child('images').child(product.imageFileName);
       ref.putFile(_productImage[product.code]);
+      _cleanupOldImages(product.imageFileName);
     }
   }
 
