@@ -159,7 +159,7 @@ class AppModel extends Model {
     _masterProductDictionary = Firestore.instance.collection('productDictionary');
     _masterProductDictionary.snapshots().listen((snap) => snap.documents.forEach((doc) => _syncProduct(doc)));
     _productDictionary = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('productDictionary');
-    _productDictionary.snapshots().listen((snap) => snap.documents.forEach((doc) => _syncProduct(doc)));
+    _productDictionary.snapshots().listen((snap) => snap.documents.forEach((doc) => _syncProduct(doc, forced: true)));
     _inventoryItemCollection = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('inventoryItems');
     _inventoryItemCollection.snapshots().listen((snap) {
       print('New item snapshot. Clearing inventory');
@@ -167,8 +167,8 @@ class AppModel extends Model {
       snap.documents.forEach((doc) {
         InventoryItem item = new InventoryItem.fromJson(doc.data);
         _inventoryItems[doc.documentID] = item;
-        notifyListeners();
         isProductIdentified(item.code);
+        notifyListeners();
       });
     });
   }
@@ -205,8 +205,8 @@ class AppModel extends Model {
     });
   }
 
-  void _syncProduct(DocumentSnapshot doc) {
-    if (_products.containsKey(doc.documentID)) {
+  void _syncProduct(DocumentSnapshot doc, {bool forced: false}) {
+    if (_products.containsKey(doc.documentID) || forced) {
       Product product = new Product.fromJson(doc.data);
       _products[product.code] = product;
       _setProductImage(product);
@@ -247,25 +247,15 @@ class AppModel extends Model {
   Future<bool> isProductIdentified(String code) async {
     if (_products.containsKey(code)) return true;
 
-    ConnectivityResult connectivity = await (new Connectivity().checkConnectivity());
-    if (connectivity == ConnectivityResult.none) return false;
-
-    Product product;
     print('Checking remote dictionary for $code');
     var doc = await _productDictionary.document(code).get();
-    if (doc.exists) product = new Product.fromJson(doc.data);
+    if (doc.exists) _syncProduct(doc, forced: true);
 
     print('Checking remote master dictionary for $code');
     var masterDoc = await _masterProductDictionary.document(code).get();
-    if (!doc.exists && masterDoc.exists) product = new Product.fromJson(masterDoc.data);
+    if (!doc.exists && masterDoc.exists) _syncProduct(masterDoc, forced: true);
 
-    if (product != null) {
-      _products[code] = product;
-      _setProductImage(product);
-      notifyListeners();
-    }
-
-    return product != null;
+    return _products.containsKey(code);
   }
 
   Future<DateTime> getExpiryDate(BuildContext context) async {
