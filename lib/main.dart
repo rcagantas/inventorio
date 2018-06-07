@@ -278,6 +278,8 @@ class ListingsPage extends StatelessWidget {
                   model.addProduct(product);
                   model.addItem(item);
                 }
+              } else {
+                model.addItem(item);
               }
             },
             child: new Icon(Icons.add_a_photo),

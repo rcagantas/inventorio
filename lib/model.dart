@@ -78,6 +78,7 @@ class AppModel extends Model {
 
   Map<String, InventoryItem> _inventoryItems = new Map();
   Map<String, Product> _products = new Map();
+  Map<String, Product> _productsMaster = new Map();
   Map<String, File> _productImage = new Map();
 
   DateTime _lastSelectedDate = new DateTime.now();
@@ -165,6 +166,7 @@ class AppModel extends Model {
       snap.documents.forEach((doc) {
         InventoryItem item = new InventoryItem.fromJson(doc.data);
         _inventoryItems[doc.documentID] = item;
+        notifyListeners();
         _syncProductCode(item.code);
       });
     });
@@ -200,24 +202,23 @@ class AppModel extends Model {
     });
   }
 
-  void _syncProduct(DocumentSnapshot doc) {
+  void _syncProduct(DocumentSnapshot doc, Map productMap) {
     if (doc.exists) {
       Product product = new Product.fromJson(doc.data);
-      _products[product.code] = product;
-      _setProductImage(product);
+      productMap[product.code] = product;
       notifyListeners();
+      _setProductImage(product.code);
     }
   }
 
   void _syncProductCode(String code) {
-    if (_products.containsKey(code)) return; // no need to sync twice
-    _productDictionary.document(code).get().then((doc) {
-      if (doc.exists) _productDictionary.document(code).snapshots().listen((doc) => _syncProduct(doc));
-      else _masterProductDictionary.document(code).snapshots().listen((doc) => _syncProduct(doc));
-    });
+    if (_products.containsKey(code) || _productsMaster.containsKey(code)) return; // avoid multiple sync
+    _productDictionary.document(code).snapshots().listen((doc) => _syncProduct(doc, _products));
+    _masterProductDictionary.document(code).snapshots().listen((doc) => _syncProduct(doc, _productsMaster));
   }
 
-  void _setProductImage(Product product) {
+  void _setProductImage(String code) {
+    Product product = _products.containsKey(code)? _products[code] : _productsMaster[code];
     if (product.imageFileName == null) { return; }
 
     if (_productImage.containsKey(product.code) &&
@@ -277,15 +278,11 @@ class AppModel extends Model {
   }
 
   void removeItem(String uuid) {
-    _inventoryItems.remove(uuid);
-    notifyListeners();
     _inventoryItemCollection.document(uuid).delete();
   }
 
   void addItem(InventoryItem item) {
-    _inventoryItems[item.uuid] = item;
-    print(json.encode(_inventoryItems));
-    notifyListeners();
+    print('item: $item');
     _inventoryItemCollection.document(item.uuid).setData(item.toJson());
   }
 
@@ -301,9 +298,7 @@ class AppModel extends Model {
   }
 
   void addProduct(Product product) {
-    _products[product.code] = _capitalize(product);
-    _setProductImage(product);
-    notifyListeners();
+    product = _capitalize(product);
 
     _masterProductDictionary.document(product.code).get().then((masterDoc) {
       if (masterDoc.exists) {
@@ -327,7 +322,7 @@ class AppModel extends Model {
   }
 
   Product getAssociatedProduct(InventoryItem item) {
-    return _products[item.code];
+    return _products.containsKey(item.code)? _products[item.code] : _productsMaster[item.code];
   }
 
   File getImage(String code) {
