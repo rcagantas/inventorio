@@ -157,25 +157,21 @@ class AppModel extends Model {
 
   void _loadData(UserAccount userAccount) async {
     _masterProductDictionary = Firestore.instance.collection('productDictionary');
-    _masterProductDictionary.snapshots().listen((snap) => snap.documents.forEach((doc) => _syncProduct(doc)));
     _productDictionary = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('productDictionary');
-    _productDictionary.snapshots().listen((snap) => snap.documents.forEach((doc) => _syncProduct(doc, forced: true)));
     _inventoryItemCollection = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('inventoryItems');
     _inventoryItemCollection.snapshots().listen((snap) {
-      print('New item snapshot. Clearing inventory');
+      print('New inventory snapshot. Clearing.');
       _inventoryItems.clear();
       snap.documents.forEach((doc) {
         InventoryItem item = new InventoryItem.fromJson(doc.data);
         _inventoryItems[doc.documentID] = item;
-        isProductIdentified(item.code);
-        notifyListeners();
+        _syncProductCode(item.code);
       });
     });
   }
 
   Future<InventoryItem> addItemFlow(BuildContext context) async {
     print('Adding new item...');
-
     String code = await BarcodeScanner.scan();
     if (code == null) return null;
 
@@ -184,7 +180,6 @@ class AppModel extends Model {
 
     String uuid = uuidGenerator.v4();
     InventoryItem item = new InventoryItem(uuid: uuid, code: code, expiryDate: expiryDate);
-    addItem(item);
     return item;
   }
 
@@ -205,13 +200,21 @@ class AppModel extends Model {
     });
   }
 
-  void _syncProduct(DocumentSnapshot doc, {bool forced: false}) {
-    if (_products.containsKey(doc.documentID) || forced) {
+  void _syncProduct(DocumentSnapshot doc) {
+    if (doc.exists) {
       Product product = new Product.fromJson(doc.data);
       _products[product.code] = product;
       _setProductImage(product);
       notifyListeners();
     }
+  }
+
+  void _syncProductCode(String code) {
+    if (_products.containsKey(code)) return; // no need to sync twice
+    _productDictionary.document(code).get().then((doc) {
+      if (doc.exists) _productDictionary.document(code).snapshots().listen((doc) => _syncProduct(doc));
+      else _masterProductDictionary.document(code).snapshots().listen((doc) => _syncProduct(doc));
+    });
   }
 
   void _setProductImage(Product product) {
@@ -245,17 +248,15 @@ class AppModel extends Model {
   }
 
   Future<bool> isProductIdentified(String code) async {
-    if (_products.containsKey(code)) return true;
-
     print('Checking remote dictionary for $code');
     var doc = await _productDictionary.document(code).get();
-    if (doc.exists) _syncProduct(doc, forced: true);
+    if (doc.exists) return true;
 
     print('Checking remote master dictionary for $code');
     var masterDoc = await _masterProductDictionary.document(code).get();
-    if (!doc.exists && masterDoc.exists) _syncProduct(masterDoc, forced: true);
+    if (masterDoc.exists) return true;
 
-    return _products.containsKey(code);
+    return false;
   }
 
   Future<DateTime> getExpiryDate(BuildContext context) async {

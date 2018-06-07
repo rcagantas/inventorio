@@ -274,8 +274,10 @@ class ListingsPage extends StatelessWidget {
                     builder: (context) => new ProductPage(new Product(code: item.code), null),
                   )
                 );
-                if (product != null) model.addProduct(product);
-                else model.removeItem(item.uuid);
+                if (product != null) {
+                  model.addProduct(product);
+                  model.addItem(item);
+                }
               }
             },
             child: new Icon(Icons.add_a_photo),
