@@ -7,10 +7,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart';
 import 'package:uuid/uuid.dart';
 
-void main() => runApp(new MyApp());
+void main() => runApp(MyApp());
 
 class MyApp extends StatefulWidget {
-  @override State<MyApp> createState() => new MyAppState();
+  @override State<MyApp> createState() => MyAppState();
 }
 
 class MyAppState extends State<MyApp> {
@@ -18,7 +18,7 @@ class MyAppState extends State<MyApp> {
 
   @override
   void initState() {
-    appModel = new AppModel();
+    appModel = AppModel();
     super.initState();
   }
 
@@ -26,9 +26,9 @@ class MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return new ScopedModel<AppModel>(
       model: appModel,
-      child: new MaterialApp(
+      child: MaterialApp(
         title: 'Inventorio',
-        home: new ListingsPage()
+        home: ListingsPage(appModel)
       )
     );
   }
@@ -224,24 +224,28 @@ class InventoryItemTile extends StatelessWidget {
 }
 
 class ListingsPage extends StatelessWidget {
+  final AppModel appModel;
+
+  ListingsPage(this.appModel);
+
   @override
   Widget build(BuildContext context) {
-    return ScopedModelDescendant<AppModel>(
-      builder: (context, child, model) => new MediaQuery(
-        data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8),
-        child: new Scaffold(
-          drawer: new Drawer(
-            child: new ListView(
-              padding: EdgeInsets.zero,
-              children: <Widget>[
-                new DrawerHeader(
+    return new MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8),
+      child: new Scaffold(
+        drawer: new Drawer(
+          child: new ListView(
+            padding: EdgeInsets.zero,
+            children: <Widget>[
+              ScopedModelDescendant<AppModel>(
+                builder: (context, child, model) => DrawerHeader(
                   decoration: new BoxDecoration(color: Theme.of(context).primaryColor),
                   child: new ListTile(
                     leading: new CircleAvatar(
-                      backgroundImage: NetworkImage(model.userImageUrl),
+                      backgroundImage: NetworkImage(appModel.userImageUrl),
                     ),
                     title: new Text(
-                      model.userDisplayName,
+                      appModel.userDisplayName,
                       style: new TextStyle(
                         fontFamily: 'Montserrat',
                         fontSize: 18.0,
@@ -249,42 +253,44 @@ class ListingsPage extends StatelessWidget {
                       ),
                     ),
                   ),
-                )
-              ],
-            ),
+                ),
+              )
+            ],
           ),
-          appBar: new AppBar(
-            title: new Text(
-              'Inventorio',
-              style: new TextStyle(fontFamily: 'Montserrat'),
-            ),
+        ),
+        appBar: new AppBar(
+          title: new Text(
+            'Inventorio',
+            style: new TextStyle(fontFamily: 'Montserrat'),
           ),
-          body:  new ListView.builder(
+        ),
+        body: ScopedModelDescendant<AppModel>(
+          builder: (context, child, model) => ListView.builder(
             itemCount: model.inventoryItems.length,
-            itemBuilder: (BuildContext context, int index) => new InventoryItemTile(model.inventoryItems[index])
+            itemBuilder: (BuildContext context, int index) => InventoryItemTile(model.inventoryItems[index])
           ),
-          floatingActionButton: new FloatingActionButton(
-            onPressed: () async {
-              InventoryItem item = await model.addItemFlow(context);
-              bool isIdentified = await model.isProductIdentified(item.code);
-              if (!isIdentified) {
-                Product product = await Navigator.push(
-                  context,
-                  new MaterialPageRoute(
-                    builder: (context) => new ProductPage(new Product(code: item.code), null),
-                  )
-                );
-                if (product != null) {
-                  model.addProduct(product);
-                  model.addItem(item);
-                }
-              } else {
-                model.addItem(item);
+        ),
+        floatingActionButton: new FloatingActionButton(
+          onPressed: () async {
+            InventoryItem item = await appModel.addItemFlow(context);
+            bool isIdentified = await appModel.isProductIdentified(item.code);
+            if (!isIdentified) {
+              Product product = await Navigator.push(
+                context,
+                new MaterialPageRoute(
+                  builder: (context) => new ProductPage(new Product(code: item.code), null),
+                )
+              );
+              if (product != null) {
+                appModel.addProduct(product);
+                appModel.addItem(item);
               }
-            },
-            child: new Icon(Icons.add_a_photo),
-            backgroundColor: Theme.of(context).primaryColor,
-          ),
+            } else {
+              appModel.addItem(item);
+            }
+          },
+          child: new Icon(Icons.add_a_photo),
+          backgroundColor: Theme.of(context).primaryColor,
         ),
       ),
     );
