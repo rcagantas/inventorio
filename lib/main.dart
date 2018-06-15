@@ -41,7 +41,11 @@ class ListingsPage extends StatelessWidget {
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8,),
       child: Scaffold(
-        appBar: AppBar(title: Text('Inventorio', style: TextStyle(fontFamily: 'Montserrat'),),),
+        appBar: AppBar(
+          title: ScopedModelDescendant<AppModel>(
+            builder: (context, child, model) => Text(model.info?.name ?? 'Inventory', style: TextStyle(fontFamily: 'Montserrat'),),
+          ),
+        ),
         body:
           ScopedModelDescendant<AppModel>(
             builder: (context, child, model) => ListView.builder(

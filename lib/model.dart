@@ -86,6 +86,7 @@ class AppModel extends Model {
   Map<String, Product> _products = Map();
   Map<String, Product> _productsMaster = Map();
   Uint8List imageData;
+  InventoryDetails info;
 
   CollectionReference _userCollection;
   CollectionReference _masterProductDictionary;
@@ -141,7 +142,7 @@ class AppModel extends Model {
 
     Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).setData(InventoryDetails(
       uuid: userAccount.currentInventoryId,
-      name: 'Default Inventory',
+      name: 'Inventory',
       createdBy: userAccount.userId,
     ).toJson());
   }
@@ -162,6 +163,11 @@ class AppModel extends Model {
   }
 
   void _loadData(UserAccount userAccount) {
+    Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).snapshots().listen((doc) {
+      info = InventoryDetails.fromJson(doc.data);
+      notifyListeners();
+    });
+
     _masterProductDictionary = Firestore.instance.collection('productDictionary');
     _productDictionary = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('productDictionary');
     _inventoryItemCollection = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('inventoryItems');
