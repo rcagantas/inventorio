@@ -240,8 +240,9 @@ class AppModel extends Model {
   }
 
   void addProduct(Product product) {
+    _syncProductCode(product.code);
     _productsMaster[product.code] = product;
-    notifyListeners(); // to temporarily show details
+    notifyListeners(); // temporarily set to trigger updates on UI while we wait for server.
 
     _uploadProductImage(product).then((product) {
 
