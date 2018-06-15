@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:scoped_model/scoped_model.dart';
@@ -14,7 +15,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:quiver/core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 part 'model.g.dart';
 
@@ -22,10 +23,15 @@ part 'model.g.dart';
 class InventoryItem extends Object with _$InventoryItemSerializerMixin {
   String uuid;
   String code;
-  DateTime expiryDate;
-  InventoryItem({this.uuid, this.code, this.expiryDate});
-  String get expiryDateString => expiryDate?.toIso8601String()?.substring(0, 10) ?? 'No Expiry Date';
+  int expiryMs;
+
+  InventoryItem({this.uuid, this.code, this.expiryMs});
   factory InventoryItem.fromJson(Map<String, dynamic> json) => _$InventoryItemFromJson(json);
+
+  DateTime get expiryDate => DateTime.fromMillisecondsSinceEpoch(expiryMs);
+  String get year => DateFormat.y().format(expiryDate);
+  String get month => DateFormat.MMM().format(expiryDate);
+  String get day => DateFormat.d().format(expiryDate);
 }
 
 @JsonSerializable()
@@ -34,9 +40,13 @@ class Product extends Object with _$ProductSerializerMixin {
   String name;
   String brand;
   String variant;
-  String imageFileName;
-  Product({this.code, this.name, this.brand, this.variant, this.imageFileName});
+  String imageUrl;
+
+  Product({this.code, this.name, this.brand, this.variant, this.imageUrl});
   factory Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
+
+  @override
+  int get hashCode => hashObjects(toJson().values);
 
   @override
   bool operator ==(other) {
@@ -45,11 +55,8 @@ class Product extends Object with _$ProductSerializerMixin {
       name == other.name &&
       brand == other.brand &&
       variant == other.variant &&
-      imageFileName == other.imageFileName;
+      imageUrl == other.imageUrl;
   }
-
-  @override
-  int get hashCode => hashObjects(toJson().values);
 }
 
 @JsonSerializable()
@@ -57,14 +64,13 @@ class InventoryDetails extends Object with _$InventoryDetailsSerializerMixin {
   String uuid;
   String name;
   String createdBy;
-  String createdOn;
-  InventoryDetails({this.uuid, this.name, this.createdBy, this.createdOn});
+  InventoryDetails({this.uuid, this.name, this.createdBy});
   factory InventoryDetails.fromJson(Map<String, dynamic> json) => _$InventoryDetailsFromJson(json);
 }
 
 @JsonSerializable()
 class UserAccount extends Object with _$UserAccountSerializerMixin {
-  List<String> knownInventories = new List();
+  List<String> knownInventories = List();
   String userId;
   String currentInventoryId;
   UserAccount(this.userId, this.currentInventoryId) {
@@ -74,14 +80,12 @@ class UserAccount extends Object with _$UserAccountSerializerMixin {
 }
 
 class AppModel extends Model {
-  final Uuid uuidGenerator = new Uuid();
+  final Uuid uuidGenerator = Uuid();
 
-  Map<String, InventoryItem> _inventoryItems = new Map();
-  Map<String, Product> _products = new Map();
-  Map<String, Product> _productsMaster = new Map();
-  Map<String, File> _productImage = new Map();
-
-  DateTime _lastSelectedDate = new DateTime.now();
+  Map<String, InventoryItem> _inventoryItems = Map();
+  Map<String, Product> _products = Map();
+  Map<String, Product> _productsMaster = Map();
+  Uint8List imageData;
 
   CollectionReference _userCollection;
   CollectionReference _masterProductDictionary;
@@ -96,32 +100,34 @@ class AppModel extends Model {
   }
 
   AppModel() {
+    _cleanupOldImages();
     _signIn().then((id) => _loadCollections(id));
   }
 
   Future<String> _signIn() async {
     String userId;
 
-    ConnectivityResult connectivity = await (new Connectivity().checkConnectivity());
+    ConnectivityResult connectivity = await (Connectivity().checkConnectivity());
     if (connectivity != ConnectivityResult.none) {
-      GoogleSignIn googleSignIn = new GoogleSignIn();
+      GoogleSignIn googleSignIn = GoogleSignIn();
       _gUser = googleSignIn.currentUser;
       _gUser = _gUser == null ? await googleSignIn.signInSilently() : _gUser;
       _gUser = _gUser == null ? await googleSignIn.signIn() : _gUser;
       userId = _gUser.id;
       notifyListeners();
-      _gUser.authentication.then((auth) =>
+      _gUser.authentication.then((auth) {
+        print('Firebase sign-in with Google: $userId');
         FirebaseAuth.instance.signInWithGoogle(
           idToken: auth.idToken,
           accessToken: auth.accessToken
-        )
-      );
+        );
+      });
     } else {
       Directory appDir = await getApplicationDocumentsDirectory();
-      File userAccountFile = new File('${appDir.path}/userAccount.json');
+      File userAccountFile = File('${appDir.path}/userAccount.json');
       if (userAccountFile.existsSync()) {
         print('Loading last known user from file.');
-        UserAccount account = new UserAccount.fromJson(json.decode(userAccountFile.readAsStringSync()));
+        UserAccount account = UserAccount.fromJson(json.decode(userAccountFile.readAsStringSync()));
         userId = account.userId;
       }
     }
@@ -130,14 +136,13 @@ class AppModel extends Model {
   }
 
   void _createNewUserAccount(String userId) {
-    UserAccount userAccount = new UserAccount(userId, uuidGenerator.v4());
+    UserAccount userAccount = UserAccount(userId, uuidGenerator.v4());
     _userCollection.document(userId).setData(userAccount.toJson());
 
-    Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).setData(new InventoryDetails(
+    Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).setData(InventoryDetails(
       uuid: userAccount.currentInventoryId,
       name: 'Default Inventory',
       createdBy: userAccount.userId,
-      createdOn: new DateTime.now().toIso8601String(),
     ).toJson());
   }
 
@@ -146,17 +151,17 @@ class AppModel extends Model {
     _userCollection.document(userId).snapshots().listen((userDoc) {
       if (!userDoc.exists) _createNewUserAccount(userId);
 
-      UserAccount userAccount = new UserAccount.fromJson(userDoc.data);
+      UserAccount userAccount = UserAccount.fromJson(userDoc.data);
       _loadData(userAccount);
 
       getApplicationDocumentsDirectory().then((appDir) {
-        File userAccountFile = new File('${appDir.path}/userAccount.json');
+        File userAccountFile = File('${appDir.path}/userAccount.json');
         userAccountFile.writeAsString(json.encode(userAccount));
       });
     });
   }
 
-  void _loadData(UserAccount userAccount) async {
+  void _loadData(UserAccount userAccount) {
     _masterProductDictionary = Firestore.instance.collection('productDictionary');
     _productDictionary = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('productDictionary');
     _inventoryItemCollection = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('inventoryItems');
@@ -164,88 +169,40 @@ class AppModel extends Model {
       print('New inventory snapshot. Clearing.');
       _inventoryItems.clear();
       snap.documents.forEach((doc) {
-        InventoryItem item = new InventoryItem.fromJson(doc.data);
+        InventoryItem item = InventoryItem.fromJson(doc.data);
         _inventoryItems[doc.documentID] = item;
+        print('Loaded ${item.uuid}');
         notifyListeners();
         _syncProductCode(item.code);
       });
     });
   }
 
-  Future<InventoryItem> addItemFlow(BuildContext context) async {
-    print('Adding new item...');
-    String code = await BarcodeScanner.scan();
-    if (code == null) return null;
-
-    DateTime expiryDate = await getExpiryDate(context);
-    if (expiryDate == null) return null;
-
-    String uuid = uuidGenerator.v4();
-    InventoryItem item = new InventoryItem(uuid: uuid, code: code, expiryDate: expiryDate);
-    return item;
-  }
-
-  void _cleanupOldImages(String fileName) async {
-    Directory appDir = await getApplicationDocumentsDirectory();
-    String code = fileName.split('_')[0];
-    String uuid = fileName.split('_')[1];
-    Directory imagePickerTmpDir = new Directory(appDir.parent.path + '/tmp');
-    imagePickerTmpDir.list()
-        .where((e) => e is File &&
-        e.path.endsWith('jpg') &&
-        e.path.contains(code) &&
-        !e.path.contains(uuid))
+  void _cleanupOldImages() {
+    getApplicationDocumentsDirectory().then((appDir) {
+      Directory imagePickerTmpDir = Directory(appDir.parent.path + '/tmp');
+      imagePickerTmpDir.list()
+        .where((e) => e is File && e.path.endsWith('jpg'))
         .map((e) => e as File)
         .forEach((f) {
-      print('Deleting ${f.path}');
-      f.delete();
+          print('Deleting ${f.path}');
+          f.delete();
+        });
     });
   }
 
   void _syncProduct(DocumentSnapshot doc, Map productMap) {
     if (doc.exists) {
-      Product product = new Product.fromJson(doc.data);
+      Product product = Product.fromJson(doc.data);
       productMap[product.code] = product;
       notifyListeners();
-      _setProductImage(product.code);
     }
   }
 
   void _syncProductCode(String code) {
-    if (_products.containsKey(code) || _productsMaster.containsKey(code)) return; // avoid multiple sync
+    if (getAssociatedProduct(code) != null) return; // avoid multiple sync
     _productDictionary.document(code).snapshots().listen((doc) => _syncProduct(doc, _products));
     _masterProductDictionary.document(code).snapshots().listen((doc) => _syncProduct(doc, _productsMaster));
-  }
-
-  void _setProductImage(String code) {
-    Product product = _products.containsKey(code)? _products[code] : _productsMaster[code];
-    if (product.imageFileName == null) { return; }
-
-    if (_productImage.containsKey(product.code) &&
-        _productImage[product.code].path.contains(product.imageFileName)) {
-      return;
-    }
-
-    getApplicationDocumentsDirectory().then((dir) {
-      File localFile = new File(dir.parent.path + '/tmp/' + product.imageFileName + '.jpg');
-      if (!localFile.existsSync()) {
-        print('Checking image ${product.code} from remote file');
-        FirebaseStorage.instance.ref().child('images').child(product.imageFileName)
-            .getDownloadURL().then((url) {
-          print('Downloaded image ${product.code} from $url');
-          http.get(url).then((response) {
-            localFile.writeAsBytes(response.bodyBytes).then((f) {
-              _productImage[product.code] = f;
-              notifyListeners();
-            });
-          });
-        });
-      } else {
-        print('Checking image ${product.code} from local file ${localFile.path}');
-        _productImage[product.code] = localFile;
-        notifyListeners();
-      }
-    });
   }
 
   Future<bool> isProductIdentified(String code) async {
@@ -260,14 +217,80 @@ class AppModel extends Model {
     return false;
   }
 
+  void removeItem(String uuid) {
+    print('Trying to delete item $uuid');
+    _inventoryItemCollection.document(uuid).delete();
+  }
+
+  void addItem(InventoryItem item) {
+    print('Trying to add item ${item.toJson()}');
+    _inventoryItemCollection.document(item.uuid).setData(item.toJson());
+  }
+
+  Future<Product> _uploadProductImage(Product product) async {
+    if (imageData == null || imageData.isEmpty) return product;
+    String uuid = uuidGenerator.v4();
+    String fileName = '${product.code}_$uuid.jpg';
+    StorageReference storage = FirebaseStorage.instance.ref().child('images').child(fileName);
+    StorageUploadTask uploadTask = storage.putData(imageData);
+    UploadTaskSnapshot uploadSnap = await uploadTask.future;
+    product.imageUrl = uploadSnap.downloadUrl.toString();
+    print('Uploaded $fileName to ${product.imageUrl}');
+    return product;
+  }
+
+  void addProduct(Product product) {
+    _uploadProductImage(product).then((product) {
+
+      print('Trying to add product ${product.code}');
+      _masterProductDictionary.document(product.code).get().then((masterDoc) {
+        if (masterDoc.exists) {
+          Product masterProduct = Product.fromJson(masterDoc.data);
+          if (masterProduct != product) {
+            print('Overriding product dictionary: ${product.code}');
+            _productDictionary.document(product.code).setData(product.toJson());
+            _masterProductDictionary.document(product.code).setData(product.toJson());
+          }
+        } else {
+          print('Adding to master dictionary: ${product.code}');
+          _masterProductDictionary.document(product.code).setData(product.toJson());
+        }
+      });
+
+    });
+  }
+
+  Product getAssociatedProduct(String code) {
+    return _products.containsKey(code)? _products[code] : _productsMaster[code];
+  }
+
+  String get userDisplayName => _gUser?.displayName ?? '';
+  String get userImageUrl => _gUser?.photoUrl ?? '';
+
+  Future<InventoryItem> buildInventoryItem(BuildContext context) async {
+    print('Scanning new item...');
+    String code = await BarcodeScanner.scan();
+    print('Code: $code');
+    if (code == null) return null;
+
+    DateTime expiryDate = await getExpiryDate(context);
+    if (expiryDate == null) return null;
+
+    String uuid = uuidGenerator.v4();
+    InventoryItem item = InventoryItem(uuid: uuid, code: code, expiryMs: expiryDate.millisecondsSinceEpoch);
+    return item;
+  }
+
+  DateTime _lastSelectedDate = DateTime.now();
   Future<DateTime> getExpiryDate(BuildContext context) async {
+    print('Getting expiry date');
     DateTime expiryDate = _lastSelectedDate;
     try {
       expiryDate = await showDatePicker(
-          context: context,
-          initialDate: _lastSelectedDate,
-          firstDate: _lastSelectedDate.subtract(new Duration(days: 1)),
-          lastDate: _lastSelectedDate.add(new Duration(days: 365 * 10))
+        context: context,
+        initialDate: _lastSelectedDate,
+        firstDate:  DateTime.now().subtract(Duration(days: 1)),
+        lastDate: _lastSelectedDate.add(Duration(days: 365 * 10))
       );
       _lastSelectedDate = expiryDate;
       print('Setting Expiry Date: [$expiryDate]');
@@ -276,59 +299,4 @@ class AppModel extends Model {
     }
     return expiryDate;
   }
-
-  void removeItem(String uuid) {
-    _inventoryItemCollection.document(uuid).delete();
-  }
-
-  void addItem(InventoryItem item) {
-    print('item: $item');
-    _inventoryItemCollection.document(item.uuid).setData(item.toJson());
-  }
-
-  String _capitalizeWord(String sentence) {
-    return sentence.split(' ').map((w) => '${w[0].toUpperCase()}${w.substring(1)}').join(' ').trim();
-  }
-
-  Product _capitalize(Product product) {
-    product.brand = _capitalizeWord(product.brand);
-    product.name = _capitalizeWord(product.name);
-    product.variant = _capitalizeWord(product.variant);
-    return product;
-  }
-
-  void addProduct(Product product) {
-    product = _capitalize(product);
-
-    _masterProductDictionary.document(product.code).get().then((masterDoc) {
-      if (masterDoc.exists) {
-        Product masterProduct = Product.fromJson(masterDoc.data);
-        if (masterProduct != product) {
-          print('Overriding product dictionary for ${product.code}');
-          _productDictionary.document(product.code).setData(product.toJson());
-          _masterProductDictionary.document(product.code).setData(product.toJson());
-        }
-      } else {
-        _masterProductDictionary.document(product.code).setData(product.toJson());
-      }
-    });
-
-    if (_productImage[product.code] != null) {
-      print('Uploading ${product.imageFileName}...');
-      var ref = FirebaseStorage.instance.ref().child('images').child(product.imageFileName);
-      ref.putFile(_productImage[product.code]);
-      _cleanupOldImages(product.imageFileName);
-    }
-  }
-
-  Product getAssociatedProduct(InventoryItem item) {
-    return _products.containsKey(item.code)? _products[item.code] : _productsMaster[item.code];
-  }
-
-  File getImage(String code) {
-    return _productImage[code];
-  }
-
-  String get userDisplayName => _gUser?.displayName ?? '';
-  String get userImageUrl => _gUser?.photoUrl ?? '';
 }

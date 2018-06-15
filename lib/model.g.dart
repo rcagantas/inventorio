@@ -10,19 +10,14 @@ InventoryItem _$InventoryItemFromJson(Map<String, dynamic> json) =>
     new InventoryItem(
         uuid: json['uuid'] as String,
         code: json['code'] as String,
-        expiryDate: json['expiryDate'] == null
-            ? null
-            : DateTime.parse(json['expiryDate'] as String));
+        expiryMs: json['expiryMs'] as int);
 
 abstract class _$InventoryItemSerializerMixin {
   String get uuid;
   String get code;
-  DateTime get expiryDate;
-  Map<String, dynamic> toJson() => <String, dynamic>{
-        'uuid': uuid,
-        'code': code,
-        'expiryDate': expiryDate?.toIso8601String()
-      };
+  int get expiryMs;
+  Map<String, dynamic> toJson() =>
+      <String, dynamic>{'uuid': uuid, 'code': code, 'expiryMs': expiryMs};
 }
 
 Product _$ProductFromJson(Map<String, dynamic> json) => new Product(
@@ -30,20 +25,20 @@ Product _$ProductFromJson(Map<String, dynamic> json) => new Product(
     name: json['name'] as String,
     brand: json['brand'] as String,
     variant: json['variant'] as String,
-    imageFileName: json['imageFileName'] as String);
+    imageUrl: json['imageUrl'] as String);
 
 abstract class _$ProductSerializerMixin {
   String get code;
   String get name;
   String get brand;
   String get variant;
-  String get imageFileName;
+  String get imageUrl;
   Map<String, dynamic> toJson() => <String, dynamic>{
         'code': code,
         'name': name,
         'brand': brand,
         'variant': variant,
-        'imageFileName': imageFileName
+        'imageUrl': imageUrl
       };
 }
 
@@ -51,20 +46,14 @@ InventoryDetails _$InventoryDetailsFromJson(Map<String, dynamic> json) =>
     new InventoryDetails(
         uuid: json['uuid'] as String,
         name: json['name'] as String,
-        createdBy: json['createdBy'] as String,
-        createdOn: json['createdOn'] as String);
+        createdBy: json['createdBy'] as String);
 
 abstract class _$InventoryDetailsSerializerMixin {
   String get uuid;
   String get name;
   String get createdBy;
-  String get createdOn;
-  Map<String, dynamic> toJson() => <String, dynamic>{
-        'uuid': uuid,
-        'name': name,
-        'createdBy': createdBy,
-        'createdOn': createdOn
-      };
+  Map<String, dynamic> toJson() =>
+      <String, dynamic>{'uuid': uuid, 'name': name, 'createdBy': createdBy};
 }
 
 UserAccount _$UserAccountFromJson(Map<String, dynamic> json) => new UserAccount(
