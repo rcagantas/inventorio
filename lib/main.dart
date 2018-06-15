@@ -80,7 +80,7 @@ class InventoryItemTile extends StatelessWidget {
   final BuildContext context;
   final int index;
 
-  Color expiryColorScale(DateTime expiryDate) {
+  Color _expiryColorScale(DateTime expiryDate) {
     DateTime today = DateTime.now();
     Duration duration = expiryDate?.difference(today) ?? Duration(days: 0);
     if (duration.inDays < 30) return Colors.redAccent;
@@ -123,9 +123,8 @@ class InventoryItemTile extends StatelessWidget {
             )
           ),
           Container(
-            height: 80.0,
-            width: 5.0,
-            color: expiryColorScale(item.expiryDate),
+            width: 5.0, height: 80.0,
+            color: _expiryColorScale(item.expiryDate),
           ),
         ],
       ),
