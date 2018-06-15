@@ -240,6 +240,9 @@ class AppModel extends Model {
   }
 
   void addProduct(Product product) {
+    _productsMaster[product.code] = product;
+    notifyListeners(); // to temporarily show details
+
     _uploadProductImage(product).then((product) {
 
       print('Trying to add product ${product.code}');

@@ -60,9 +60,13 @@ class ListingsPage extends StatelessWidget {
 
               if (!isProductIdentified) {
                 Product product = await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(Product(code: item.code)),),);
-                if (product != null) model.addProduct(product);
+                if (product != null) {
+                  model.addProduct(product);
+                  model.addItem(item);
+                }
+              } else {
+                model.addItem(item);
               }
-              model.addItem(item);
             }
           },
         ),
@@ -96,18 +100,19 @@ class InventoryItemTile extends StatelessWidget {
             flex: 1,
             child: Padding(
               padding: const EdgeInsets.only(bottom: 2.0),
-              child: CachedNetworkImage(imageUrl: product?.imageUrl, width: 80.0, height: 80.0, fit: BoxFit.cover,),
+              child: product?.imageUrl == null
+                ? Image.memory(kTransparentImage)
+                : CachedNetworkImage(imageUrl: product.imageUrl, width: 80.0, height: 80.0, fit: BoxFit.cover,),
             ),
           ),
           Expanded(
             flex: 3,
-            child: Column(
-              children: <Widget>[
+            child: Column(children: <Widget>[
                 product?.brand == null?   Container(): Text(product.brand,   style: TextStyle(fontFamily: 'Raleway',    fontSize: 15.0), textAlign: TextAlign.center,),
                 product?.name == null?    Container(): Text(product.name,    style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0), textAlign: TextAlign.center,),
                 product?.variant == null? Container(): Text(product.variant, style: TextStyle(fontFamily: 'Montserrat', fontSize: 15.0), textAlign: TextAlign.center,),
               ],
-            )
+            ),
           ),
           Expanded(flex: 1,
             child: Column(
@@ -152,7 +157,7 @@ class InventoryItemTile extends StatelessWidget {
         if (direction == DismissDirection.startToEnd) {
           Scaffold.of(context).showSnackBar(
             SnackBar(
-              content: Text('Removed item ${product.name}'),
+              content: Text('Removed item ${product?.name}'),
               action: SnackBarAction(
                 label: "UNDO",
                 onPressed: () {
@@ -254,7 +259,10 @@ class _ProductPageState extends State<ProductPage> {
                   child:
                     Stack(children: <Widget>[
                       Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 180.0,)),
-                      CachedNetworkImage(imageUrl: staging.imageUrl, width: 300.0, height: 300.0, fit: BoxFit.cover,),
+                      //CachedNetworkImage(imageUrl: staging.imageUrl ?? '_', width: 300.0, height: 300.0, fit: BoxFit.cover,),
+                      staging.imageUrl == null
+                        ? Image.memory(kTransparentImage)
+                        : CachedNetworkImage(imageUrl: staging.imageUrl, width: 300.0, height: 300.0, fit: BoxFit.cover,),
                       Image.memory(stagingImage, width: 300.0, height: 300.0, fit: BoxFit.cover,),
                     ]
                   ),
