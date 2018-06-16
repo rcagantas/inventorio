@@ -102,12 +102,9 @@ class InventoryItemTile extends StatelessWidget {
         children: <Widget>[
           Expanded(
             flex: 1,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 2.0),
-              child: product?.imageUrl == null
-                ? Image.memory(kTransparentImage)
-                : CachedNetworkImage(imageUrl: product.imageUrl, width: 80.0, height: 80.0, fit: BoxFit.cover,),
-            ),
+            child: product?.imageUrl == null
+              ? Image.memory(kTransparentImage)
+              : CachedNetworkImage(imageUrl: product.imageUrl, width: 78.0, height: 78.0, fit: BoxFit.cover,),
           ),
           Expanded(
             flex: 3,
