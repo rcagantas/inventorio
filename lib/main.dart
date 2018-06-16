@@ -76,28 +76,36 @@ class ListingsPage extends StatelessWidget {
         ),
         drawer: Drawer(
           child: ScopedModelDescendant<AppModel>(
-            builder: (context, child, model) => ListView.builder(
-              itemCount: 3 + model.userAccount.knownInventories.length,
-              itemBuilder: (context, index) {
-                switch(index) {
-                  case 0: return DrawerHeader(
-                    decoration: BoxDecoration(color: Theme.of(context).primaryColor),
-                    child: ListTile(
-                      leading: CircleAvatar(backgroundImage: CachedNetworkImageProvider(model.userImageUrl),),
-                      title: Text(model.userDisplayName, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0, color: Colors.white),),
-                    ),
-                  ); break;
-                  case 1: return ListTile(dense: true, title: Text('Add New Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),)); break;
-                  case 2: return Divider(); break;
-                  default:
-                    return ListTile(
-                      title: Text(model.inventoryDetails[model.userAccount.knownInventories[index-3]].toString(), style: TextStyle(fontFamily: 'Raleway', fontSize: 15.0,), softWrap: false,),
-                      selected: (model.userAccount.knownInventories[index-3] == model.currentInventory.uuid),
-                    );
-                    break;
+            builder: (context, child, model) {
+              int prepend = 4;
+              return ListView.builder(
+                itemCount: prepend + model.userAccount.knownInventories.length,
+                itemBuilder: (context, index) {
+                  switch(index) {
+                    case 0: return DrawerHeader(
+                      decoration: BoxDecoration(color: Theme.of(context).primaryColor),
+                      child: ListTile(
+                        leading: CircleAvatar(backgroundImage: CachedNetworkImageProvider(model.userImageUrl),),
+                        title: Text(model.userDisplayName, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0, color: Colors.white),),
+                      ),
+                    ); break;
+                    case 1: return ListTile(dense: true, title: Text('Create New Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),)); break;
+                    case 2: return ListTile(dense: true, title: Text('Scan Existing Inventory Code', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),)); break;
+                    case 3: return Divider(); break;
+                    default:
+                      return ListTile(
+                        title: Text(model.inventoryDetails[model.userAccount.knownInventories[index-prepend]].toString(), style: TextStyle(fontFamily: 'Raleway', fontSize: 15.0,), softWrap: false,),
+                        selected: (model.userAccount.knownInventories[index-prepend] == model.currentInventory.uuid),
+                        onTap: () {
+                          InventoryDetails details = model.inventoryDetails[model.userAccount.knownInventories[index-prepend]];
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(details),));
+                        },
+                      );
+                      break;
+                  }
                 }
-              }
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -285,7 +293,6 @@ class _ProductPageState extends State<ProductPage> {
                   child:
                     Stack(children: <Widget>[
                       Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 180.0,)),
-                      //CachedNetworkImage(imageUrl: staging.imageUrl ?? '_', width: 300.0, height: 300.0, fit: BoxFit.cover,),
                       staging.imageUrl == null
                         ? Image.memory(kTransparentImage)
                         : CachedNetworkImage(imageUrl: staging.imageUrl, width: 300.0, height: 300.0, fit: BoxFit.cover,),
@@ -302,6 +309,47 @@ class _ProductPageState extends State<ProductPage> {
           onPressed: () => Navigator.pop(context, staging),
         ),
       )
+    );
+  }
+}
+
+class InventoryDetailsPage extends StatefulWidget {
+  InventoryDetailsPage(this.inventoryDetails);
+  final InventoryDetails inventoryDetails;
+  @override _InventoryDetailsState createState() => _InventoryDetailsState();
+}
+
+class _InventoryDetailsState extends State<InventoryDetailsPage> {
+  InventoryDetails staging;
+  TextEditingController _name;
+
+  @override
+  void initState() {
+    super.initState();
+    staging = widget.inventoryDetails;
+    _name = TextEditingController(text: staging.name);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8),
+      child: Scaffold(
+        appBar: AppBar(title: Text(widget.inventoryDetails.uuid, style: TextStyle(fontFamily: 'Montserrat', fontSize: 15.0),),),
+        body: ListView(
+          children: <Widget>[
+            ListTile(
+              title: TextField(
+                controller: _name,
+                onChanged: (s) => staging.name = s,
+                decoration: InputDecoration(hintText: 'Variant'),
+                style: TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
+              ),
+              trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () => _name.clear()),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
