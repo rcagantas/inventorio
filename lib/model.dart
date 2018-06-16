@@ -66,6 +66,8 @@ class InventoryDetails extends Object with _$InventoryDetailsSerializerMixin {
   String createdBy;
   InventoryDetails({this.uuid, this.name, this.createdBy});
   factory InventoryDetails.fromJson(Map<String, dynamic> json) => _$InventoryDetailsFromJson(json);
+
+  @override String toString() => '$name   $uuid';
 }
 
 @JsonSerializable()
@@ -73,10 +75,23 @@ class UserAccount extends Object with _$UserAccountSerializerMixin {
   List<String> knownInventories = List();
   String userId;
   String currentInventoryId;
+
   UserAccount(this.userId, this.currentInventoryId) {
     knownInventories.add(this.currentInventoryId);
   }
-  factory UserAccount.fromJson(Map<String, dynamic> json) => _$UserAccountFromJson(json);
+
+  factory UserAccount.fromJson(Map<String, dynamic> json) =>
+      _$UserAccountFromJson(json);
+
+  @override int get hashCode => hashObjects(toJson().values);
+
+  @override
+  bool operator ==(other) {
+    return other is UserAccount &&
+      knownInventories == other.knownInventories &&
+      userId == other.userId &&
+      currentInventoryId == other.currentInventoryId;
+  }
 }
 
 class AppModel extends Model {
@@ -86,7 +101,8 @@ class AppModel extends Model {
   Map<String, Product> _products = Map();
   Map<String, Product> _productsMaster = Map();
   Uint8List imageData;
-  InventoryDetails info;
+  Map<String, InventoryDetails> inventoryDetails = Map();
+  UserAccount userAccount;
 
   CollectionReference _userCollection;
   CollectionReference _masterProductDictionary;
@@ -152,22 +168,18 @@ class AppModel extends Model {
     _userCollection.document(userId).snapshots().listen((userDoc) {
       if (!userDoc.exists) _createNewUserAccount(userId);
 
-      UserAccount userAccount = UserAccount.fromJson(userDoc.data);
+      userAccount = UserAccount.fromJson(userDoc.data);
       _loadData(userAccount);
 
       getApplicationDocumentsDirectory().then((appDir) {
         File userAccountFile = File('${appDir.path}/userAccount.json');
-        userAccountFile.writeAsString(json.encode(userAccount));
+        UserAccount accountFromFile = UserAccount.fromJson(json.decode(userAccountFile.readAsStringSync()));
+        if (userAccount != accountFromFile) userAccountFile.writeAsString(json.encode(userAccount));
       });
     });
   }
 
   void _loadData(UserAccount userAccount) {
-    Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).snapshots().listen((doc) {
-      info = InventoryDetails.fromJson(doc.data);
-      notifyListeners();
-    });
-
     _masterProductDictionary = Firestore.instance.collection('productDictionary');
     _productDictionary = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('productDictionary');
     _inventoryItemCollection = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('inventoryItems');
@@ -180,6 +192,13 @@ class AppModel extends Model {
         print('Loaded ${item.uuid}');
         notifyListeners();
         _syncProductCode(item.code);
+      });
+    });
+
+    userAccount.knownInventories.forEach((inventoryId) {
+      Firestore.instance.collection('inventory').document(inventoryId).snapshots().listen((doc) {
+        inventoryDetails[inventoryId] = InventoryDetails.fromJson(doc.data);
+        notifyListeners();
       });
     });
   }
@@ -276,6 +295,7 @@ class AppModel extends Model {
 
   String get userDisplayName => _gUser?.displayName ?? '';
   String get userImageUrl => _gUser?.photoUrl ?? '';
+  InventoryDetails get currentInventory => inventoryDetails[userAccount?.currentInventoryId ?? 0] ?? InventoryDetails();
 
   Future<InventoryItem> buildInventoryItem(BuildContext context) async {
     print('Scanning new item...');

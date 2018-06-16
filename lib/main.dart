@@ -43,7 +43,7 @@ class ListingsPage extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: ScopedModelDescendant<AppModel>(
-            builder: (context, child, model) => Text(model.info?.name ?? 'Inventory', style: TextStyle(fontFamily: 'Montserrat'),),
+            builder: (context, child, model) => Text(model.currentInventory?.name ?? 'Inventory', style: TextStyle(fontFamily: 'Montserrat'),),
           ),
         ),
         body:
@@ -73,6 +73,32 @@ class ListingsPage extends StatelessWidget {
               }
             }
           },
+        ),
+        drawer: Drawer(
+          child: ScopedModelDescendant<AppModel>(
+            builder: (context, child, model) => ListView.builder(
+              itemCount: 3 + model.userAccount.knownInventories.length,
+              itemBuilder: (context, index) {
+                switch(index) {
+                  case 0: return DrawerHeader(
+                    decoration: BoxDecoration(color: Theme.of(context).primaryColor),
+                    child: ListTile(
+                      leading: CircleAvatar(backgroundImage: CachedNetworkImageProvider(model.userImageUrl),),
+                      title: Text(model.userDisplayName, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0, color: Colors.white),),
+                    ),
+                  ); break;
+                  case 1: return ListTile(dense: true, title: Text('Add New Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),)); break;
+                  case 2: return Divider(); break;
+                  default:
+                    return ListTile(
+                      title: Text(model.inventoryDetails[model.userAccount.knownInventories[index-3]].toString(), style: TextStyle(fontFamily: 'Raleway', fontSize: 15.0,), softWrap: false,),
+                      selected: (model.userAccount.knownInventories[index-3] == model.currentInventory.uuid),
+                    );
+                    break;
+                }
+              }
+            ),
+          ),
         ),
       ),
     );
