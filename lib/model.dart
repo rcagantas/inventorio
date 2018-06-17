@@ -152,7 +152,7 @@ class AppModel extends Model {
   CollectionReference _inventoryItemCollection;
   GoogleSignInAccount _gUser;
 
-  set filter(String f) { _searchFilter = f; notifyListeners(); }
+  set filter(String f) { _searchFilter = f?.trim()?.toLowerCase(); notifyListeners(); }
 
   List<InventoryItem> get inventoryItems {
     List<InventoryItem> toSort = _inventoryItems.values.toList();
@@ -162,9 +162,9 @@ class AppModel extends Model {
         .where((item) {
           Product product = getAssociatedProduct(item.code);
           return (
-            (product.brand != null && product.brand.contains(_searchFilter)) ||
-            (product.name != null && product.name.contains(_searchFilter)) ||
-            (product.variant != null && product.variant.contains(_searchFilter))
+            (product.brand != null && product.brand.toLowerCase().contains(_searchFilter)) ||
+            (product.name != null && product.name.toLowerCase().contains(_searchFilter)) ||
+            (product.variant != null && product.variant.toLowerCase().contains(_searchFilter))
           );
         }).toList();
     }
