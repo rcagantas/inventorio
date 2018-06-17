@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:transparent_image/transparent_image.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:loader_search_bar/loader_search_bar.dart';
 
 void main() => runApp(MyApp());
 
@@ -49,10 +50,15 @@ class ListingsPage extends StatelessWidget {
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8,),
       child: Scaffold(
-        appBar: AppBar(
-          title: ScopedModelDescendant<AppModel>(
-            builder: (context, child, model) => Text(model.currentInventory?.name ?? 'Inventory', style: TextStyle(fontFamily: 'Montserrat'),),
+        appBar: SearchBar(
+          defaultAppBar: AppBar(
+            title: ScopedModelDescendant<AppModel>(
+              builder: (context, child, model) => Text(model.currentInventory?.name ?? 'Inventory', style: TextStyle(fontFamily: 'Montserrat'),),
+            ),
           ),
+          searchHint: 'Filter',
+          onActivatedChanged: (active) { if (!active) ModelFinder<AppModel>().of(context).filter = null; },
+          onQueryChanged: (query) { ModelFinder<AppModel>().of(context).filter = query; },
         ),
         body:
           ScopedModelDescendant<AppModel>(

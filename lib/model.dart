@@ -144,6 +144,7 @@ class AppModel extends Model {
   Uint8List imageData;
   Map<String, InventoryDetails> inventoryDetails = Map();
   UserAccount userAccount;
+  String _searchFilter;
 
   CollectionReference _userCollection;
   CollectionReference _masterProductDictionary;
@@ -151,9 +152,22 @@ class AppModel extends Model {
   CollectionReference _inventoryItemCollection;
   GoogleSignInAccount _gUser;
 
+  set filter(String f) { _searchFilter = f; notifyListeners(); }
+
   List<InventoryItem> get inventoryItems {
     List<InventoryItem> toSort = _inventoryItems.values.toList();
     toSort.sort((item1, item2) => item1.expiryDate.compareTo(item2.expiryDate));
+    if (_searchFilter != null && _searchFilter != '') {
+      return toSort
+        .where((item) {
+          Product product = getAssociatedProduct(item.code);
+          return (
+            (product.brand != null && product.brand.contains(_searchFilter)) ||
+            (product.name != null && product.name.contains(_searchFilter)) ||
+            (product.variant != null && product.variant.contains(_searchFilter))
+          );
+        }).toList();
+    }
     return toSort;
   }
 
