@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:inventorio/model.dart';
 import 'package:scoped_model/scoped_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:transparent_image/transparent_image.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 void main() => runApp(MyApp());
 
@@ -24,6 +27,11 @@ class MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+
     return ScopedModel<AppModel>(
       model: appModel,
       child: MaterialApp(
@@ -58,7 +66,7 @@ class ListingsPage extends StatelessWidget {
           backgroundColor: Theme.of(context).primaryColor,
           onPressed: () async {
             AppModel model = ModelFinder<AppModel>().of(context);
-            InventoryItem item = await model.buildInventoryItem(context);
+            InventoryItem item = await AppModelUtils.buildInventoryItem(context);
             if (item != null) {
               bool isProductIdentified = await model.isProductIdentified(item.code);
 
@@ -77,28 +85,63 @@ class ListingsPage extends StatelessWidget {
         drawer: Drawer(
           child: ScopedModelDescendant<AppModel>(
             builder: (context, child, model) {
-              int prepend = 4;
+              int prepend = 5;
               return ListView.builder(
+                padding: EdgeInsets.zero,
                 itemCount: prepend + model.userAccount.knownInventories.length,
                 itemBuilder: (context, index) {
                   switch(index) {
-                    case 0: return DrawerHeader(
-                      decoration: BoxDecoration(color: Theme.of(context).primaryColor),
-                      child: ListTile(
-                        leading: CircleAvatar(backgroundImage: CachedNetworkImageProvider(model.userImageUrl),),
-                        title: Text(model.userDisplayName, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0, color: Colors.white),),
-                      ),
-                    ); break;
-                    case 1: return ListTile(dense: true, title: Text('Create New Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),)); break;
-                    case 2: return ListTile(dense: true, title: Text('Scan Existing Inventory Code', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),)); break;
-                    case 3: return Divider(); break;
+                    case 0:
+                      return DrawerHeader(
+                        decoration: BoxDecoration(color: Theme.of(context).primaryColor),
+                        child: ListTile(
+                          leading: CircleAvatar(backgroundImage: CachedNetworkImageProvider(model.userImageUrl),),
+                          title: Text(model.userDisplayName, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0, color: Colors.white),),
+                        ),
+                      );
+                      break;
+                    case 1:
+                      return ListTile(
+                        dense: true,
+                        title: Text('Create New Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+                        onTap: () async {
+                          InventoryDetails inventory = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(null)));
+                          if (inventory != null) model.addInventory(inventory);
+                        },
+                      );
+                      break;
+                    case 2:
+                      return ListTile(
+
+                        dense: true,
+                        title: Text('Scan Existing Inventory Code', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+                        onTap: () {
+                          model.scanInventory();
+                          Navigator.of(context).pop();
+                        },
+                      );
+                      break;
+                    case 3:
+                      return ListTile(
+                        dense: true,
+                        title: Text('Edit/Share Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+                        onTap: () async {
+                          InventoryDetails details = model.currentInventory;
+                          InventoryDetails edited = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(details),));
+                          if (edited != null) model.addInventory(edited);
+                          Navigator.of(context).pop();
+                        },
+                      );
+                      break;
+                    case 4: return Divider(); break;
                     default:
                       return ListTile(
-                        title: Text(model.inventoryDetails[model.userAccount.knownInventories[index-prepend]].toString(), style: TextStyle(fontFamily: 'Raleway', fontSize: 15.0,), softWrap: false,),
+                        dense: true,
+                        title: Text(model.inventoryDetails[model.userAccount.knownInventories[index-prepend]].toString(), style: TextStyle(fontFamily: 'Raleway', fontSize: 18.0,), softWrap: false,),
                         selected: (model.userAccount.knownInventories[index-prepend] == model.currentInventory.uuid),
                         onTap: () {
-                          InventoryDetails details = model.inventoryDetails[model.userAccount.knownInventories[index-prepend]];
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(details),));
+                          model.changeCurrentInventory(model.userAccount.knownInventories[index-prepend]);
+                          Navigator.of(context).pop();
                         },
                       );
                       break;
@@ -195,7 +238,7 @@ class InventoryItemTile extends StatelessWidget {
               action: SnackBarAction(
                 label: "UNDO",
                 onPressed: () {
-                  item.uuid = model.uuidGenerator.v4();
+                  item.uuid = AppModelUtils.generateUuid();
                   model.addItem(item);
                 },
               )
@@ -205,7 +248,7 @@ class InventoryItemTile extends StatelessWidget {
           Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(product),))
             .then((editedProduct) {
               if (editedProduct != null) model.addProduct(editedProduct);
-              item.uuid = model.uuidGenerator.v4();
+              item.uuid = AppModelUtils.generateUuid();
               model.addItem(item);
           });
         }
@@ -233,16 +276,14 @@ class _ProductPageState extends State<ProductPage> {
     _brand = TextEditingController(text: staging.brand);
     _name = TextEditingController(text: staging.name);
     _variant = TextEditingController(text: staging.variant);
-  }
 
-  String _capitalizeWords(String sentence) {
-    if (sentence == null) return sentence;
-    return sentence.split(' ').map((w) => '${w[0].toUpperCase()}${w.substring(1)}').join(' ').trim();
+    ModelFinder<AppModel>().of(context).imageData = null;
   }
 
   @override
   Widget build(BuildContext context) {
     AppModel model = ModelFinder<AppModel>().of(context);
+
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8),
       child: Scaffold(
@@ -252,7 +293,7 @@ class _ProductPageState extends State<ProductPage> {
             ListTile(
               title: TextField(
                 controller: _brand,
-                onChanged: (s) => staging.brand = _capitalizeWords(s),
+                onChanged: (s) => staging.brand = AppModelUtils.capitalizeWords(s),
                 decoration: InputDecoration(hintText: 'Brand'),
                 style: TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
               ),
@@ -261,7 +302,7 @@ class _ProductPageState extends State<ProductPage> {
             ListTile(
               title: TextField(
                 controller: _name,
-                onChanged: (s) => staging.name = _capitalizeWords(s),
+                onChanged: (s) => staging.name = AppModelUtils.capitalizeWords(s),
                 decoration: InputDecoration(hintText: 'Product Name'),
                 style: TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
               ),
@@ -270,7 +311,7 @@ class _ProductPageState extends State<ProductPage> {
             ListTile(
               title: TextField(
                 controller: _variant,
-                onChanged: (s) => staging.variant = _capitalizeWords(s),
+                onChanged: (s) => staging.variant = AppModelUtils.capitalizeWords(s),
                 decoration: InputDecoration(hintText: 'Variant'),
                 style: TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
               ),
@@ -289,7 +330,7 @@ class _ProductPageState extends State<ProductPage> {
                   });
                 },
                 child: SizedBox(
-                  height: 300.0, width: 300.0,
+                  width: 300.0, height: 300.0,
                   child:
                     Stack(children: <Widget>[
                       Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 180.0,)),
@@ -305,7 +346,7 @@ class _ProductPageState extends State<ProductPage> {
           ],
         ),
         floatingActionButton: FloatingActionButton(
-          child: Icon(Icons.add),
+          child: Icon(Icons.input),
           onPressed: () => Navigator.pop(context, staging),
         ),
       )
@@ -326,8 +367,33 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
   @override
   void initState() {
     super.initState();
-    staging = widget.inventoryDetails;
+    staging = widget.inventoryDetails == null
+      ? new InventoryDetails(uuid: AppModelUtils.generateUuid())
+      : widget.inventoryDetails;
     _name = TextEditingController(text: staging.name);
+  }
+
+  Future<bool> _sureDialog() async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Are you sure?', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+          actions: <Widget>[
+            FlatButton(
+              child: Text('Unsubscribe', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+              onPressed: () { Navigator.of(context).pop(true); },
+            ),
+            FlatButton(
+              color: Theme.of(context).primaryColor,
+              child: Text('Cancel', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0, color: Colors.white),),
+              onPressed: () { Navigator.of(context).pop(false); },
+            ),
+          ],
+        );
+      }
+    );
   }
 
   @override
@@ -335,19 +401,45 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8),
       child: Scaffold(
-        appBar: AppBar(title: Text(widget.inventoryDetails.uuid, style: TextStyle(fontFamily: 'Montserrat', fontSize: 15.0),),),
+        appBar: AppBar(title: Text(staging.uuid, style: TextStyle(fontFamily: 'Montserrat', fontSize: 15.0),),),
         body: ListView(
           children: <Widget>[
             ListTile(
               title: TextField(
                 controller: _name,
-                onChanged: (s) => staging.name = s,
-                decoration: InputDecoration(hintText: 'Variant'),
+                onChanged: (s) => staging.name = AppModelUtils.capitalizeWords(s),
+                decoration: InputDecoration(hintText: 'New Inventory Name'),
                 style: TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
               ),
               trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () => _name.clear()),
             ),
+            Divider(),
+            ListTile(title: Text('Share this inventory by scanning the image below.', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),),
+            Center(
+              child: QrImage(
+                data: staging.uuid,
+                size: 250.0,
+              ),
+            ),
+            widget.inventoryDetails == null
+            ? Container(width: 0.0, height: 0.0,)
+            : ListTile(
+              title: RaisedButton(
+                child: Text('Unsubscribe to inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+                onPressed: () async {
+                  if (await _sureDialog()) {
+                    AppModel model = ModelFinder<AppModel>().of(context);
+                    model.unsubscribeInventory(staging.uuid);
+                    Navigator.pop(context, null);
+                  }
+                }
+              ),
+            )
           ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          child: Icon(Icons.input),
+          onPressed: () => Navigator.pop(context, staging),
         ),
       ),
     );

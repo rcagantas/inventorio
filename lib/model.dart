@@ -64,7 +64,7 @@ class InventoryDetails extends Object with _$InventoryDetailsSerializerMixin {
   String uuid;
   String name;
   String createdBy;
-  InventoryDetails({this.uuid, this.name, this.createdBy});
+  InventoryDetails({@required this.uuid, this.name, this.createdBy});
   factory InventoryDetails.fromJson(Map<String, dynamic> json) => _$InventoryDetailsFromJson(json);
 
   @override String toString() => '$name   $uuid';
@@ -94,9 +94,50 @@ class UserAccount extends Object with _$UserAccountSerializerMixin {
   }
 }
 
-class AppModel extends Model {
-  final Uuid uuidGenerator = Uuid();
+class AppModelUtils {
+  static Uuid _uuid = new Uuid();
+  static String generateUuid() => _uuid.v4();
 
+  static Future<InventoryItem> buildInventoryItem(BuildContext context) async {
+    print('Scanning new item...');
+    String code = await BarcodeScanner.scan();
+    print('Code: $code');
+    if (code == null) return null;
+
+    DateTime expiryDate = await _getExpiryDate(context);
+    if (expiryDate == null) return null;
+
+    String uuid = AppModelUtils.generateUuid();
+    InventoryItem item = InventoryItem(uuid: uuid, code: code, expiryMs: expiryDate.millisecondsSinceEpoch);
+    return item;
+  }
+
+  static DateTime _lastSelectedDate = DateTime.now();
+  static Future<DateTime> _getExpiryDate(BuildContext context) async {
+    print('Getting expiry date');
+    DateTime expiryDate = _lastSelectedDate;
+    try {
+      expiryDate = await showDatePicker(
+          context: context,
+          initialDate: _lastSelectedDate,
+          firstDate:  DateTime.now().subtract(Duration(days: 1)),
+          lastDate: _lastSelectedDate.add(Duration(days: 365 * 10))
+      );
+      _lastSelectedDate = expiryDate;
+      print('Setting Expiry Date: [$expiryDate]');
+    } catch (e) {
+      print('Unknown exception $e');
+    }
+    return expiryDate;
+  }
+
+  static String capitalizeWords(String sentence) {
+    if (sentence == null) return sentence;
+    return sentence.split(' ').map((w) => '${w[0].toUpperCase()}${w.substring(1)}').join(' ').trim();
+  }
+}
+
+class AppModel extends Model {
   Map<String, InventoryItem> _inventoryItems = Map();
   Map<String, Product> _products = Map();
   Map<String, Product> _productsMaster = Map();
@@ -153,7 +194,7 @@ class AppModel extends Model {
   }
 
   void _createNewUserAccount(String userId) {
-    UserAccount userAccount = UserAccount(userId, uuidGenerator.v4());
+    UserAccount userAccount = UserAccount(userId, AppModelUtils.generateUuid());
     _userCollection.document(userId).setData(userAccount.toJson());
 
     Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).setData(InventoryDetails(
@@ -184,7 +225,7 @@ class AppModel extends Model {
     _productDictionary = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('productDictionary');
     _inventoryItemCollection = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('inventoryItems');
     _inventoryItemCollection.snapshots().listen((snap) {
-      print('New inventory snapshot. Clearing.');
+      print('New inventory snapshot from ${userAccount.currentInventoryId}. Clearing.');
       _inventoryItems.clear();
       snap.documents.forEach((doc) {
         InventoryItem item = InventoryItem.fromJson(doc.data);
@@ -254,12 +295,13 @@ class AppModel extends Model {
 
   Future<Product> _uploadProductImage(Product product) async {
     if (imageData == null || imageData.isEmpty) return product;
-    String uuid = uuidGenerator.v4();
+    String uuid = AppModelUtils.generateUuid();
     String fileName = '${product.code}_$uuid.jpg';
     StorageReference storage = FirebaseStorage.instance.ref().child('images').child(fileName);
     StorageUploadTask uploadTask = storage.putData(imageData);
     UploadTaskSnapshot uploadSnap = await uploadTask.future;
     product.imageUrl = uploadSnap.downloadUrl.toString();
+    imageData = null;
     print('Uploaded $fileName to ${product.imageUrl}');
     return product;
   }
@@ -295,38 +337,41 @@ class AppModel extends Model {
 
   String get userDisplayName => _gUser?.displayName ?? '';
   String get userImageUrl => _gUser?.photoUrl ?? '';
-  InventoryDetails get currentInventory => inventoryDetails[userAccount?.currentInventoryId ?? 0] ?? InventoryDetails();
+  InventoryDetails get currentInventory => inventoryDetails[userAccount?.currentInventoryId ?? 0] ?? InventoryDetails(uuid: AppModelUtils.generateUuid());
 
-  Future<InventoryItem> buildInventoryItem(BuildContext context) async {
-    print('Scanning new item...');
-    String code = await BarcodeScanner.scan();
-    print('Code: $code');
-    if (code == null) return null;
+  void addInventory(InventoryDetails inventory) {
+    if (userAccount == null || inventory == null) return;
+    userAccount.knownInventories.add(inventory.uuid);
+    userAccount.currentInventoryId = inventory.uuid;
+    _userCollection.document(userAccount.userId).setData(userAccount.toJson());
 
-    DateTime expiryDate = await getExpiryDate(context);
-    if (expiryDate == null) return null;
-
-    String uuid = uuidGenerator.v4();
-    InventoryItem item = InventoryItem(uuid: uuid, code: code, expiryMs: expiryDate.millisecondsSinceEpoch);
-    return item;
+    inventory.createdBy = userAccount.userId;
+    Firestore.instance.collection('inventory').document(inventory.uuid).setData(inventory.toJson());
+    print('Setting inventory: ${inventory.uuid}');
   }
 
-  DateTime _lastSelectedDate = DateTime.now();
-  Future<DateTime> getExpiryDate(BuildContext context) async {
-    print('Getting expiry date');
-    DateTime expiryDate = _lastSelectedDate;
-    try {
-      expiryDate = await showDatePicker(
-        context: context,
-        initialDate: _lastSelectedDate,
-        firstDate:  DateTime.now().subtract(Duration(days: 1)),
-        lastDate: _lastSelectedDate.add(Duration(days: 365 * 10))
-      );
-      _lastSelectedDate = expiryDate;
-      print('Setting Expiry Date: [$expiryDate]');
-    } catch (e) {
-      print('Unknown exception $e');
-    }
-    return expiryDate;
+  void changeCurrentInventory(String code) {
+    if (userAccount == null || code == null) return;
+    if (!userAccount.knownInventories.contains(code)) return;
+    userAccount.currentInventoryId = code;
+    _userCollection.document(userAccount.userId).setData(userAccount.toJson());
+  }
+
+  void unsubscribeInventory(String code) {
+    if (userAccount == null || code == null) return;
+    if (userAccount.knownInventories.length == 1) return;
+    userAccount.knownInventories.remove(code);
+    userAccount.currentInventoryId = userAccount.knownInventories[0];
+    _userCollection.document(userAccount.userId).setData(userAccount.toJson());
+    print('Unsubscribing ${userAccount.userId} from inventory $code');
+  }
+
+  void scanInventory() async {
+    if (userAccount == null) return;
+    String code = await BarcodeScanner.scan();
+    if (!userAccount.knownInventories.contains(code)) userAccount.knownInventories.add(code);
+    userAccount.currentInventoryId = code;
+    print('Scanned inventory code $code');
+    _userCollection.document(userAccount.userId).setData(userAccount.toJson());
   }
 }
