@@ -192,9 +192,9 @@ class InventoryItemTile extends StatelessWidget {
           Expanded(
             flex: 3,
             child: Column(children: <Widget>[
-                product?.brand == null?   Container(): Text(product.brand,   style: TextStyle(fontFamily: 'Raleway',    fontSize: 15.0), textAlign: TextAlign.center,),
+                product?.brand == null?   Container(): Text(product.brand,   style: TextStyle(fontFamily: 'Raleway',    fontSize: 16.0), textAlign: TextAlign.center,),
                 product?.name == null?    Container(): Text(product.name,    style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0), textAlign: TextAlign.center,),
-                product?.variant == null? Container(): Text(product.variant, style: TextStyle(fontFamily: 'Montserrat', fontSize: 15.0), textAlign: TextAlign.center,),
+                product?.variant == null? Container(): Text(product.variant, style: TextStyle(fontFamily: 'Raleway',    fontSize: 16.0), textAlign: TextAlign.center,),
               ],
             ),
           ),
@@ -303,7 +303,7 @@ class _ProductPageState extends State<ProductPage> {
                 decoration: InputDecoration(hintText: 'Brand'),
                 style: TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
               ),
-              trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () => _brand.clear())
+              trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _brand.clear(); staging.brand = null; }),
             ),
             ListTile(
               title: TextField(
@@ -312,7 +312,7 @@ class _ProductPageState extends State<ProductPage> {
                 decoration: InputDecoration(hintText: 'Product Name'),
                 style: TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
               ),
-              trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () => _name.clear())
+              trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _name.clear(); staging.name = null; }),
             ),
             ListTile(
               title: TextField(
@@ -321,7 +321,7 @@ class _ProductPageState extends State<ProductPage> {
                 decoration: InputDecoration(hintText: 'Variant'),
                 style: TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
               ),
-              trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () => _variant.clear()),
+              trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _variant.clear(); staging.variant = null; }),
             ),
             Divider(),
             ListTile(
@@ -417,7 +417,7 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
                 decoration: InputDecoration(hintText: 'New Inventory Name'),
                 style: TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
               ),
-              trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () => _name.clear()),
+              trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _name.clear(); staging.name = null; }),
             ),
             Divider(),
             ListTile(title: Text('Share this inventory by scanning the image below.', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),),

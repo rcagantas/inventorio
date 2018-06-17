@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:scoped_model/scoped_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:barcode_scan/barcode_scan.dart';
 import 'package:path_provider/path_provider.dart';
@@ -132,7 +132,7 @@ class AppModelUtils {
   }
 
   static String capitalizeWords(String sentence) {
-    if (sentence == null) return sentence;
+    if (sentence == null || sentence.trim() == '') return sentence;
     return sentence.split(' ').map((w) => '${w[0].toUpperCase()}${w.substring(1)}').join(' ').trim();
   }
 }
@@ -172,8 +172,8 @@ class AppModel extends Model {
   }
 
   AppModel() {
-    _cleanupOldImages();
     _signIn().then((id) => _loadCollections(id));
+    _cleanupOldImages();
   }
 
   Future<String> _signIn() async {
@@ -187,6 +187,8 @@ class AppModel extends Model {
       _gUser = _gUser == null ? await googleSignIn.signIn() : _gUser;
       userId = _gUser.id;
       notifyListeners();
+
+      SharedPreferences.getInstance().then((save) => save.setString('inventorio.userId', userId));
       _gUser.authentication.then((auth) {
         print('Firebase sign-in with Google: $userId');
         FirebaseAuth.instance.signInWithGoogle(
@@ -195,13 +197,10 @@ class AppModel extends Model {
         );
       });
     } else {
-      Directory appDir = await getApplicationDocumentsDirectory();
-      File userAccountFile = File('${appDir.path}/userAccount.json');
-      if (userAccountFile.existsSync()) {
-        print('Loading last known user from file.');
-        UserAccount account = UserAccount.fromJson(json.decode(userAccountFile.readAsStringSync()));
-        userId = account.userId;
-      }
+
+      print('Loading last known user from shared preferences.');
+      SharedPreferences save = await SharedPreferences.getInstance();
+      userId = save.getString('inventorio.userId');
     }
 
     return userId;
@@ -225,12 +224,6 @@ class AppModel extends Model {
 
       userAccount = UserAccount.fromJson(userDoc.data);
       _loadData(userAccount);
-
-      getApplicationDocumentsDirectory().then((appDir) {
-        File userAccountFile = File('${appDir.path}/userAccount.json');
-        UserAccount accountFromFile = UserAccount.fromJson(json.decode(userAccountFile.readAsStringSync()));
-        if (userAccount != accountFromFile) userAccountFile.writeAsString(json.encode(userAccount));
-      });
     });
   }
 
@@ -244,7 +237,6 @@ class AppModel extends Model {
       snap.documents.forEach((doc) {
         InventoryItem item = InventoryItem.fromJson(doc.data);
         _inventoryItems[doc.documentID] = item;
-        print('Loaded ${item.uuid}');
         notifyListeners();
         _syncProductCode(item.code);
       });
@@ -327,7 +319,7 @@ class AppModel extends Model {
 
     _uploadProductImage(product).then((product) {
 
-      print('Trying to add product ${product.code}');
+      print('Trying to set product ${product.code} with ${product.toJson()}');
       _masterProductDictionary.document(product.code).get().then((masterDoc) {
         if (masterDoc.exists) {
           Product masterProduct = Product.fromJson(masterDoc.data);
