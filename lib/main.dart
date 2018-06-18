@@ -72,6 +72,7 @@ class ListingsPage extends StatelessWidget {
           backgroundColor: Theme.of(context).primaryColor,
           onPressed: () async {
             AppModel model = ModelFinder<AppModel>().of(context);
+            if (!model.isSignedIn) { model.signIn(); return; }
             InventoryItem item = await AppModelUtils.buildInventoryItem(context);
             if (item != null) {
               bool isProductIdentified = await model.isProductIdentified(item.code);
@@ -94,49 +95,60 @@ class ListingsPage extends StatelessWidget {
               int prepend = 5;
               return ListView.builder(
                 padding: EdgeInsets.zero,
-                itemCount: prepend + model.userAccount.knownInventories.length,
+                itemCount: model.isSignedIn? prepend + model.userAccount.knownInventories.length: 1,
                 itemBuilder: (context, index) {
                   switch(index) {
                     case 0:
                       return DrawerHeader(
                         decoration: BoxDecoration(color: Theme.of(context).primaryColor),
-                        child: ListTile(
-                          leading: CircleAvatar(backgroundImage: CachedNetworkImageProvider(model.userImageUrl),),
-                          title: Text(model.userDisplayName, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0, color: Colors.white),),
-                        ),
+                        child: model.isSignedIn?
+                          ListTile(
+                            title: Text('Sign-in with another account', style: TextStyle(fontFamily: 'Montserrat', fontSize: 20.0, color: Colors.white,),),
+                            subtitle: Text('Currently signed in as ${model.userDisplayName}', style: TextStyle(fontFamily: 'Montserrat', fontSize: 15.0, color: Colors.white,),),
+                            onTap: () { model.signOut(); Navigator.of(context).pop(); },
+                          ) :
+                          ListTile(
+                            title: Text('Login with Google', style: TextStyle(fontFamily: 'Montserrat', fontSize: 25.0, color: Colors.white,),),
+                            onTap: () { model.signIn(); Navigator.of(context).pop(); },
+                          )
                       );
                       break;
                     case 1:
-                      return ListTile(
-                        dense: true,
-                        title: Text('Create New Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
-                        onTap: () async {
-                          InventoryDetails inventory = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(null)));
-                          if (inventory != null) model.addInventory(inventory);
-                        },
+                      return Container(
+                        decoration: BoxDecoration(color: Theme.of(context).secondaryHeaderColor),
+                        child: ListTile(
+                          dense: true,
+                          title: Text('Create New Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0,),),
+                          onTap: () async {
+                            InventoryDetails inventory = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(null)));
+                            if (inventory != null) model.addInventory(inventory);
+                          },
+                        ),
                       );
                       break;
                     case 2:
-                      return ListTile(
-
-                        dense: true,
-                        title: Text('Scan Existing Inventory Code', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
-                        onTap: () {
-                          model.scanInventory();
-                          Navigator.of(context).pop();
-                        },
+                      return Container(
+                        decoration: BoxDecoration(color: Theme.of(context).secondaryHeaderColor),
+                        child: ListTile(
+                          dense: true,
+                          title: Text('Scan Existing Inventory Code', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+                          onTap: () { model.scanInventory().then((code) { if (code != null ) Navigator.of(context).pop(); }); },
+                        ),
                       );
                       break;
                     case 3:
-                      return ListTile(
-                        dense: true,
-                        title: Text('Edit/Share Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
-                        onTap: () async {
-                          InventoryDetails details = model.currentInventory;
-                          InventoryDetails edited = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(details),));
-                          if (edited != null) model.addInventory(edited);
-                          Navigator.of(context).pop();
-                        },
+                      return Container(
+                        decoration: BoxDecoration(color: Theme.of(context).secondaryHeaderColor),
+                        child: ListTile(
+                          dense: true,
+                          title: Text('Edit/Share Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+                          onTap: () async {
+                            Navigator.of(context).pop();
+                            InventoryDetails details = model.currentInventory;
+                            InventoryDetails edited = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(details),));
+                            if (edited != null) model.addInventory(edited);
+                          },
+                        ),
                       );
                       break;
                     case 4: return Divider(); break;

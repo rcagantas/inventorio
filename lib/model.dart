@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -7,12 +6,10 @@ import 'package:scoped_model/scoped_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:barcode_scan/barcode_scan.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:connectivity/connectivity.dart';
 import 'package:quiver/core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:intl/intl.dart';
@@ -151,6 +148,7 @@ class AppModel extends Model {
   CollectionReference _productDictionary;
   CollectionReference _inventoryItemCollection;
   GoogleSignInAccount _gUser;
+  GoogleSignIn _googleSignIn;
 
   set filter(String f) { _searchFilter = f?.trim()?.toLowerCase(); notifyListeners(); }
 
@@ -172,39 +170,36 @@ class AppModel extends Model {
   }
 
   AppModel() {
-    _signIn().then((id) => _loadCollections(id));
-    _cleanupOldImages();
-  }
-
-  Future<String> _signIn() async {
-    String userId;
-
-    ConnectivityResult connectivity = await (Connectivity().checkConnectivity());
-    if (connectivity != ConnectivityResult.none) {
-      GoogleSignIn googleSignIn = GoogleSignIn();
-      _gUser = googleSignIn.currentUser;
-      _gUser = _gUser == null ? await googleSignIn.signInSilently() : _gUser;
-      _gUser = _gUser == null ? await googleSignIn.signIn() : _gUser;
-      userId = _gUser.id;
-      notifyListeners();
-
-      SharedPreferences.getInstance().then((save) => save.setString('inventorio.userId', userId));
-      _gUser.authentication.then((auth) {
-        print('Firebase sign-in with Google: $userId');
-        FirebaseAuth.instance.signInWithGoogle(
-          idToken: auth.idToken,
-          accessToken: auth.accessToken
-        );
-      });
-    } else {
-
+    _googleSignIn = GoogleSignIn();
+    _googleSignIn.signInSilently().timeout(Duration(seconds: 30), onTimeout: () {
       print('Loading last known user from shared preferences.');
-      SharedPreferences save = await SharedPreferences.getInstance();
-      userId = save.getString('inventorio.userId');
-    }
+      SharedPreferences.getInstance().then((save) {
+        String userId = save.getString('inventorio.userId');
+        _loadCollections(userId);
+      });
+    });
 
-    return userId;
+    _googleSignIn.onCurrentUserChanged.listen((account) {
+      print('Google sign-in account id: ${account.id}');
+      _gUser = account;
+      _gUser.authentication.then((auth) {
+        print('Firebase sign-in with Google: ${account.id}');
+        FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
+      });
+
+      String userId = account.id;
+      SharedPreferences.getInstance().then((save) => save.setString('inventorio.userId', userId));
+      _loadCollections(userId);
+    });
   }
+
+  void signIn() { _googleSignIn.signIn(); }
+  void signOut() { _googleSignIn.disconnect().then((account) { notifyListeners(); }); }
+
+  bool get isSignedIn => _gUser != null;
+  String get userDisplayName => _gUser?.displayName ?? '';
+  String get userImageUrl => _gUser?.photoUrl ?? '';
+  InventoryDetails get currentInventory => inventoryDetails[userAccount?.currentInventoryId ?? 0] ?? InventoryDetails(uuid: AppModelUtils.generateUuid());
 
   void _createNewUserAccount(String userId) {
     UserAccount userAccount = UserAccount(userId, AppModelUtils.generateUuid());
@@ -247,19 +242,6 @@ class AppModel extends Model {
         inventoryDetails[inventoryId] = InventoryDetails.fromJson(doc.data);
         notifyListeners();
       });
-    });
-  }
-
-  void _cleanupOldImages() {
-    getApplicationDocumentsDirectory().then((appDir) {
-      Directory imagePickerTmpDir = Directory(appDir.parent.path + '/tmp');
-      imagePickerTmpDir.list()
-        .where((e) => e is File && e.path.endsWith('jpg'))
-        .map((e) => e as File)
-        .forEach((f) {
-          print('Deleting ${f.path}');
-          f.delete();
-        });
     });
   }
 
@@ -341,10 +323,6 @@ class AppModel extends Model {
     return _products.containsKey(code)? _products[code] : _productsMaster[code];
   }
 
-  String get userDisplayName => _gUser?.displayName ?? '';
-  String get userImageUrl => _gUser?.photoUrl ?? '';
-  InventoryDetails get currentInventory => inventoryDetails[userAccount?.currentInventoryId ?? 0] ?? InventoryDetails(uuid: AppModelUtils.generateUuid());
-
   void addInventory(InventoryDetails inventory) {
     if (userAccount == null || inventory == null) return;
     userAccount.knownInventories.add(inventory.uuid);
@@ -372,12 +350,13 @@ class AppModel extends Model {
     print('Unsubscribing ${userAccount.userId} from inventory $code');
   }
 
-  void scanInventory() async {
-    if (userAccount == null) return;
+  Future<String> scanInventory() async {
+    if (userAccount == null) return null;
     String code = await BarcodeScanner.scan();
     if (!userAccount.knownInventories.contains(code)) userAccount.knownInventories.add(code);
     userAccount.currentInventoryId = code;
     print('Scanned inventory code $code');
     _userCollection.document(userAccount.userId).setData(userAccount.toJson());
+    return code;
   }
 }
