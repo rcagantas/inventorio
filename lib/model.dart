@@ -138,10 +138,11 @@ class AppModel extends Model {
   Map<String, InventoryItem> _inventoryItems = Map();
   Map<String, Product> _products = Map();
   Map<String, Product> _productsMaster = Map();
-  Uint8List imageData;
   Map<String, InventoryDetails> inventoryDetails = Map();
-  UserAccount userAccount;
   String _searchFilter;
+
+  Uint8List imageData;
+  UserAccount userAccount;
 
   CollectionReference _userCollection;
   CollectionReference _masterProductDictionary;
@@ -169,17 +170,23 @@ class AppModel extends Model {
     return toSort;
   }
 
+  void _loadFromPreferences() {
+    print('Loading last known user from shared preferences.');
+    SharedPreferences.getInstance().then((save) {
+      String userId = save.getString('inventorio.userId');
+      _loadCollections(userId);
+    });
+  }
+
   AppModel() {
     _googleSignIn = GoogleSignIn();
-    _googleSignIn.signInSilently().timeout(Duration(seconds: 30), onTimeout: () {
-      print('Loading last known user from shared preferences.');
-      SharedPreferences.getInstance().then((save) {
-        String userId = save.getString('inventorio.userId');
-        _loadCollections(userId);
-      });
-    });
-
     _googleSignIn.onCurrentUserChanged.listen((account) {
+      if (account == null) {
+        _init();
+        _googleSignIn.signIn();
+        return;
+      }
+
       print('Google sign-in account id: ${account.id}');
       _gUser = account;
       _gUser.authentication.then((auth) {
@@ -191,10 +198,28 @@ class AppModel extends Model {
       SharedPreferences.getInstance().then((save) => save.setString('inventorio.userId', userId));
       _loadCollections(userId);
     });
+
+    _loadFromPreferences();
+    _googleSignIn.signInSilently(suppressErrors: true);
+  }
+
+  void _init() {
+    _gUser = null;
+    _inventoryItems.clear();
+    _products.clear();
+    _productsMaster.clear();
+    _inventoryItems.clear();
+    _userCollection = null;
+    _masterProductDictionary = null;
+    _productDictionary = null;
+    _inventoryItemCollection = null;
+
+    userAccount = null;
+    notifyListeners();
   }
 
   void signIn() { _googleSignIn.signIn(); }
-  void signOut() { _googleSignIn.disconnect().then((account) { notifyListeners(); }); }
+  void signOut() { _googleSignIn.signOut(); }
 
   bool get isSignedIn => _gUser != null;
   String get userDisplayName => _gUser?.displayName ?? '';
@@ -216,7 +241,6 @@ class AppModel extends Model {
     _userCollection = Firestore.instance.collection('users');
     _userCollection.document(userId).snapshots().listen((userDoc) {
       if (!userDoc.exists) _createNewUserAccount(userId);
-
       userAccount = UserAccount.fromJson(userDoc.data);
       _loadData(userAccount);
     });

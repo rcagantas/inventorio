@@ -95,7 +95,7 @@ class ListingsPage extends StatelessWidget {
               int prepend = 5;
               return ListView.builder(
                 padding: EdgeInsets.zero,
-                itemCount: model.isSignedIn? prepend + model.userAccount.knownInventories.length: 1,
+                itemCount: prepend + model.userAccount.knownInventories.length,
                 itemBuilder: (context, index) {
                   switch(index) {
                     case 0:
@@ -105,11 +105,11 @@ class ListingsPage extends StatelessWidget {
                           ListTile(
                             title: Text('Sign-in with another account', style: TextStyle(fontFamily: 'Montserrat', fontSize: 20.0, color: Colors.white,),),
                             subtitle: Text('Currently signed in as ${model.userDisplayName}', style: TextStyle(fontFamily: 'Montserrat', fontSize: 15.0, color: Colors.white,),),
-                            onTap: () { model.signOut(); Navigator.of(context).pop(); },
+                            onTap: () { Navigator.of(context).pop(); model.signOut(); },
                           ) :
                           ListTile(
                             title: Text('Login with Google', style: TextStyle(fontFamily: 'Montserrat', fontSize: 25.0, color: Colors.white,),),
-                            onTap: () { model.signIn(); Navigator.of(context).pop(); },
+                            onTap: () { Navigator.of(context).pop(); model.signIn(); },
                           )
                       );
                       break;
@@ -120,6 +120,7 @@ class ListingsPage extends StatelessWidget {
                           dense: true,
                           title: Text('Create New Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0,),),
                           onTap: () async {
+                            Navigator.of(context).pop();
                             InventoryDetails inventory = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(null)));
                             if (inventory != null) model.addInventory(inventory);
                           },
@@ -132,7 +133,7 @@ class ListingsPage extends StatelessWidget {
                         child: ListTile(
                           dense: true,
                           title: Text('Scan Existing Inventory Code', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
-                          onTap: () { model.scanInventory().then((code) { if (code != null ) Navigator.of(context).pop(); }); },
+                          onTap: () { Navigator.of(context).pop(); model.scanInventory(); },
                         ),
                       );
                       break;
