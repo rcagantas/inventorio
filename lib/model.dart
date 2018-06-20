@@ -353,24 +353,24 @@ class AppModel extends Model {
 
   Future<bool> sureDialog(BuildContext context, String question, String yes, String no) async {
     return showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) {
-          return AlertDialog(
-            title: Text(question, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
-            actions: <Widget>[
-              FlatButton(
-                child: Text(yes, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
-                onPressed: () { Navigator.of(context).pop(true); },
-              ),
-              FlatButton(
-                color: Theme.of(context).primaryColor,
-                child: Text(no, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0, color: Colors.white),),
-                onPressed: () { Navigator.of(context).pop(false); },
-              ),
-            ],
-          );
-        }
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(question, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+          actions: <Widget>[
+            FlatButton(
+              child: Text(yes, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+              onPressed: () { Navigator.of(context).pop(true); },
+            ),
+            FlatButton(
+              color: Theme.of(context).primaryColor,
+              child: Text(no, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0, color: Colors.white),),
+              onPressed: () { Navigator.of(context).pop(false); },
+            ),
+          ],
+        );
+      }
     );
   }
 
