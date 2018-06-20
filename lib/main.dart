@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -91,87 +90,82 @@ class ListingsPage extends StatelessWidget {
         ),
         drawer: Drawer(
           child: ScopedModelDescendant<AppModel>(
-            builder: (context, child, model) {
-              int prepend = 5;
-              return ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: prepend + model.userAccount.knownInventories.length,
-                itemBuilder: (context, index) {
-                  switch(index) {
-                    case 0:
-                      return DrawerHeader(
-                        decoration: BoxDecoration(color: Theme.of(context).primaryColor),
-                        child: model.isSignedIn?
-                          ListTile(
-                            title: Text('Sign-in with another account', style: TextStyle(fontFamily: 'Montserrat', fontSize: 20.0, color: Colors.white,),),
-                            subtitle: Text('Currently signed in as ${model.userDisplayName}', style: TextStyle(fontFamily: 'Montserrat', fontSize: 15.0, color: Colors.white,),),
-                            onTap: () { Navigator.of(context).pop(); model.signOut(); },
-                          ) :
-                          ListTile(
-                            title: Text('Login with Google', style: TextStyle(fontFamily: 'Montserrat', fontSize: 25.0, color: Colors.white,),),
-                            onTap: () { Navigator.of(context).pop(); model.signIn(); },
-                          )
-                      );
-                      break;
-                    case 1:
-                      return Container(
-                        decoration: BoxDecoration(color: Theme.of(context).secondaryHeaderColor),
-                        child: ListTile(
-                          dense: true,
-                          title: Text('Create New Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0,),),
-                          onTap: () async {
-                            Navigator.of(context).pop();
-                            InventoryDetails inventory = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(null)));
-                            if (inventory != null) model.addInventory(inventory);
-                          },
-                        ),
-                      );
-                      break;
-                    case 2:
-                      return Container(
-                        decoration: BoxDecoration(color: Theme.of(context).secondaryHeaderColor),
-                        child: ListTile(
-                          dense: true,
-                          title: Text('Scan Existing Inventory Code', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
-                          onTap: () { Navigator.of(context).pop(); model.scanInventory(); },
-                        ),
-                      );
-                      break;
-                    case 3:
-                      return Container(
-                        decoration: BoxDecoration(color: Theme.of(context).secondaryHeaderColor),
-                        child: ListTile(
-                          dense: true,
-                          title: Text('Edit/Share Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
-                          onTap: () async {
-                            Navigator.of(context).pop();
-                            InventoryDetails details = model.currentInventory;
-                            InventoryDetails edited = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(details),));
-                            if (edited != null) model.addInventory(edited);
-                          },
-                        ),
-                      );
-                      break;
-                    case 4: return Divider(); break;
-                    default:
-                      return ListTile(
-                        dense: true,
-                        title: Text(model.inventoryDetails[model.userAccount.knownInventories[index-prepend]].toString(), style: TextStyle(fontFamily: 'Raleway', fontSize: 18.0,), softWrap: false,),
-                        selected: (model.userAccount.knownInventories[index-prepend] == model.currentInventory.uuid),
-                        onTap: () {
-                          model.changeCurrentInventory(model.userAccount.knownInventories[index-prepend]);
-                          Navigator.of(context).pop();
-                        },
-                      );
-                      break;
-                  }
-                }
-              );
-            },
+            builder: (context, child, model) => ListView(
+              padding: EdgeInsets.zero,
+              children: _buildDrawerItems(context, model),
+            ),
           ),
         ),
       ),
     );
+  }
+
+  List<Widget> _buildDrawerItems(BuildContext context, AppModel model) {
+    List<Widget> widgets = [
+      DrawerHeader(
+        decoration: BoxDecoration(color: Theme.of(context).primaryColor),
+        child: ListTile(
+          title: Text(model.currentInventory.name, style: TextStyle(fontFamily: 'Montserrat', fontSize: 25.0, color: Colors.white, fontWeight: FontWeight.bold),),
+          subtitle: Text(model.currentInventory.uuid, style: TextStyle(fontFamily: 'Raleway', fontSize: 15.0, color: Colors.white),),
+        ),
+      ),
+      ListTile(
+        title: Text('Login with Google', style: TextStyle(fontFamily: 'Montserrat', fontSize: 20.0),),
+        subtitle: !model.isSignedIn? null: Text('Currently logged in as ' + model.userDisplayName, style: TextStyle(fontFamily: 'Raleway', fontSize: 16.0),),
+        onTap: () {
+          Navigator.of(context).pop(); model.signIn();
+          if (model.isSignedIn) {
+            model.sureDialog(context, 'Login with another account?', 'Sign-out', 'Cancel').then((sure) {
+              if (sure) model.signOut();
+            });
+          } else {
+            model.signIn();
+          }
+        },
+      ),
+      ListTile(
+        dense: true,
+        title: Text('Create New Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0,),),
+        onTap: () async {
+          Navigator.of(context).pop();
+          InventoryDetails inventory = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(null)));
+          if (inventory != null) model.addInventory(inventory);
+        },
+      ),
+      ListTile(
+        dense: true,
+        title: Text('Scan Existing Inventory Code', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+        onTap: () {
+          Navigator.of(context).pop();
+          model.scanInventory();
+        },
+      ),
+      ListTile(
+        dense: true,
+        title: Text('Edit/Share Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+        onTap: () async {
+          Navigator.of(context).pop();
+          InventoryDetails details = model.currentInventory;
+          InventoryDetails edited = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(details),));
+          if (edited != null) model.addInventory(edited);
+        },
+      ),
+      Divider(),
+    ];
+    model.userAccount.knownInventories.forEach((inventoryId) {
+      widgets.add(
+        ListTile(
+          dense: true,
+          title: Text(model.inventoryDetails[inventoryId].toString(), style: TextStyle(fontFamily: 'Raleway', fontSize: 18.0,), softWrap: false,),
+          selected: (inventoryId == model.currentInventory.uuid),
+          onTap: () {
+            model.changeCurrentInventory(inventoryId);
+            Navigator.of(context).pop();
+          },
+        )
+      );
+    });
+    return widgets;
   }
 }
 
@@ -180,11 +174,9 @@ class InventoryItemTile extends StatelessWidget {
   final BuildContext context;
   final int index;
 
-  Color _expiryColorScale(DateTime expiryDate) {
-    DateTime today = DateTime.now();
-    Duration duration = expiryDate?.difference(today) ?? Duration(days: 0);
-    if (duration.inDays < 30) return Colors.redAccent;
-    else if (duration.inDays < 90) return Colors.yellowAccent;
+  Color _expiryColorScale(int days) {
+    if (days < 30) return Colors.redAccent;
+    else if (days < 90) return Colors.yellowAccent;
     return Colors.greenAccent;
   }
 
@@ -221,7 +213,7 @@ class InventoryItemTile extends StatelessWidget {
           ),
           Container(
             width: 5.0, height: 80.0,
-            color: _expiryColorScale(item.expiryDate),
+            color: _expiryColorScale(item.daysFromToday),
           ),
         ],
       ),
@@ -392,29 +384,6 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
     _name = TextEditingController(text: staging.name);
   }
 
-  Future<bool> _sureDialog() async {
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Are you sure?', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
-          actions: <Widget>[
-            FlatButton(
-              child: Text('Unsubscribe', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
-              onPressed: () { Navigator.of(context).pop(true); },
-            ),
-            FlatButton(
-              color: Theme.of(context).primaryColor,
-              child: Text('Cancel', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0, color: Colors.white),),
-              onPressed: () { Navigator.of(context).pop(false); },
-            ),
-          ],
-        );
-      }
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return MediaQuery(
@@ -446,8 +415,8 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
               title: RaisedButton(
                 child: Text('Unsubscribe to inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
                 onPressed: () async {
-                  if (await _sureDialog()) {
-                    AppModel model = ModelFinder<AppModel>().of(context);
+                  AppModel model = ModelFinder<AppModel>().of(context);
+                  if (await model.sureDialog(context, 'Are you sure?', 'Unsubscribe', 'Cancel')) {
                     model.unsubscribeInventory(staging.uuid);
                     Navigator.pop(context, null);
                   }

@@ -20,15 +20,16 @@ part 'model.g.dart';
 class InventoryItem extends Object with _$InventoryItemSerializerMixin {
   String uuid;
   String code;
-  int expiryMs;
+  String expiry;
 
-  InventoryItem({this.uuid, this.code, this.expiryMs});
+  InventoryItem({this.uuid, this.code, this.expiry});
   factory InventoryItem.fromJson(Map<String, dynamic> json) => _$InventoryItemFromJson(json);
 
-  DateTime get expiryDate => DateTime.fromMillisecondsSinceEpoch(expiryMs);
+  DateTime get expiryDate => DateTime.parse(expiry.replaceAll('-', ''));
   String get year => DateFormat.y().format(expiryDate);
   String get month => DateFormat.MMM().format(expiryDate);
   String get day => DateFormat.d().format(expiryDate);
+  int get daysFromToday => expiryDate.difference(DateTime.now()).inDays;
 }
 
 @JsonSerializable()
@@ -105,7 +106,7 @@ class AppModelUtils {
     if (expiryDate == null) return null;
 
     String uuid = AppModelUtils.generateUuid();
-    InventoryItem item = InventoryItem(uuid: uuid, code: code, expiryMs: expiryDate.millisecondsSinceEpoch);
+    InventoryItem item = InventoryItem(uuid: uuid, code: code, expiry: expiryDate.toIso8601String().substring(0, 10));
     return item;
   }
 
@@ -345,6 +346,29 @@ class AppModel extends Model {
 
   Product getAssociatedProduct(String code) {
     return _products.containsKey(code)? _products[code] : _productsMaster[code];
+  }
+
+  Future<bool> sureDialog(BuildContext context, String question, String yes, String no) async {
+    return showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            title: Text(question, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+            actions: <Widget>[
+              FlatButton(
+                child: Text(yes, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+                onPressed: () { Navigator.of(context).pop(true); },
+              ),
+              FlatButton(
+                color: Theme.of(context).primaryColor,
+                child: Text(no, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0, color: Colors.white),),
+                onPressed: () { Navigator.of(context).pop(false); },
+              ),
+            ],
+          );
+        }
+    );
   }
 
   void addInventory(InventoryDetails inventory) {
