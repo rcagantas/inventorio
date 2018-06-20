@@ -71,7 +71,12 @@ class ListingsPage extends StatelessWidget {
           backgroundColor: Theme.of(context).primaryColor,
           onPressed: () async {
             AppModel model = ModelFinder<AppModel>().of(context);
-            if (!model.isSignedIn) { model.signIn(); return; }
+
+            if (!model.isSignedIn) {
+              model.signIn();
+              return;
+            }
+
             InventoryItem item = await AppModelUtils.buildInventoryItem(context);
             if (item != null) {
               bool isProductIdentified = await model.isProductIdentified(item.code);
@@ -105,12 +110,12 @@ class ListingsPage extends StatelessWidget {
       DrawerHeader(
         decoration: BoxDecoration(color: Theme.of(context).primaryColor),
         child: ListTile(
-          title: Text(model.currentInventory.name, style: TextStyle(fontFamily: 'Montserrat', fontSize: 25.0, color: Colors.white, fontWeight: FontWeight.bold),),
-          subtitle: Text(model.currentInventory.uuid, style: TextStyle(fontFamily: 'Raleway', fontSize: 15.0, color: Colors.white),),
+          title: Text(model.currentInventory?.name ?? '', style: TextStyle(fontFamily: 'Montserrat', fontSize: 25.0, color: Colors.white, fontWeight: FontWeight.bold),),
+          subtitle: Text(model.currentInventory?.uuid ?? '', style: TextStyle(fontFamily: 'Raleway', fontSize: 15.0, color: Colors.white),),
         ),
       ),
       ListTile(
-        title: Text('Login with Google', style: TextStyle(fontFamily: 'Montserrat', fontSize: 20.0),),
+        title: Text('Login with Google', style: TextStyle(fontFamily: 'Montserrat', fontSize: 20.0, fontWeight: FontWeight.bold),),
         subtitle: !model.isSignedIn? null: Text('Currently logged in as ' + model.userDisplayName, style: TextStyle(fontFamily: 'Raleway', fontSize: 16.0),),
         onTap: () {
           Navigator.of(context).pop(); model.signIn();
@@ -124,6 +129,7 @@ class ListingsPage extends StatelessWidget {
         },
       ),
       ListTile(
+        enabled: model.isSignedIn,
         dense: true,
         title: Text('Create New Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0,),),
         onTap: () async {
@@ -133,6 +139,7 @@ class ListingsPage extends StatelessWidget {
         },
       ),
       ListTile(
+        enabled: model.isSignedIn,
         dense: true,
         title: Text('Scan Existing Inventory Code', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
         onTap: () {
@@ -141,6 +148,7 @@ class ListingsPage extends StatelessWidget {
         },
       ),
       ListTile(
+        enabled: model.isSignedIn,
         dense: true,
         title: Text('Edit/Share Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
         onTap: () async {
@@ -152,7 +160,8 @@ class ListingsPage extends StatelessWidget {
       ),
       Divider(),
     ];
-    model.userAccount.knownInventories.forEach((inventoryId) {
+
+    model.userAccount?.knownInventories?.forEach((inventoryId) {
       widgets.add(
         ListTile(
           dense: true,
@@ -165,6 +174,7 @@ class ListingsPage extends StatelessWidget {
         )
       );
     });
+
     return widgets;
   }
 }

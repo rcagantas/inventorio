@@ -151,6 +151,7 @@ class AppModel extends Model {
   CollectionReference _inventoryItemCollection;
   GoogleSignInAccount _gUser;
   GoogleSignIn _googleSignIn;
+  String _loadedUserId;
 
   set filter(String f) { _searchFilter = f?.trim()?.toLowerCase(); notifyListeners(); }
 
@@ -225,7 +226,7 @@ class AppModel extends Model {
   bool get isSignedIn => _gUser != null;
   String get userDisplayName => _gUser?.displayName ?? '';
   String get userImageUrl => _gUser?.photoUrl ?? '';
-  InventoryDetails get currentInventory => inventoryDetails[userAccount?.currentInventoryId ?? 0] ?? InventoryDetails(uuid: AppModelUtils.generateUuid());
+  InventoryDetails get currentInventory => inventoryDetails[userAccount?.currentInventoryId ?? 0] ?? null;
 
   void _createNewUserAccount(String userId) {
     UserAccount userAccount = UserAccount(userId, AppModelUtils.generateUuid());
@@ -239,12 +240,14 @@ class AppModel extends Model {
   }
 
   void _loadCollections(String userId) {
+    if (userId == _loadedUserId) return;
     _userCollection = Firestore.instance.collection('users');
     _userCollection.document(userId).snapshots().listen((userDoc) {
       if (!userDoc.exists) _createNewUserAccount(userId);
       userAccount = UserAccount.fromJson(userDoc.data);
       _loadData(userAccount);
     });
+    _loadedUserId = userId;
   }
 
   void _loadData(UserAccount userAccount) {
