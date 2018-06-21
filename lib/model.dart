@@ -96,7 +96,7 @@ class AppModelUtils {
   static Uuid _uuid = new Uuid();
   static String generateUuid() => _uuid.v4();
 
-  static Future<InventoryItem> buildInventoryItem(BuildContext context) async {
+  static Future<InventoryItem> buildInventoryItemWithModal(BuildContext context) async {
     print('Scanning new item...');
     String code = await BarcodeScanner.scan();
     print('Code: $code');
@@ -108,6 +108,10 @@ class AppModelUtils {
     String uuid = AppModelUtils.generateUuid();
     InventoryItem item = InventoryItem(uuid: uuid, code: code, expiry: expiryDate.toIso8601String().substring(0, 10));
     return item;
+  }
+
+  static InventoryItem buildInventoryItem(String code, DateTime expiryDate) {
+    return InventoryItem(uuid: AppModelUtils.generateUuid(), code: code, expiry: expiryDate.toIso8601String().substring(0, 10));
   }
 
   static DateTime _lastSelectedDate = DateTime.now();

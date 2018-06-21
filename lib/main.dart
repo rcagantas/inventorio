@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:barcode_scan/barcode_scan.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:inventorio/model.dart';
@@ -9,6 +11,7 @@ import 'package:transparent_image/transparent_image.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:loader_search_bar/loader_search_bar.dart';
+import 'package:date_utils/date_utils.dart';
 
 void main() => runApp(MyApp());
 
@@ -44,6 +47,48 @@ class MyAppState extends State<MyApp> {
 
 class ListingsPage extends StatelessWidget {
 
+  void _addItem2(BuildContext context) async {
+    AppModel model = ModelFinder<AppModel>().of(context);
+    if (!model.isSignedIn) { model.signIn(); return; }
+
+    print('Scanning new item...');
+    String code = await BarcodeScanner.scan();
+    bool isProductIdentified = await model.isProductIdentified(code);
+
+    Product product;
+    if (!isProductIdentified) {
+      product = await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(Product(code: code)),),);
+      if (product != null) { model.addProduct(product); }
+    } else {
+      product = model.getAssociatedProduct(code);
+    }
+
+    DateTime expiry =  await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryAddPage(product),),);
+    InventoryItem item = AppModelUtils.buildInventoryItem(code, expiry);
+    model.addItem(item);
+  }
+
+  void _addItem(BuildContext context) async {
+    AppModel model = ModelFinder<AppModel>().of(context);
+
+    if (!model.isSignedIn) { model.signIn(); return; }
+
+    InventoryItem item = await AppModelUtils.buildInventoryItemWithModal(context);
+    if (item != null) {
+      bool isProductIdentified = await model.isProductIdentified(item.code);
+
+      if (!isProductIdentified) {
+        Product product = await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(Product(code: item.code)),),);
+        if (product != null) {
+          model.addProduct(product);
+          model.addItem(item);
+        }
+      } else {
+        model.addItem(item);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MediaQuery(
@@ -66,32 +111,12 @@ class ListingsPage extends StatelessWidget {
               itemBuilder: (context, index) => InventoryItemTile(context, index),
             ),
           ),
-        floatingActionButton: FloatingActionButton(
-          child: Icon(Icons.add_a_photo),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        floatingActionButton: FloatingActionButton.extended(
+          icon: Icon(Icons.add_a_photo),
+          label: Text('Scan Barcode', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0)),
           backgroundColor: Theme.of(context).primaryColor,
-          onPressed: () async {
-            AppModel model = ModelFinder<AppModel>().of(context);
-
-            if (!model.isSignedIn) {
-              model.signIn();
-              return;
-            }
-
-            InventoryItem item = await AppModelUtils.buildInventoryItem(context);
-            if (item != null) {
-              bool isProductIdentified = await model.isProductIdentified(item.code);
-
-              if (!isProductIdentified) {
-                Product product = await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(Product(code: item.code)),),);
-                if (product != null) {
-                  model.addProduct(product);
-                  model.addItem(item);
-                }
-              } else {
-                model.addItem(item);
-              }
-            }
-          },
+          onPressed: () { _addItem2(context); },
         ),
         drawer: Drawer(
           child: ScopedModelDescendant<AppModel>(
@@ -274,6 +299,122 @@ class InventoryItemTile extends StatelessWidget {
           });
         }
       },
+    );
+  }
+}
+
+class InventoryAddPage extends StatefulWidget {
+  final Product product;
+  InventoryAddPage(this.product);
+  @override _InventoryAddPageState createState() => _InventoryAddPageState();
+}
+
+class _InventoryAddPageState extends State<InventoryAddPage> {
+
+  Widget _createPicker(BuildContext context, {
+    @required List<Widget> children,
+    @required Function(int) onChange,
+    @required FixedExtentScrollController scrollController}
+  ) {
+    return Expanded(
+      flex: 1,
+      child: Container(
+        height: 200.0,
+        child: CupertinoPicker(
+          scrollController: scrollController,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          itemExtent: 40.0,
+          onSelectedItemChanged: onChange,
+          children: children,
+        ),
+      ),
+    );
+  }
+
+  List<String> monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November','December',];
+  FixedExtentScrollController yearController, monthController, dayController;
+  int yearIndex, monthIndex, dayIndex;
+  DateTime selectedYearMonth;
+  DateTime selectedDate;
+  DateTime now = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    yearController = FixedExtentScrollController();
+    monthController = FixedExtentScrollController(initialItem: now.month - 1);
+    dayController = FixedExtentScrollController(initialItem: now.day - 1);
+    selectedYearMonth = DateTime(now.year, now.month);
+    yearIndex = now.year;
+    monthIndex = now.month;
+    dayIndex = now.day;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8,),
+      child: Scaffold(
+        appBar: AppBar(title: Text(widget.product.code, style: TextStyle(fontFamily: 'Montserrat'),),),
+        body: Column(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: <Widget>[
+                  Expanded(flex: 1, child: CachedNetworkImage(imageUrl: widget.product.imageUrl, width: 150.0, height: 150.0, fit: BoxFit.cover)),
+                  Expanded(flex: 2, child: Column(
+                    children: <Widget>[
+                      Text(widget.product.brand,   style: TextStyle(fontFamily: 'Raleway',    fontSize: 20.0), textAlign: TextAlign.left,),
+                      Text(widget.product.name,    style: TextStyle(fontFamily: 'Montserrat', fontSize: 25.0), textAlign: TextAlign.left,),
+                      Text(widget.product.variant, style: TextStyle(fontFamily: 'Raleway',    fontSize: 20.0), textAlign: TextAlign.left,),
+                    ],
+                  ),)
+                ],
+              ),
+            ),
+            Divider(),
+            Row(
+              children: <Widget>[
+                _createPicker(
+                  context,
+                  onChange: (index) { yearIndex = index + now.year; selectedYearMonth = DateTime(yearIndex, monthIndex); },
+                  scrollController: yearController,
+                  children: List<Widget>.generate(10, (int index) {
+                    return Center(
+                      child: Text('${index + 2018}', style: TextStyle(fontFamily: 'Montserrat', fontSize: 30.0))
+                    );
+                  })
+                ),
+                _createPicker(
+                  context,
+                  onChange: (index) { monthIndex = index + 1; selectedYearMonth = DateTime(now.year, monthIndex); },
+                  scrollController: monthController,
+                  children: List<Widget>.generate(12, (int index) {
+                    return Center(
+                      child: Text(monthNames[index], style: TextStyle(fontFamily: 'Montserrat', fontSize: 30.0))
+                    );
+                  })
+                ),
+                _createPicker(
+                  context,
+                  onChange: (index) { dayIndex = index + 1; },
+                  scrollController: dayController,
+                  children: List<Widget>.generate(Utils.lastDayOfMonth(selectedYearMonth).day, (int index) {
+                    return Center(
+                      child: Text('${index + 1}', style: TextStyle(fontFamily: 'Montserrat', fontSize: 30.0))
+                    );
+                  })
+                ),
+              ],
+            ),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          child: Icon(Icons.input),
+          onPressed: () => Navigator.pop(context, DateTime(yearIndex, monthIndex, dayIndex)),
+        ),
+      ),
     );
   }
 }
