@@ -55,17 +55,24 @@ class ListingsPage extends StatelessWidget {
     String code = await BarcodeScanner.scan();
     bool isProductIdentified = await model.isProductIdentified(code);
 
-    Product product;
+    Product product = isProductIdentified
+      ? model.getAssociatedProduct(code)
+      : await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(Product(code: code)),),);
+
+    print('Product $product');
+    if (product == null) return;
+
     if (!isProductIdentified) {
-      product = await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(Product(code: code)),),);
-      if (product != null) { model.addProduct(product); }
-    } else {
-      product = model.getAssociatedProduct(code);
+      print('Attempting to add new product');
+      model.addProduct(product);
     }
 
+    print('Attempting to add new item');
     DateTime expiry =  await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryAddPage(product),),);
+    if (expiry == null) return;
+
     InventoryItem item = AppModelUtils.buildInventoryItem(code, expiry);
-    model.addItem(item);
+    if (item != null) model.addItem(item);
   }
 
   void _addItem(BuildContext context) async {
@@ -107,6 +114,7 @@ class ListingsPage extends StatelessWidget {
         body:
           ScopedModelDescendant<AppModel>(
             builder: (context, child, model) => ListView.builder(
+              cacheExtent: 1000.0,
               itemCount: model.inventoryItems.length,
               itemBuilder: (context, index) => InventoryItemTile(context, index),
             ),
@@ -221,36 +229,46 @@ class InventoryItemTile extends StatelessWidget {
     InventoryItem item = model.inventoryItems[index];
     Product product = model.getAssociatedProduct(item.code);
     return Dismissible(
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            flex: 1,
-            child: product?.imageUrl == null
-              ? Image.memory(kTransparentImage)
-              : CachedNetworkImage(imageUrl: product.imageUrl, width: 78.0, height: 78.0, fit: BoxFit.cover,),
-          ),
-          Expanded(
-            flex: 3,
-            child: Column(children: <Widget>[
-                product?.brand == null?   Container(): Text(product.brand,   style: TextStyle(fontFamily: 'Raleway',    fontSize: 16.0), textAlign: TextAlign.center,),
-                product?.name == null?    Container(): Text(product.name,    style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0), textAlign: TextAlign.center,),
-                product?.variant == null? Container(): Text(product.variant, style: TextStyle(fontFamily: 'Raleway',    fontSize: 16.0), textAlign: TextAlign.center,),
-              ],
+      child: Container(
+        height: 80.0,
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              flex: 1,
+              child: CachedNetworkImage(
+                imageUrl: product?.imageUrl ?? '',
+                width: 78.0, height: 78.0, fit: BoxFit.cover,
+                fadeOutDuration: Duration(milliseconds: 100),
+                placeholder: Image.memory(kTransparentImage),
+                errorWidget: Image.memory(kTransparentImage),
+              ),
             ),
-          ),
-          Expanded(flex: 1,
-            child: Column(
-              children: <Widget>[
-                Text(item.year, style: TextStyle(fontFamily: 'Raleway', fontSize: 15.0, fontWeight: FontWeight.bold), textAlign: TextAlign.center,),
-                Text('${item.month} ${item.day}', style: TextStyle(fontFamily: 'Raleway', fontSize: 18.0, fontWeight: FontWeight.bold), textAlign: TextAlign.center,),
-              ],
-            )
-          ),
-          Container(
-            width: 5.0, height: 80.0,
-            color: _expiryColorScale(item.daysFromToday),
-          ),
-        ],
+            Expanded(
+              flex: 3,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  product?.brand == null?   Container(): Text(product.brand,   style: TextStyle(fontFamily: 'Raleway',    fontSize: 17.0), textAlign: TextAlign.center,),
+                  product?.name == null?    Container(): Text(product.name,    style: TextStyle(fontFamily: 'Montserrat', fontSize: 19.0), textAlign: TextAlign.center,),
+                  product?.variant == null? Container(): Text(product.variant, style: TextStyle(fontFamily: 'Raleway',    fontSize: 17.0), textAlign: TextAlign.center,),
+                ],
+              ),
+            ),
+            Expanded(flex: 1,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text(item.year, style: TextStyle(fontFamily: 'Raleway', fontSize: 15.0, fontWeight: FontWeight.bold), textAlign: TextAlign.center,),
+                  Text('${item.month} ${item.day}', style: TextStyle(fontFamily: 'Raleway', fontSize: 18.0, fontWeight: FontWeight.bold), textAlign: TextAlign.center,),
+                ],
+              )
+            ),
+            Container(
+              width: 5.0, height: 80.0,
+              color: _expiryColorScale(item.daysFromToday),
+            ),
+          ],
+        )
       ),
       key: ObjectKey(item.uuid),
       background: Container(
@@ -311,6 +329,27 @@ class InventoryAddPage extends StatefulWidget {
 
 class _InventoryAddPageState extends State<InventoryAddPage> {
 
+  List<String> monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November','December',];
+  FixedExtentScrollController yearController, monthController, dayController;
+  int yearIndex, monthIndex, dayIndex;
+  DateTime selectedYearMonth;
+  DateTime selectedDate;
+  DateTime now = DateTime.now();
+  Product staging;
+
+  @override
+  void initState() {
+    super.initState();
+    yearController = FixedExtentScrollController();
+    monthController = FixedExtentScrollController(initialItem: now.month - 1);
+    dayController = FixedExtentScrollController(initialItem: now.day - 1);
+    selectedYearMonth = DateTime(now.year, now.month);
+    yearIndex = now.year;
+    monthIndex = now.month;
+    dayIndex = now.day;
+    staging = widget.product;
+  }
+
   Widget _createPicker(BuildContext context, {
     @required List<Widget> children,
     @required Function(int) onChange,
@@ -331,46 +370,44 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
     );
   }
 
-  List<String> monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November','December',];
-  FixedExtentScrollController yearController, monthController, dayController;
-  int yearIndex, monthIndex, dayIndex;
-  DateTime selectedYearMonth;
-  DateTime selectedDate;
-  DateTime now = DateTime.now();
-
-  @override
-  void initState() {
-    super.initState();
-    yearController = FixedExtentScrollController();
-    monthController = FixedExtentScrollController(initialItem: now.month - 1);
-    dayController = FixedExtentScrollController(initialItem: now.day - 1);
-    selectedYearMonth = DateTime(now.year, now.month);
-    yearIndex = now.year;
-    monthIndex = now.month;
-    dayIndex = now.day;
-  }
-
   @override
   Widget build(BuildContext context) {
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8,),
       child: Scaffold(
-        appBar: AppBar(title: Text(widget.product.code, style: TextStyle(fontFamily: 'Montserrat'),),),
-        body: Column(
+        appBar: AppBar(title: Text(widget.product.code ?? '', style: TextStyle(fontFamily: 'Montserrat'),),),
+        body: ListView(
           children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: <Widget>[
-                  Expanded(flex: 1, child: CachedNetworkImage(imageUrl: widget.product.imageUrl, width: 150.0, height: 150.0, fit: BoxFit.cover)),
-                  Expanded(flex: 2, child: Column(
-                    children: <Widget>[
-                      Text(widget.product.brand,   style: TextStyle(fontFamily: 'Raleway',    fontSize: 20.0), textAlign: TextAlign.left,),
-                      Text(widget.product.name,    style: TextStyle(fontFamily: 'Montserrat', fontSize: 25.0), textAlign: TextAlign.left,),
-                      Text(widget.product.variant, style: TextStyle(fontFamily: 'Raleway',    fontSize: 20.0), textAlign: TextAlign.left,),
-                    ],
-                  ),)
-                ],
+            Container(
+              height: 180.0,
+              child: ScopedModelDescendant<AppModel>(
+                builder: (context, child, model) => Row(
+                  children: <Widget>[
+                    Expanded(
+                      flex: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: CachedNetworkImage(
+                          imageUrl: staging.imageUrl ?? '', width: 150.0, height: 150.0, fit: BoxFit.cover,
+                          placeholder: Icon(Icons.camera_alt, color: Colors.grey, size: 150.0,),
+                          errorWidget: Icon(Icons.camera_alt, color: Colors.grey, size: 150.0,),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Text(staging.brand ?? '',   style: TextStyle(fontFamily: 'Raleway',    fontSize: 20.0), textAlign: TextAlign.left,),
+                          Text(staging.name ?? '',    style: TextStyle(fontFamily: 'Montserrat', fontSize: 25.0), textAlign: TextAlign.left,),
+                          Text(staging.variant ?? '', style: TextStyle(fontFamily: 'Raleway',    fontSize: 20.0), textAlign: TextAlign.left,),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
               ),
             ),
             Divider(),
@@ -480,30 +517,26 @@ class _ProductPageState extends State<ProductPage> {
               trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _variant.clear(); staging.variant = null; }),
             ),
             Divider(),
-            ListTile(
-              title: FlatButton(
-                onPressed: () {
-                  ImagePicker.pickImage(source: ImageSource.camera).then((file) {
-                    setState(() {
-                      stagingImage = file.readAsBytesSync();
-                      model.imageData = stagingImage;
-                      file.deleteSync();
-                    });
+            FlatButton(
+              onPressed: () {
+                ImagePicker.pickImage(source: ImageSource.camera).then((file) {
+                  setState(() {
+                    stagingImage = file.readAsBytesSync();
+                    model.imageData = stagingImage;
+                    file.deleteSync();
                   });
-                },
-                child: SizedBox(
-                  width: 300.0, height: 300.0,
-                  child:
-                    Stack(children: <Widget>[
-                      Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 180.0,)),
-                      staging.imageUrl == null
-                        ? Image.memory(kTransparentImage)
-                        : CachedNetworkImage(imageUrl: staging.imageUrl, width: 300.0, height: 300.0, fit: BoxFit.cover,),
-                      Image.memory(stagingImage, width: 300.0, height: 300.0, fit: BoxFit.cover,),
-                    ]
+                });
+              },
+              child: Stack(
+                children: <Widget>[
+                  CachedNetworkImage(
+                    imageUrl: staging.imageUrl ?? '', width: 250.0, height: 250.0, fit: BoxFit.cover,
+                    placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 180.0,)),
+                    errorWidget: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 180.0)),
                   ),
-                ),
-              )
+                  Center(child: Image.memory(stagingImage, width: 250.0, height: 250.0, fit: BoxFit.cover,)),
+                ]
+              ),
             )
           ],
         ),

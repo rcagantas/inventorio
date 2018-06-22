@@ -294,12 +294,13 @@ class AppModel extends Model {
   Future<bool> isProductIdentified(String code) async {
     print('Checking remote dictionary for $code');
     var doc = await _productDictionary.document(code).get();
-    if (doc.exists) return true;
+    if (doc.exists) { _syncProduct(doc, _products); return true; }
 
     print('Checking remote master dictionary for $code');
     var masterDoc = await _masterProductDictionary.document(code).get();
-    if (masterDoc.exists) return true;
+    if (masterDoc.exists) { _syncProduct(masterDoc, _productsMaster); return true; }
 
+    print('$code not identified');
     return false;
   }
 
@@ -326,29 +327,21 @@ class AppModel extends Model {
     return product;
   }
 
+  void _uploadProduct(Product product) {
+    print('Trying to set product ${product.code} with ${product.toJson()}');
+    _productDictionary.document(product.code).setData(product.toJson());
+    _masterProductDictionary.document(product.code).setData(product.toJson());
+  }
+
   void addProduct(Product product) {
     _syncProductCode(product.code);
     _productsMaster[product.code] = product;
     notifyListeners(); // temporarily set to trigger updates on UI while we wait for server.
 
-    _uploadProductImage(product).then((product) {
-
-      print('Trying to set product ${product.code} with ${product.toJson()}');
-      _masterProductDictionary.document(product.code).get().then((masterDoc) {
-        if (masterDoc.exists) {
-          Product masterProduct = Product.fromJson(masterDoc.data);
-          if (masterProduct != product) {
-            print('Overriding product dictionary: ${product.code}');
-            _productDictionary.document(product.code).setData(product.toJson());
-            _masterProductDictionary.document(product.code).setData(product.toJson());
-          }
-        } else {
-          print('Adding to master dictionary: ${product.code}');
-          _masterProductDictionary.document(product.code).setData(product.toJson());
-        }
-      });
-
-    });
+    _uploadProductImage(product).then(
+      (product) { _uploadProduct(product); },
+      onError: () { _uploadProduct(product); }
+    );
   }
 
   Product getAssociatedProduct(String code) {
