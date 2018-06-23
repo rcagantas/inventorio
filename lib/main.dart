@@ -47,7 +47,7 @@ class MyAppState extends State<MyApp> {
 
 class ListingsPage extends StatelessWidget {
 
-  void _addItem2(BuildContext context) async {
+  void _addItem(BuildContext context) async {
     AppModel model = ModelFinder<AppModel>().of(context);
     if (!model.isSignedIn) { model.signIn(); return; }
 
@@ -73,27 +73,6 @@ class ListingsPage extends StatelessWidget {
 
     InventoryItem item = AppModelUtils.buildInventoryItem(code, expiry);
     if (item != null) model.addItem(item);
-  }
-
-  void _addItem(BuildContext context) async {
-    AppModel model = ModelFinder<AppModel>().of(context);
-
-    if (!model.isSignedIn) { model.signIn(); return; }
-
-    InventoryItem item = await AppModelUtils.buildInventoryItemWithModal(context);
-    if (item != null) {
-      bool isProductIdentified = await model.isProductIdentified(item.code);
-
-      if (!isProductIdentified) {
-        Product product = await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(Product(code: item.code)),),);
-        if (product != null) {
-          model.addProduct(product);
-          model.addItem(item);
-        }
-      } else {
-        model.addItem(item);
-      }
-    }
   }
 
   @override
@@ -124,7 +103,7 @@ class ListingsPage extends StatelessWidget {
           icon: Icon(Icons.add_a_photo),
           label: Text('Scan Barcode', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0)),
           backgroundColor: Theme.of(context).primaryColor,
-          onPressed: () { _addItem2(context); },
+          onPressed: () { _addItem(context); },
         ),
         drawer: Drawer(
           child: ScopedModelDescendant<AppModel>(
@@ -239,8 +218,8 @@ class InventoryItemTile extends StatelessWidget {
                 imageUrl: product?.imageUrl ?? '',
                 width: 78.0, height: 78.0, fit: BoxFit.cover,
                 fadeOutDuration: Duration(milliseconds: 100),
-                placeholder: Image.memory(kTransparentImage),
-                errorWidget: Image.memory(kTransparentImage),
+                placeholder: Icon(Icons.camera_alt, color: Colors.grey.withOpacity(.30),),
+                errorWidget: Icon(Icons.camera_alt, color: Colors.grey.withOpacity(.30),),
               ),
             ),
             Expanded(
@@ -389,8 +368,8 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                         padding: const EdgeInsets.all(8.0),
                         child: CachedNetworkImage(
                           imageUrl: staging.imageUrl ?? '', width: 150.0, height: 150.0, fit: BoxFit.cover,
-                          placeholder: Icon(Icons.camera_alt, color: Colors.grey, size: 150.0,),
-                          errorWidget: Icon(Icons.camera_alt, color: Colors.grey, size: 150.0,),
+                          placeholder: Icon(Icons.camera_alt, color: Colors.grey.withOpacity(0.3), size: 150.0,),
+                          errorWidget: Icon(Icons.camera_alt, color: Colors.grey.withOpacity(0.3), size: 150.0,),
                         ),
                       ),
                     ),

@@ -13,6 +13,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:quiver/core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:image/image.dart' as img;
 
 part 'model.g.dart';
 
@@ -96,41 +97,8 @@ class AppModelUtils {
   static Uuid _uuid = new Uuid();
   static String generateUuid() => _uuid.v4();
 
-  static Future<InventoryItem> buildInventoryItemWithModal(BuildContext context) async {
-    print('Scanning new item...');
-    String code = await BarcodeScanner.scan();
-    print('Code: $code');
-    if (code == null) return null;
-
-    DateTime expiryDate = await _getExpiryDate(context);
-    if (expiryDate == null) return null;
-
-    String uuid = AppModelUtils.generateUuid();
-    InventoryItem item = InventoryItem(uuid: uuid, code: code, expiry: expiryDate.toIso8601String().substring(0, 10));
-    return item;
-  }
-
   static InventoryItem buildInventoryItem(String code, DateTime expiryDate) {
     return InventoryItem(uuid: AppModelUtils.generateUuid(), code: code, expiry: expiryDate.toIso8601String().substring(0, 10));
-  }
-
-  static DateTime _lastSelectedDate = DateTime.now();
-  static Future<DateTime> _getExpiryDate(BuildContext context) async {
-    print('Getting expiry date');
-    DateTime expiryDate = _lastSelectedDate;
-    try {
-      expiryDate = await showDatePicker(
-          context: context,
-          initialDate: _lastSelectedDate,
-          firstDate:  DateTime.now().subtract(Duration(days: 1)),
-          lastDate: _lastSelectedDate.add(Duration(days: 365 * 10))
-      );
-      _lastSelectedDate = expiryDate;
-      print('Setting Expiry Date: [$expiryDate]');
-    } catch (e) {
-      print('Unknown exception $e');
-    }
-    return expiryDate;
   }
 
   static String capitalizeWords(String sentence) {
@@ -314,8 +282,16 @@ class AppModel extends Model {
     _inventoryItemCollection.document(item.uuid).setData(item.toJson());
   }
 
+  Uint8List _cropAndResize(Uint8List sourceData) {
+    int width = Image.memory(sourceData, scale: 0.3,).width.toInt();
+    img.Image cropped = img.copyResize(img.decodeImage(sourceData), width);
+    return cropped.getBytes();
+  }
+
   Future<Product> _uploadProductImage(Product product) async {
     if (imageData == null || imageData.isEmpty) return product;
+    imageData = _cropAndResize(imageData);
+
     String uuid = AppModelUtils.generateUuid();
     String fileName = '${product.code}_$uuid.jpg';
     StorageReference storage = FirebaseStorage.instance.ref().child('images').child(fileName);
@@ -338,10 +314,8 @@ class AppModel extends Model {
     _productsMaster[product.code] = product;
     notifyListeners(); // temporarily set to trigger updates on UI while we wait for server.
 
-    _uploadProductImage(product).then(
-      (product) { _uploadProduct(product); },
-      onError: () { _uploadProduct(product); }
-    );
+    _uploadProduct(product); // persist immediately so we don't lose the data.
+    _uploadProductImage(product).then((product) { _uploadProduct(product); },); // upload again but this time with image url
   }
 
   Product getAssociatedProduct(String code) {
