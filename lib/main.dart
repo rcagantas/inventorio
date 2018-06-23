@@ -361,34 +361,40 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
             Container(
               height: 180.0,
               child: ScopedModelDescendant<AppModel>(
-                builder: (context, child, model) => Row(
-                  children: <Widget>[
-                    Expanded(
-                      flex: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: CachedNetworkImage(
-                          imageUrl: staging.imageUrl ?? '', width: 150.0, height: 150.0, fit: BoxFit.cover,
-                          placeholder: widget.newItem
-                            ? Image.memory(model.imageData, width: 150.0, height: 150.0, fit: BoxFit.cover)
-                            : Icon(Icons.camera_alt, color: Colors.grey.withOpacity(0.3), size: 150.0,),
-                          errorWidget: Icon(Icons.camera_alt, color: Colors.grey.withOpacity(0.3), size: 150.0,),
+                builder: (context, child, model) => FlatButton(
+                  onPressed: () async {
+                    Product temp = await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(staging)));
+                    if (temp != null) staging = temp;
+                  },
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        flex: 2,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: CachedNetworkImage(
+                            imageUrl: staging.imageUrl ?? '', width: 150.0, height: 150.0, fit: BoxFit.cover,
+                            placeholder: widget.newItem
+                              ? Image.memory(model.imageData, width: 150.0, height: 150.0, fit: BoxFit.cover)
+                              : Icon(Icons.camera_alt, color: Colors.grey.withOpacity(0.3), size: 150.0,),
+                            errorWidget: Icon(Icons.camera_alt, color: Colors.grey.withOpacity(0.3), size: 150.0,),
+                          ),
                         ),
                       ),
-                    ),
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          Text(staging.brand ?? '',   style: TextStyle(fontFamily: 'Raleway',    fontSize: 20.0), textAlign: TextAlign.left,),
-                          Text(staging.name ?? '',    style: TextStyle(fontFamily: 'Montserrat', fontSize: 25.0), textAlign: TextAlign.left,),
-                          Text(staging.variant ?? '', style: TextStyle(fontFamily: 'Raleway',    fontSize: 20.0), textAlign: TextAlign.left,),
-                        ],
-                      ),
-                    )
-                  ],
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Text(staging.brand ?? '',   style: TextStyle(fontFamily: 'Raleway',    fontSize: 20.0), textAlign: TextAlign.left,),
+                            Text(staging.name ?? '',    style: TextStyle(fontFamily: 'Montserrat', fontSize: 25.0), textAlign: TextAlign.left,),
+                            Text(staging.variant ?? '', style: TextStyle(fontFamily: 'Raleway',    fontSize: 20.0), textAlign: TextAlign.left,),
+                          ],
+                        ),
+                      )
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -401,7 +407,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                   scrollController: yearController,
                   children: List<Widget>.generate(10, (int index) {
                     return Center(
-                      child: Text('${index + 2018}', style: TextStyle(fontFamily: 'Montserrat', fontSize: 30.0))
+                      child: Text('${index + 2018}', style: TextStyle(fontFamily: 'Montserrat', fontSize: 29.0))
                     );
                   })
                 ),
@@ -411,7 +417,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                   scrollController: monthController,
                   children: List<Widget>.generate(12, (int index) {
                     return Center(
-                      child: Text(monthNames[index], style: TextStyle(fontFamily: 'Montserrat', fontSize: 30.0))
+                      child: Text(monthNames[index], style: TextStyle(fontFamily: 'Montserrat', fontSize: 29.0))
                     );
                   })
                 ),
@@ -421,7 +427,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                   scrollController: dayController,
                   children: List<Widget>.generate(Utils.lastDayOfMonth(selectedYearMonth).day, (int index) {
                     return Center(
-                      child: Text('${index + 1}', style: TextStyle(fontFamily: 'Montserrat', fontSize: 30.0))
+                      child: Text('${index + 1}', style: TextStyle(fontFamily: 'Montserrat', fontSize: 29.0))
                     );
                   })
                 ),
@@ -516,7 +522,7 @@ class _ProductPageState extends State<ProductPage> {
                     placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 180.0,)),
                     errorWidget: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 180.0)),
                   ),
-                  Center(child: Image.memory(stagingImage, width: 250.0, height: 250.0, fit: BoxFit.cover,)),
+                  Image.memory(stagingImage, width: 250.0, height: 250.0, fit: BoxFit.cover,),
                 ]
               ),
             )
