@@ -68,7 +68,7 @@ class ListingsPage extends StatelessWidget {
     }
 
     print('Attempting to add new item');
-    DateTime expiry =  await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryAddPage(product),),);
+    DateTime expiry =  await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryAddPage(product, newItem: !isProductIdentified),),);
     if (expiry == null) return;
 
     InventoryItem item = AppModelUtils.buildInventoryItem(code, expiry);
@@ -302,7 +302,8 @@ class InventoryItemTile extends StatelessWidget {
 
 class InventoryAddPage extends StatefulWidget {
   final Product product;
-  InventoryAddPage(this.product);
+  final bool newItem;
+  InventoryAddPage(this.product, {this.newItem = false});
   @override _InventoryAddPageState createState() => _InventoryAddPageState();
 }
 
@@ -368,7 +369,9 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                         padding: const EdgeInsets.all(8.0),
                         child: CachedNetworkImage(
                           imageUrl: staging.imageUrl ?? '', width: 150.0, height: 150.0, fit: BoxFit.cover,
-                          placeholder: Icon(Icons.camera_alt, color: Colors.grey.withOpacity(0.3), size: 150.0,),
+                          placeholder: widget.newItem
+                            ? Image.memory(model.imageData, width: 150.0, height: 150.0, fit: BoxFit.cover)
+                            : Icon(Icons.camera_alt, color: Colors.grey.withOpacity(0.3), size: 150.0,),
                           errorWidget: Icon(Icons.camera_alt, color: Colors.grey.withOpacity(0.3), size: 150.0,),
                         ),
                       ),

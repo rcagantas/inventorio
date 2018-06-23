@@ -13,7 +13,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:quiver/core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:intl/intl.dart';
-import 'package:image/image.dart' as img;
 
 part 'model.g.dart';
 
@@ -282,15 +281,8 @@ class AppModel extends Model {
     _inventoryItemCollection.document(item.uuid).setData(item.toJson());
   }
 
-  Uint8List _cropAndResize(Uint8List sourceData) {
-    int width = Image.memory(sourceData, scale: 0.3,).width.toInt();
-    img.Image cropped = img.copyResize(img.decodeImage(sourceData), width);
-    return cropped.getBytes();
-  }
-
   Future<Product> _uploadProductImage(Product product) async {
     if (imageData == null || imageData.isEmpty) return product;
-    imageData = _cropAndResize(imageData);
 
     String uuid = AppModelUtils.generateUuid();
     String fileName = '${product.code}_$uuid.jpg';
