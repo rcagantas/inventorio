@@ -39,7 +39,12 @@ class MyAppState extends State<MyApp> {
       model: appModel,
       child: MaterialApp(
         theme: ThemeData.light().copyWith(
-          primaryColor: Colors.blue.shade700
+          primaryColor: Colors.blue.shade700,
+          primaryTextTheme: TextTheme(
+            title: TextStyle(fontFamily: 'Montserrat', fontSize: 15.0, color: Colors.white),
+            display1: TextStyle(fontFamily: 'Montserrat', fontSize: 15.0, color: Colors.black),
+            display2: TextStyle(fontFamily: 'Raleway', fontSize: 13.0, color: Colors.black),
+          ),
         ),
         title: 'Inventorio',
         home: ListingsPage(),
@@ -81,12 +86,12 @@ class ListingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8,),
+      data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0,),
       child: Scaffold(
         appBar: SearchBar(
           defaultAppBar: AppBar(
             title: ScopedModelDescendant<AppModel>(
-              builder: (context, child, model) => Text(model.currentInventory?.name ?? 'Inventory', style: TextStyle(fontFamily: 'Montserrat'),),
+              builder: (context, child, model) => Text(model.currentInventory?.name ?? 'Inventory', style: Theme.of(context).primaryTextTheme.title),
             ),
           ),
           searchHint: 'Filter',
@@ -96,7 +101,7 @@ class ListingsPage extends StatelessWidget {
         body:
           ScopedModelDescendant<AppModel>(
             builder: (context, child, model) => ListView.builder(
-              cacheExtent: 2000.0,
+              //cacheExtent: 2000.0,
               itemCount: model.inventoryItems.length,
               itemBuilder: (context, index) => InventoryItemTile(context, index),
             ),
@@ -104,7 +109,7 @@ class ListingsPage extends StatelessWidget {
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         floatingActionButton: FloatingActionButton.extended(
           icon: Icon(Icons.add_a_photo),
-          label: Text('Scan Barcode', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0)),
+          label: Text('Scan Barcode', style: Theme.of(context).primaryTextTheme.title),
           backgroundColor: Theme.of(context).primaryColor,
           onPressed: () { _addItem(context); },
         ),
@@ -125,13 +130,13 @@ class ListingsPage extends StatelessWidget {
       DrawerHeader(
         decoration: BoxDecoration(color: Theme.of(context).primaryColor),
         child: ListTile(
-          title: Text(model.currentInventory?.name ?? '', style: TextStyle(fontFamily: 'Montserrat', fontSize: 25.0, color: Colors.white, fontWeight: FontWeight.bold),),
-          subtitle: Text(model.currentInventory?.uuid ?? '', style: TextStyle(fontFamily: 'Raleway', fontSize: 15.0, color: Colors.white),),
+          title: Text(model.currentInventory?.name ?? '', style: Theme.of(context).primaryTextTheme.title.copyWith(fontSize: 20.0, fontWeight: FontWeight.bold),),
+          subtitle: Text('${model.inventoryItems.length} items', style: Theme.of(context).primaryTextTheme.display2.copyWith(color: Colors.white),),
         ),
       ),
       ListTile(
-        title: Text('Login with Google', style: TextStyle(fontFamily: 'Montserrat', fontSize: 20.0, fontWeight: FontWeight.bold),),
-        subtitle: !model.isSignedIn? null: Text('Currently logged in as ' + model.userDisplayName, style: TextStyle(fontFamily: 'Raleway', fontSize: 16.0),),
+        title: Text('Login with Google', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontWeight: FontWeight.bold),),
+        subtitle: !model.isSignedIn? null: Text('Currently logged in as ' + model.userDisplayName, style: Theme.of(context).primaryTextTheme.display2,),
         onTap: () {
           Navigator.of(context).pop(); model.signIn();
           if (model.isSignedIn) {
@@ -146,7 +151,7 @@ class ListingsPage extends StatelessWidget {
       ListTile(
         enabled: model.isSignedIn,
         dense: true,
-        title: Text('Create New Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0,),),
+        title: Text('Create New Inventory', style: Theme.of(context).primaryTextTheme.display1,),
         onTap: () async {
           Navigator.of(context).pop();
           InventoryDetails inventory = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(null)));
@@ -156,7 +161,7 @@ class ListingsPage extends StatelessWidget {
       ListTile(
         enabled: model.isSignedIn,
         dense: true,
-        title: Text('Scan Existing Inventory Code', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+        title: Text('Scan Existing Inventory Code', style: Theme.of(context).primaryTextTheme.display1,),
         onTap: () {
           Navigator.of(context).pop();
           model.scanInventory();
@@ -165,7 +170,7 @@ class ListingsPage extends StatelessWidget {
       ListTile(
         enabled: model.isSignedIn,
         dense: true,
-        title: Text('Edit/Share Inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+        title: Text('Edit/Share Inventory', style: Theme.of(context).primaryTextTheme.display1,),
         onTap: () async {
           Navigator.of(context).pop();
           InventoryDetails details = model.currentInventory;
@@ -180,8 +185,11 @@ class ListingsPage extends StatelessWidget {
       widgets.add(
         ListTile(
           dense: true,
-          title: Text(model.inventoryDetails[inventoryId].toString(), style: TextStyle(fontFamily: 'Raleway', fontSize: 18.0,), softWrap: false,),
-          selected: (inventoryId == model.currentInventory.uuid),
+          title: Text(
+            model.inventoryDetails[inventoryId].toString(),
+            style: Theme.of(context).primaryTextTheme.display2
+              .copyWith(fontWeight: inventoryId == model.currentInventory.uuid? FontWeight.bold : FontWeight.normal),
+            softWrap: false,),
           onTap: () {
             model.changeCurrentInventory(inventoryId);
             Navigator.of(context).pop();
@@ -215,9 +223,11 @@ class InventoryItemTile extends StatelessWidget {
         height: 80.0,
         child: Row(
           children: <Widget>[
-            Expanded(
-              flex: 1,
-              child: CachedNetworkImage(
+            SizedBox(
+              width: 78.0, height: 78.0,
+              child: product?.imageUrl == null
+              ? Icon(Icons.camera_alt, color: Colors.grey.withOpacity(.30),)
+              : CachedNetworkImage(
                 imageUrl: product?.imageUrl ?? '',
                 width: 78.0, height: 78.0, fit: BoxFit.cover,
                 fadeOutDuration: Duration(milliseconds: 100),
@@ -230,9 +240,9 @@ class InventoryItemTile extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  product?.brand == null?   Container(): Text(product.brand,   style: TextStyle(fontFamily: 'Raleway',    fontSize: 17.0), textAlign: TextAlign.center,),
-                  product?.name == null?    Container(): Text(product.name,    style: TextStyle(fontFamily: 'Montserrat', fontSize: 19.0), textAlign: TextAlign.center,),
-                  product?.variant == null? Container(): Text(product.variant, style: TextStyle(fontFamily: 'Raleway',    fontSize: 17.0), textAlign: TextAlign.center,),
+                  product?.brand == null?   Container(): Text(product.brand,   style: Theme.of(context).primaryTextTheme.display2, textAlign: TextAlign.center,),
+                  product?.name == null?    Container(): Text(product.name,    style: Theme.of(context).primaryTextTheme.display1, textAlign: TextAlign.center,),
+                  product?.variant == null? Container(): Text(product.variant, style: Theme.of(context).primaryTextTheme.display2, textAlign: TextAlign.center,),
                 ],
               ),
             ),
@@ -240,8 +250,8 @@ class InventoryItemTile extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  Text(item.year, style: TextStyle(fontFamily: 'Raleway', fontSize: 15.0, fontWeight: FontWeight.bold), textAlign: TextAlign.center,),
-                  Text('${item.month} ${item.day}', style: TextStyle(fontFamily: 'Raleway', fontSize: 18.0, fontWeight: FontWeight.bold), textAlign: TextAlign.center,),
+                  Text(item.year, style: Theme.of(context).primaryTextTheme.display2.copyWith(fontWeight: FontWeight.bold), textAlign: TextAlign.center,),
+                  Text('${item.month} ${item.day}', style: Theme.of(context).primaryTextTheme.display2.copyWith(fontWeight: FontWeight.bold), textAlign: TextAlign.center,),
                 ],
               )
             ),
@@ -259,7 +269,7 @@ class InventoryItemTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
             Icon(Icons.delete, color: Colors.white),
-            Text('Remove', style: TextStyle(fontFamily: 'Montserrat', color: Colors.white, fontWeight: FontWeight.bold),),
+            Text('Remove', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 12.0, color: Colors.white, fontWeight: FontWeight.bold),),
           ],
         ),
       ),
@@ -268,7 +278,7 @@ class InventoryItemTile extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: <Widget>[
-            Text('Edit Product', style: TextStyle(fontFamily: 'Montserrat', fontWeight: FontWeight.bold),),
+            Text('Edit Product', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 12.0, color: Colors.white, fontWeight: FontWeight.bold),),
             Icon(Icons.edit),
           ],
         ),
@@ -291,12 +301,10 @@ class InventoryItemTile extends StatelessWidget {
             )
           );
         } else {
+          item.uuid = AppModelUtils.generateUuid();
+          model.addItem(item);
           Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(product),))
-            .then((editedProduct) {
-              if (editedProduct != null) model.addProduct(editedProduct);
-              item.uuid = AppModelUtils.generateUuid();
-              model.addItem(item);
-          });
+            .then((editedProduct) { if (editedProduct != null) model.addProduct(editedProduct); });
         }
       },
     );
@@ -356,9 +364,9 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
   @override
   Widget build(BuildContext context) {
     return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8,),
+      data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0,),
       child: Scaffold(
-        appBar: AppBar(title: Text(widget.product.code ?? '', style: TextStyle(fontFamily: 'Montserrat'),),),
+        appBar: AppBar(title: Text(widget.product.code ?? '', style: Theme.of(context).primaryTextTheme.title,),),
         body: ListView(
           children: <Widget>[
             Container(
@@ -373,15 +381,11 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                     children: <Widget>[
                       Expanded(
                         flex: 2,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: CachedNetworkImage(
-                            imageUrl: staging.imageUrl ?? '', width: 150.0, height: 150.0, fit: BoxFit.cover,
-                            placeholder: widget.newItem
-                              ? Image.memory(model.imageData, width: 150.0, height: 150.0, fit: BoxFit.cover)
-                              : Icon(Icons.camera_alt, color: Colors.grey.withOpacity(0.3), size: 150.0,),
+                        child: Center(
+                          child: CachedNetworkImage(imageUrl: staging.imageUrl ?? '', width: 150.0, height: 150.0, fit: BoxFit.cover,
+                            placeholder: Icon(Icons.camera_alt, color: Colors.grey.withOpacity(0.3), size: 150.0,),
                             errorWidget: Icon(Icons.camera_alt, color: Colors.grey.withOpacity(0.3), size: 150.0,),
-                          ),
+                          )
                         ),
                       ),
                       Expanded(
@@ -390,9 +394,9 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: <Widget>[
-                            Text(staging.brand ?? '',   style: TextStyle(fontFamily: 'Raleway',    fontSize: 20.0), textAlign: TextAlign.left,),
-                            Text(staging.name ?? '',    style: TextStyle(fontFamily: 'Montserrat', fontSize: 25.0), textAlign: TextAlign.left,),
-                            Text(staging.variant ?? '', style: TextStyle(fontFamily: 'Raleway',    fontSize: 20.0), textAlign: TextAlign.left,),
+                            Text(staging.brand ?? '',   style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center,),
+                            Text(staging.name ?? '',    style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 18.0), textAlign: TextAlign.center,),
+                            Text(staging.variant ?? '', style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center,),
                           ],
                         ),
                       )
@@ -410,7 +414,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                   scrollController: yearController,
                   children: List<Widget>.generate(10, (int index) {
                     return Center(
-                      child: Text('${index + 2018}', style: TextStyle(fontFamily: 'Montserrat', fontSize: 29.0))
+                      child: Text('${index + 2018}', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 18.0))
                     );
                   })
                 ),
@@ -420,7 +424,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                   scrollController: monthController,
                   children: List<Widget>.generate(12, (int index) {
                     return Center(
-                      child: Text(monthNames[index], style: TextStyle(fontFamily: 'Montserrat', fontSize: 29.0))
+                      child: Text(monthNames[index], style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 18.0))
                     );
                   })
                 ),
@@ -430,7 +434,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                   scrollController: dayController,
                   children: List<Widget>.generate(Utils.lastDayOfMonth(selectedYearMonth).day, (int index) {
                     return Center(
-                      child: Text('${index + 1}', style: TextStyle(fontFamily: 'Montserrat', fontSize: 29.0))
+                      child: Text('${index + 1}', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 18.0))
                     );
                   })
                 ),
@@ -476,9 +480,9 @@ class _ProductPageState extends State<ProductPage> {
     AppModel model = ModelFinder<AppModel>().of(context);
 
     return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8),
+      data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
       child: Scaffold(
-        appBar: AppBar(title: Text(staging.code, style: TextStyle(fontFamily: 'Montserrat'),),),
+        appBar: AppBar(title: Text(staging.code, style: Theme.of(context).primaryTextTheme.title,),),
         body: ListView(
           children: <Widget>[
             ListTile(
@@ -486,7 +490,7 @@ class _ProductPageState extends State<ProductPage> {
                 controller: _brand,
                 onChanged: (s) => staging.brand = AppModelUtils.capitalizeWords(s),
                 decoration: InputDecoration(hintText: 'Brand'),
-                style: TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
+                style: Theme.of(context).primaryTextTheme.display1,
               ),
               trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _brand.clear(); staging.brand = null; }),
             ),
@@ -495,7 +499,7 @@ class _ProductPageState extends State<ProductPage> {
                 controller: _name,
                 onChanged: (s) => staging.name = AppModelUtils.capitalizeWords(s),
                 decoration: InputDecoration(hintText: 'Product Name'),
-                style: TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
+                style: Theme.of(context).primaryTextTheme.display1,
               ),
               trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _name.clear(); staging.name = null; }),
             ),
@@ -504,7 +508,7 @@ class _ProductPageState extends State<ProductPage> {
                 controller: _variant,
                 onChanged: (s) => staging.variant = AppModelUtils.capitalizeWords(s),
                 decoration: InputDecoration(hintText: 'Variant'),
-                style: TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
+                style: Theme.of(context).primaryTextTheme.display1,
               ),
               trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _variant.clear(); staging.variant = null; }),
             ),
@@ -521,12 +525,14 @@ class _ProductPageState extends State<ProductPage> {
               },
               child: Stack(
                 children: <Widget>[
-                  CachedNetworkImage(
-                    imageUrl: staging.imageUrl ?? '', width: 250.0, height: 250.0, fit: BoxFit.cover,
-                    placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 180.0,)),
-                    errorWidget: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 180.0)),
+                  Center(
+                    child: CachedNetworkImage(
+                      imageUrl: staging.imageUrl ?? '', width: 250.0, height: 250.0, fit: BoxFit.cover,
+                      placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 180.0,)),
+                      errorWidget: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 180.0)),
+                    ),
                   ),
-                  Image.memory(stagingImage, width: 250.0, height: 250.0, fit: BoxFit.cover,),
+                  Center(child: Image.memory(stagingImage, width: 250.0, height: 250.0, fit: BoxFit.cover,)),
                 ]
               ),
             )
@@ -564,7 +570,7 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8),
+      data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
       child: Scaffold(
         appBar: AppBar(title: Text(staging.uuid, style: TextStyle(fontFamily: 'Montserrat', fontSize: 15.0),),),
         body: ListView(
