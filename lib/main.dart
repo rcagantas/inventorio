@@ -38,6 +38,9 @@ class MyAppState extends State<MyApp> {
     return ScopedModel<AppModel>(
       model: appModel,
       child: MaterialApp(
+        theme: ThemeData.light().copyWith(
+          primaryColor: Colors.blue.shade700
+        ),
         title: 'Inventorio',
         home: ListingsPage(),
       )
@@ -93,7 +96,7 @@ class ListingsPage extends StatelessWidget {
         body:
           ScopedModelDescendant<AppModel>(
             builder: (context, child, model) => ListView.builder(
-              cacheExtent: 1000.0,
+              cacheExtent: 2000.0,
               itemCount: model.inventoryItems.length,
               itemBuilder: (context, index) => InventoryItemTile(context, index),
             ),
@@ -438,6 +441,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
         floatingActionButton: FloatingActionButton(
           child: Icon(Icons.input),
           onPressed: () => Navigator.pop(context, DateTime(yearIndex, monthIndex, dayIndex)),
+          backgroundColor: Theme.of(context).primaryColor,
         ),
       ),
     );
@@ -531,6 +535,7 @@ class _ProductPageState extends State<ProductPage> {
         floatingActionButton: FloatingActionButton(
           child: Icon(Icons.input),
           onPressed: () => Navigator.pop(context, staging),
+          backgroundColor: Theme.of(context).primaryColor,
         ),
       )
     );
