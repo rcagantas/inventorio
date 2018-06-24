@@ -101,7 +101,8 @@ class ListingsPage extends StatelessWidget {
         body:
           ScopedModelDescendant<AppModel>(
             builder: (context, child, model) => ListView.builder(
-              //cacheExtent: 2000.0,
+              cacheExtent: 1000.0,
+              itemExtent: 80.0,
               itemCount: model.inventoryItems.length,
               itemBuilder: (context, index) => InventoryItemTile(context, index),
             ),
@@ -228,6 +229,7 @@ class InventoryItemTile extends StatelessWidget {
               child: product?.imageUrl == null
               ? Icon(Icons.camera_alt, color: Colors.grey.withOpacity(.30),)
               : CachedNetworkImage(
+                key: ObjectKey(product.imageUrl),
                 imageUrl: product?.imageUrl ?? '',
                 width: 78.0, height: 78.0, fit: BoxFit.cover,
                 fadeOutDuration: Duration(milliseconds: 100),
@@ -572,7 +574,7 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
       child: Scaffold(
-        appBar: AppBar(title: Text(staging.uuid, style: TextStyle(fontFamily: 'Montserrat', fontSize: 15.0),),),
+        appBar: AppBar(title: Text(staging.uuid, style: Theme.of(context).primaryTextTheme.title,),),
         body: ListView(
           children: <Widget>[
             ListTile(
@@ -580,12 +582,12 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
                 controller: _name,
                 onChanged: (s) => staging.name = AppModelUtils.capitalizeWords(s),
                 decoration: InputDecoration(hintText: 'New Inventory Name'),
-                style: TextStyle(fontFamily: 'Montserrat', color: Colors.black, fontSize: 18.0),
+                style: Theme.of(context).primaryTextTheme.display1,
               ),
               trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _name.clear(); staging.name = null; }),
             ),
             Divider(),
-            ListTile(title: Text('Share this inventory by scanning the image below.', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),),
+            ListTile(title: Text('Share this inventory by scanning the image below.', style: Theme.of(context).primaryTextTheme.display1,),),
             Center(
               child: QrImage(
                 data: staging.uuid,
@@ -596,7 +598,7 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
             ? Container(width: 0.0, height: 0.0,)
             : ListTile(
               title: RaisedButton(
-                child: Text('Unsubscribe to inventory', style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
+                child: Text('Unsubscribe to inventory', style: Theme.of(context).primaryTextTheme.display1,),
                 onPressed: () async {
                   AppModel model = ModelFinder<AppModel>().of(context);
                   if (await model.sureDialog(context, 'Are you sure?', 'Unsubscribe', 'Cancel')) {
