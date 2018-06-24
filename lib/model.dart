@@ -13,6 +13,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:quiver/core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 
 part 'model.g.dart';
 
@@ -152,6 +153,7 @@ class AppModel extends Model {
   }
 
   AppModel() {
+    imageCache.clear();
     _googleSignIn = GoogleSignIn();
     _googleSignIn.onCurrentUserChanged.listen((account) {
       if (account == null) {

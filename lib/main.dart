@@ -101,7 +101,7 @@ class ListingsPage extends StatelessWidget {
         body:
           ScopedModelDescendant<AppModel>(
             builder: (context, child, model) => ListView.builder(
-              cacheExtent: 1000.0,
+              cacheExtent: 80.0 * 30,
               itemExtent: 80.0,
               itemCount: model.inventoryItems.length,
               itemBuilder: (context, index) => InventoryItemTile(context, index),
@@ -228,14 +228,11 @@ class InventoryItemTile extends StatelessWidget {
               width: 78.0, height: 78.0,
               child: product?.imageUrl == null
               ? Icon(Icons.camera_alt, color: Colors.grey.withOpacity(.30),)
-              : CachedNetworkImage(
-                key: ObjectKey(product.imageUrl),
-                imageUrl: product?.imageUrl ?? '',
-                width: 78.0, height: 78.0, fit: BoxFit.cover,
-                fadeOutDuration: Duration(milliseconds: 100),
-                placeholder: Icon(Icons.camera_alt, color: Colors.grey.withOpacity(.30),),
-                errorWidget: Icon(Icons.camera_alt, color: Colors.grey.withOpacity(.30),),
-              ),
+              : FadeInImage(
+                fit: BoxFit.fitWidth,
+                placeholder: MemoryImage(kTransparentImage),
+                image: CachedNetworkImageProvider(product.imageUrl, scale: 0.001)
+              )
             ),
             Expanded(
               flex: 3,
