@@ -101,7 +101,6 @@ class ListingsPage extends StatelessWidget {
         body:
           ScopedModelDescendant<AppModel>(
             builder: (context, child, model) => ListView.builder(
-              cacheExtent: 80.0 * 30,
               itemExtent: 80.0,
               itemCount: model.inventoryItems.length,
               itemBuilder: (context, index) => InventoryItemTile(context, index),
@@ -226,13 +225,13 @@ class InventoryItemTile extends StatelessWidget {
           children: <Widget>[
             SizedBox(
               width: 78.0, height: 78.0,
-              child: product?.imageUrl == null
-              ? Icon(Icons.camera_alt, color: Colors.grey.withOpacity(.30),)
-              : FadeInImage(
-                fit: BoxFit.fitWidth,
-                placeholder: MemoryImage(kTransparentImage),
-                image: CachedNetworkImageProvider(product.imageUrl, scale: 0.001)
-              )
+              child: product?.thumbUrl == null
+              ? Icon(Icons.camera_alt, color: Colors.grey.shade400,)
+              : CachedNetworkImage(
+                imageUrl: product?.thumbUrl ?? '', fit: BoxFit.cover,
+                placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey)),
+                errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
+              ),
             ),
             Expanded(
               flex: 3,
@@ -471,7 +470,7 @@ class _ProductPageState extends State<ProductPage> {
     _name = TextEditingController(text: staging.name);
     _variant = TextEditingController(text: staging.variant);
 
-    ModelFinder<AppModel>().of(context).imageData = null;
+    ModelFinder<AppModel>().of(context).imageDataToUpload = null;
   }
 
   @override
@@ -517,7 +516,7 @@ class _ProductPageState extends State<ProductPage> {
                 ImagePicker.pickImage(source: ImageSource.camera).then((file) {
                   setState(() {
                     stagingImage = file.readAsBytesSync();
-                    model.imageData = stagingImage;
+                    model.imageDataToUpload = stagingImage;
                     file.deleteSync();
                   });
                 });
