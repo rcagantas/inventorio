@@ -412,7 +412,12 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                 ),
                 _createPicker(
                   context,
-                  onChange: (index) { monthIndex = index + 1; selectedYearMonth = DateTime(now.year, monthIndex); },
+                  onChange: (index) {
+                    monthIndex = index + 1;
+                    setState(() {
+                      selectedYearMonth = DateTime(now.year, monthIndex);
+                    });
+                  },
                   scrollController: monthController,
                   children: List<Widget>.generate(12, (int index) {
                     return Center(
