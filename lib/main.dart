@@ -93,8 +93,10 @@ class ListingsPage extends StatelessWidget {
           ScopedModelDescendant<AppModel>(
             builder: (context, child, model) => ListView.builder(
               itemExtent: 80.0,
-              itemCount: model.inventoryItems.length,
-              itemBuilder: (context, index) => InventoryItemTile(context, index),
+              itemCount: model.inventoryItems.length + 1,
+              itemBuilder: (context, index) => index == model.inventoryItems.length
+                ? SizedBox(height: 80.0) // add an item for padding against floating button
+                : InventoryItemTile(context, index),
             ),
           ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -372,8 +374,8 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                         child: SizedBox(
                           width: 150.0, height: 150.0,
                           child: staging?.imageUrl == null
-                              ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 100.0,)
-                              : CachedNetworkImage(
+                          ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 100.0,)
+                          : CachedNetworkImage(
                             imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
                             placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey)),
                             errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
@@ -527,8 +529,8 @@ class _ProductPageState extends State<ProductPage> {
                     child: SizedBox(
                       width: 250.0, height: 250.0,
                       child: staging?.imageUrl == null
-                          ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 200.0,)
-                          : CachedNetworkImage(
+                      ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 200.0,)
+                      : CachedNetworkImage(
                         imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
                         placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey)),
                         errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
