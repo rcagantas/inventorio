@@ -14,8 +14,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:quiver/core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
 import 'package:flutter_native_image/flutter_native_image.dart';
 
 part 'model.g.dart';
@@ -43,9 +41,8 @@ class Product extends Object with _$ProductSerializerMixin {
   String brand;
   String variant;
   String imageUrl;
-  String thumbUrl;
 
-  Product({this.code, this.name, this.brand, this.variant, this.imageUrl, this.thumbUrl});
+  Product({this.code, this.name, this.brand, this.variant, this.imageUrl});
   factory Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
 
   @override
@@ -58,8 +55,7 @@ class Product extends Object with _$ProductSerializerMixin {
       name == other.name &&
       brand == other.brand &&
       variant == other.variant &&
-      imageUrl == other.imageUrl &&
-      thumbUrl == other.thumbUrl
+      imageUrl == other.imageUrl
     ;
   }
 }
@@ -111,6 +107,21 @@ class AppModelUtils {
     if (sentence == null || sentence.trim() == '') return sentence;
     return sentence.split(' ').map((w) => '${w[0].toUpperCase()}${w.substring(1)}').join(' ').trim();
   }
+
+  static Future<Uint8List> resizeImage(File toResize) async {
+    int size = 1024;
+    ImageProperties properties = await FlutterNativeImage.getImageProperties(toResize.path);
+
+    print('Resizing image ${toResize.path}');
+    File thumbnail = await FlutterNativeImage.compressImage(toResize.path, quality: 100,
+        targetWidth: size,
+        targetHeight: (properties.height * size / properties.width).round()
+    );
+
+    Uint8List data = thumbnail.readAsBytesSync();
+    thumbnail.delete();
+    return data;
+  }
 }
 
 class AppModel extends Model {
@@ -120,7 +131,6 @@ class AppModel extends Model {
   Map<String, InventoryDetails> inventoryDetails = Map();
   String _searchFilter;
 
-  Uint8List imageDataToUpload;
   UserAccount userAccount;
 
   CollectionReference _userCollection;
@@ -257,45 +267,7 @@ class AppModel extends Model {
       Product product = Product.fromJson(doc.data);
       productMap[product.code] = product;
       notifyListeners();
-      _migrateProduct(product);
     }
-  }
-
-  void _migrateProduct(Product product) {
-    if (product.imageUrl != null && product.thumbUrl == null) {
-      print('Attempting to download ${product.imageUrl}');
-      http.get(product.imageUrl).then((response) {
-        print('Downloaded ${product.imageUrl}');
-
-        getApplicationDocumentsDirectory().then((dir) {
-          String uuid = AppModelUtils.generateUuid();
-          String fileName = '${product.code}_$uuid.jpg';
-
-          File toResize = File('${dir.path}/../tmp/$fileName');
-          toResize.writeAsBytesSync(response.bodyBytes);
-          _resizeImage(toResize, 1024).then((data) {
-            _uploadDataToStorage(data, 'thumbnails', fileName).then((url) {
-              product.thumbUrl = url;
-              _uploadProduct(product); // migrate with thumbnail url
-            });
-          }).whenComplete(() {
-            toResize.deleteSync();
-          });
-        });
-      }, onError: () {
-        print('Error downloading ${product.thumbUrl}');
-      });
-    }
-  }
-
-  Future<Uint8List> _resizeImage(File toResize, int size) async {
-    ImageProperties properties = await FlutterNativeImage.getImageProperties(toResize.path);
-    print('Resizing image ${toResize.path}');
-    File thumbnail = await FlutterNativeImage.compressImage(toResize.path, quality: 100,
-      targetWidth: size,
-      targetHeight: (properties.height * size / properties.width).round()
-    );
-    return thumbnail.readAsBytesSync();
   }
 
   void _syncProductCode(String code) {
@@ -327,27 +299,19 @@ class AppModel extends Model {
     _inventoryItemCollection.document(item.uuid).setData(item.toJson());
   }
 
-  Future<Product> _uploadProductImage(Product product) async {
+  Future<Product> _uploadProductImage(Product product, Uint8List imageDataToUpload) async {
     if (imageDataToUpload == null || imageDataToUpload.isEmpty) return product;
 
     String uuid = AppModelUtils.generateUuid();
     String fileName = '${product.code}_$uuid.jpg';
     product.imageUrl = await _uploadDataToStorage(imageDataToUpload, 'images', fileName);
 
-    Directory dir = await getApplicationDocumentsDirectory();
-    File toResize = File('${dir.path}/../tmp/$fileName');
-    toResize.writeAsBytesSync(imageDataToUpload); // write to file so we can resize
-    Uint8List data = await _resizeImage(toResize, 1024);
-    product.thumbUrl = await _uploadDataToStorage(data, 'thumbnails', fileName);
-
-    imageDataToUpload = null;
-    toResize.deleteSync(); // clean up.
     return product;
   }
 
   Future<String> _uploadDataToStorage(Uint8List data, String folder, String fileName) async {
     StorageReference storage = FirebaseStorage.instance.ref().child(folder).child(fileName);
-    StorageUploadTask uploadTask = storage.putData(imageDataToUpload);
+    StorageUploadTask uploadTask = storage.putData(data);
     UploadTaskSnapshot uploadSnap = await uploadTask.future;
     String url = uploadSnap.downloadUrl.toString();
     print('Uploaded $fileName to url');
@@ -366,7 +330,10 @@ class AppModel extends Model {
     notifyListeners(); // temporarily set to trigger updates on UI while we wait for server.
 
     _uploadProduct(product); // persist immediately so we don't lose the data.
-    _uploadProductImage(product).then((product) { _uploadProduct(product); }); // again but with image url
+  }
+
+  void addProductImage(Product product, Uint8List imageDataToUpload) {
+    _uploadProductImage(product, imageDataToUpload).then((product) { _uploadProduct(product); }); // again but with image url
   }
 
   Product getAssociatedProduct(String code) {

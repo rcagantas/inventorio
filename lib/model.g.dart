@@ -25,8 +25,7 @@ Product _$ProductFromJson(Map<String, dynamic> json) => new Product(
     name: json['name'] as String,
     brand: json['brand'] as String,
     variant: json['variant'] as String,
-    imageUrl: json['imageUrl'] as String,
-    thumbUrl: json['thumbUrl'] as String);
+    imageUrl: json['imageUrl'] as String);
 
 abstract class _$ProductSerializerMixin {
   String get code;
@@ -34,14 +33,12 @@ abstract class _$ProductSerializerMixin {
   String get brand;
   String get variant;
   String get imageUrl;
-  String get thumbUrl;
   Map<String, dynamic> toJson() => <String, dynamic>{
         'code': code,
         'name': name,
         'brand': brand,
         'variant': variant,
-        'imageUrl': imageUrl,
-        'thumbUrl': thumbUrl
+        'imageUrl': imageUrl
       };
 }
 

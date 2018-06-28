@@ -70,17 +70,8 @@ class ListingsPage extends StatelessWidget {
     print('Product $product');
     if (product == null) return;
 
-    if (!isProductIdentified) {
-      print('Attempting to add new product');
-      model.addProduct(product);
-    }
-
     print('Attempting to add new item');
-    DateTime expiry =  await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryAddPage(product, newItem: !isProductIdentified),),);
-    if (expiry == null) return;
-
-    InventoryItem item = AppModelUtils.buildInventoryItem(code, expiry);
-    if (item != null) model.addItem(item);
+    Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryAddPage(product, newItem: !isProductIdentified),),);
   }
 
   @override
@@ -225,10 +216,10 @@ class InventoryItemTile extends StatelessWidget {
           children: <Widget>[
             SizedBox(
               width: 78.0, height: 78.0,
-              child: product?.thumbUrl == null
+              child: product?.imageUrl == null
               ? Icon(Icons.camera_alt, color: Colors.grey.shade400,)
               : CachedNetworkImage(
-                imageUrl: product?.thumbUrl ?? '', fit: BoxFit.cover,
+                imageUrl: product?.imageUrl ?? '', fit: BoxFit.cover,
                 placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey)),
                 errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
               ),
@@ -293,16 +284,15 @@ class InventoryItemTile extends StatelessWidget {
                 label: "UNDO",
                 onPressed: () {
                   item.uuid = AppModelUtils.generateUuid();
-                  model.addItem(item);
+                  model.addItem(item); // undo remove
                 },
               )
             )
           );
         } else {
           item.uuid = AppModelUtils.generateUuid();
-          model.addItem(item);
-          Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(product),))
-            .then((editedProduct) { if (editedProduct != null) model.addProduct(editedProduct); });
+          model.addItem(item); // edit product
+          Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(product),));
         }
       },
     );
@@ -379,11 +369,15 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                     children: <Widget>[
                       Expanded(
                         flex: 2,
-                        child: Center(
-                          child: CachedNetworkImage(imageUrl: staging.imageUrl ?? '', width: 150.0, height: 150.0, fit: BoxFit.cover,
-                            placeholder: Icon(Icons.camera_alt, color: Colors.grey.withOpacity(0.3), size: 150.0,),
-                            errorWidget: Icon(Icons.camera_alt, color: Colors.grey.withOpacity(0.3), size: 150.0,),
-                          )
+                        child: SizedBox(
+                          width: 150.0, height: 150.0,
+                          child: staging?.imageUrl == null
+                              ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 100.0,)
+                              : CachedNetworkImage(
+                            imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
+                            placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey)),
+                            errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
+                          ),
                         ),
                       ),
                       Expanded(
@@ -442,7 +436,12 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
         ),
         floatingActionButton: FloatingActionButton(
           child: Icon(Icons.input),
-          onPressed: () => Navigator.pop(context, DateTime(yearIndex, monthIndex, dayIndex)),
+          onPressed: () {
+            DateTime expiryDate = DateTime(yearIndex, monthIndex, dayIndex);
+            InventoryItem item = AppModelUtils.buildInventoryItem(staging.code, expiryDate);
+            if (item != null) ModelFinder<AppModel>().of(context).addItem(item);
+            Navigator.pop(context, expiryDate);
+          },
           backgroundColor: Theme.of(context).primaryColor,
         ),
       ),
@@ -469,8 +468,6 @@ class _ProductPageState extends State<ProductPage> {
     _brand = TextEditingController(text: staging.brand);
     _name = TextEditingController(text: staging.name);
     _variant = TextEditingController(text: staging.variant);
-
-    ModelFinder<AppModel>().of(context).imageDataToUpload = null;
   }
 
   @override
@@ -514,20 +511,23 @@ class _ProductPageState extends State<ProductPage> {
             FlatButton(
               onPressed: () {
                 ImagePicker.pickImage(source: ImageSource.camera).then((file) {
-                  setState(() {
-                    stagingImage = file.readAsBytesSync();
-                    model.imageDataToUpload = stagingImage;
-                    file.deleteSync();
-                  });
+                  AppModelUtils.resizeImage(file)
+                    .then((data) { setState(() { stagingImage = data; }); })
+                    .whenComplete(() { file.delete(); });
                 });
               },
               child: Stack(
                 children: <Widget>[
                   Center(
-                    child: CachedNetworkImage(
-                      imageUrl: staging.imageUrl ?? '', width: 250.0, height: 250.0, fit: BoxFit.cover,
-                      placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 180.0,)),
-                      errorWidget: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 180.0)),
+                    child: SizedBox(
+                      width: 250.0, height: 250.0,
+                      child: staging?.imageUrl == null
+                          ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 200.0,)
+                          : CachedNetworkImage(
+                        imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
+                        placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey)),
+                        errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
+                      ),
                     ),
                   ),
                   Center(child: Image.memory(stagingImage, width: 250.0, height: 250.0, fit: BoxFit.cover,)),
@@ -538,7 +538,12 @@ class _ProductPageState extends State<ProductPage> {
         ),
         floatingActionButton: FloatingActionButton(
           child: Icon(Icons.input),
-          onPressed: () => Navigator.pop(context, staging),
+          onPressed: () {
+            model.addProduct(staging); // add product
+            if (stagingImage != kTransparentImage)
+              model.addProductImage(staging, stagingImage); // update with image;
+            Navigator.pop(context, staging);
+          },
           backgroundColor: Theme.of(context).primaryColor,
         ),
       )
