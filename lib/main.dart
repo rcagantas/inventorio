@@ -60,7 +60,18 @@ class ListingsPage extends StatelessWidget {
     if (!model.isSignedIn) { model.signIn(); return; }
 
     print('Scanning new item...');
+
     String code = await BarcodeScanner.scan();
+    if (code.contains('/')) {
+      Scaffold.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Invalid code: $code"), duration: Duration(seconds: 5),
+          action: SnackBarAction(label: "COPY", onPressed: () { Clipboard.setData(new ClipboardData(text: code));},)
+        )
+      );
+      return;
+    }
+
     bool isProductIdentified = await model.isProductIdentified(code);
 
     Product product = isProductIdentified
@@ -100,11 +111,13 @@ class ListingsPage extends StatelessWidget {
             ),
           ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-        floatingActionButton: FloatingActionButton.extended(
-          icon: Icon(Icons.add_a_photo),
-          label: Text('Scan Barcode', style: Theme.of(context).primaryTextTheme.title),
-          backgroundColor: Theme.of(context).primaryColor,
-          onPressed: () { _addItem(context); },
+        floatingActionButton: Builder(
+          builder: (BuildContext context) => FloatingActionButton.extended(
+            icon: Icon(Icons.add_a_photo),
+            label: Text('Scan Barcode', style: Theme.of(context).primaryTextTheme.title),
+            backgroundColor: Theme.of(context).primaryColor,
+            onPressed: () { _addItem(context); },
+          ),
         ),
         drawer: Drawer(
           child: ScopedModelDescendant<AppModel>(
@@ -269,7 +282,7 @@ class InventoryItemTile extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: <Widget>[
-            Text('Edit Product', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 12.0, color: Colors.white, fontWeight: FontWeight.bold),),
+            Text('Edit Product', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 12.0, fontWeight: FontWeight.bold),),
             Icon(Icons.edit),
           ],
         ),
@@ -374,11 +387,11 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                         child: SizedBox(
                           width: 150.0, height: 150.0,
                           child: staging?.imageUrl == null
-                          ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 100.0,)
+                          ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 80.0,)
                           : CachedNetworkImage(
                             imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
-                            placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey)),
-                            errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
+                            placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 80.0,)),
+                            errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: 80.0,)),
                           ),
                         ),
                       ),
@@ -532,8 +545,8 @@ class _ProductPageState extends State<ProductPage> {
                       ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 200.0,)
                       : CachedNetworkImage(
                         imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
-                        placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey)),
-                        errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
+                        placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 200.0)),
+                        errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: 200.0)),
                       ),
                     ),
                   ),
