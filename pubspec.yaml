@@ -56,6 +56,9 @@ flutter:
     - family: Montserrat
       fonts:
         - asset: resources/fonts/Montserrat/Montserrat-Regular.ttf
+    - family: Questrial
+      fonts:
+        - asset: resources/fonts/Questrial/Questrial-Regular.ttf
 
 
   # The following line ensures that the Material Icons font is

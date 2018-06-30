@@ -114,7 +114,7 @@ class ListingsPage extends StatelessWidget {
         floatingActionButton: Builder(
           builder: (BuildContext context) => FloatingActionButton.extended(
             icon: Icon(Icons.add_a_photo),
-            label: Text('Scan Barcode', style: Theme.of(context).primaryTextTheme.title),
+            label: Text('Barcode', style: Theme.of(context).primaryTextTheme.title),
             backgroundColor: Theme.of(context).primaryColor,
             onPressed: () { _addItem(context); },
           ),
@@ -503,7 +503,6 @@ class _ProductPageState extends State<ProductPage> {
             ListTile(
               title: TextField(
                 controller: _brand,
-                onChanged: (s) => staging.brand = AppModelUtils.capitalizeWords(s),
                 decoration: InputDecoration(hintText: 'Brand'),
                 style: Theme.of(context).primaryTextTheme.display1,
               ),
@@ -512,7 +511,6 @@ class _ProductPageState extends State<ProductPage> {
             ListTile(
               title: TextField(
                 controller: _name,
-                onChanged: (s) => staging.name = AppModelUtils.capitalizeWords(s),
                 decoration: InputDecoration(hintText: 'Product Name'),
                 style: Theme.of(context).primaryTextTheme.display1,
               ),
@@ -521,7 +519,6 @@ class _ProductPageState extends State<ProductPage> {
             ListTile(
               title: TextField(
                 controller: _variant,
-                onChanged: (s) => staging.variant = AppModelUtils.capitalizeWords(s),
                 decoration: InputDecoration(hintText: 'Variant'),
                 style: Theme.of(context).primaryTextTheme.display1,
               ),
@@ -559,6 +556,9 @@ class _ProductPageState extends State<ProductPage> {
         floatingActionButton: FloatingActionButton(
           child: Icon(Icons.input),
           onPressed: () {
+            staging.brand = AppModelUtils.capitalizeWords(_brand.text);
+            staging.name = AppModelUtils.capitalizeWords(_name.text);
+            staging.variant = AppModelUtils.capitalizeWords(_variant.text);
             model.addProduct(staging); // add product
             if (stagingImage != kTransparentImage)
               model.addProductImage(staging, stagingImage); // update with image;
