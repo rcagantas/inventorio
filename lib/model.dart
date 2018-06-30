@@ -219,20 +219,24 @@ class AppModel extends Model {
 
   void _createNewUserAccount(String userId) {
     UserAccount userAccount = UserAccount(userId, AppModelUtils.generateUuid());
-    _userCollection.document(userId).setData(userAccount.toJson());
 
     Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).setData(InventoryDetails(
       uuid: userAccount.currentInventoryId,
       name: 'Inventory',
       createdBy: userAccount.userId,
     ).toJson());
+
+    _userCollection.document(userId).setData(userAccount.toJson());
   }
 
   void _loadCollections(String userId) {
     if (userId == _loadedUserId) return;
     _userCollection = Firestore.instance.collection('users');
     _userCollection.document(userId).snapshots().listen((userDoc) {
-      if (!userDoc.exists) _createNewUserAccount(userId);
+      if (!userDoc.exists) {
+        _createNewUserAccount(userId);
+        return;
+      }
       userAccount = UserAccount.fromJson(userDoc.data);
       _loadData(userAccount);
     });
@@ -368,6 +372,7 @@ class AppModel extends Model {
     userAccount.knownInventories.add(inventory.uuid);
     userAccount.currentInventoryId = inventory.uuid;
     _userCollection.document(userAccount.userId).setData(userAccount.toJson());
+    _loadData(userAccount);
 
     inventory.createdBy = userAccount.userId;
     Firestore.instance.collection('inventory').document(inventory.uuid).setData(inventory.toJson());
