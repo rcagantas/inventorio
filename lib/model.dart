@@ -260,8 +260,10 @@ class AppModel extends Model {
 
     userAccount.knownInventories.forEach((inventoryId) {
       Firestore.instance.collection('inventory').document(inventoryId).snapshots().listen((doc) {
-        inventoryDetails[inventoryId] = InventoryDetails.fromJson(doc.data);
-        notifyListeners();
+        if (doc.exists && userAccount.knownInventories.contains(inventoryId)) {
+          inventoryDetails[inventoryId] = InventoryDetails.fromJson(doc.data);
+          notifyListeners();
+        }
       });
     });
   }

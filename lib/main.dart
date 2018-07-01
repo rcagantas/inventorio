@@ -114,7 +114,7 @@ class ListingsPage extends StatelessWidget {
         floatingActionButton: Builder(
           builder: (BuildContext context) => FloatingActionButton.extended(
             icon: Icon(Icons.add_a_photo),
-            label: Text('Barcode', style: Theme.of(context).primaryTextTheme.title),
+            label: Text('Scan Barcode', style: Theme.of(context).primaryTextTheme.title),
             backgroundColor: Theme.of(context).primaryColor,
             onPressed: () { _addItem(context); },
           ),
@@ -159,7 +159,6 @@ class ListingsPage extends StatelessWidget {
         dense: true,
         title: Text('Create New Inventory', style: Theme.of(context).primaryTextTheme.display1,),
         onTap: () async {
-          Navigator.of(context).pop();
           InventoryDetails inventory = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(null)));
           if (inventory != null) model.addInventory(inventory);
         },
@@ -178,7 +177,6 @@ class ListingsPage extends StatelessWidget {
         dense: true,
         title: Text('Edit/Share Inventory', style: Theme.of(context).primaryTextTheme.display1,),
         onTap: () async {
-          Navigator.of(context).pop();
           InventoryDetails details = model.currentInventory;
           InventoryDetails edited = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(details),));
           if (edited != null) model.addInventory(edited);
