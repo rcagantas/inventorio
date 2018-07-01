@@ -66,7 +66,7 @@ class ListingsPage extends StatelessWidget {
       Scaffold.of(context).showSnackBar(
         SnackBar(
           content: Text("Invalid code: $code"), duration: Duration(seconds: 5),
-          action: SnackBarAction(label: "COPY", onPressed: () { Clipboard.setData(new ClipboardData(text: code));},)
+          action: SnackBarAction(label: "COPY", onPressed: () { Clipboard.setData(ClipboardData(text: code));},)
         )
       );
       return;
@@ -181,6 +181,11 @@ class ListingsPage extends StatelessWidget {
           InventoryDetails edited = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(details),));
           if (edited != null) model.addInventory(edited);
         },
+      ),
+      ListTile(
+        dense: true,
+          title: Text('Logs', style: Theme.of(context).primaryTextTheme.display1,),
+          onTap: () { Navigator.push(context, MaterialPageRoute(builder: (context) => LogPage())); }
       ),
       Divider(),
     ];
@@ -583,7 +588,7 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
   void initState() {
     super.initState();
     staging = widget.inventoryDetails == null
-      ? new InventoryDetails(uuid: AppModelUtils.generateUuid())
+      ? InventoryDetails(uuid: AppModelUtils.generateUuid())
       : widget.inventoryDetails;
     _name = TextEditingController(text: staging.name);
   }
@@ -632,6 +637,24 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
         floatingActionButton: FloatingActionButton(
           child: Icon(Icons.input),
           onPressed: () => Navigator.pop(context, staging),
+        ),
+      ),
+    );
+  }
+}
+
+class LogPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+      child: Scaffold(
+        appBar: AppBar(title: Text('Logs', style: Theme.of(context).primaryTextTheme.title,),),
+        body: ScopedModelDescendant<AppModel>(
+          builder: (context, child, model) => ListView.builder(
+            itemCount: model.logMessages.length,
+            itemBuilder: (context, index) => Text(model.logMessages[index])
+          ),
         ),
       ),
     );

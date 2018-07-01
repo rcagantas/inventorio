@@ -96,7 +96,7 @@ class UserAccount extends Object with _$UserAccountSerializerMixin {
 }
 
 class AppModelUtils {
-  static Uuid _uuid = new Uuid();
+  static Uuid _uuid = Uuid();
   static String generateUuid() => _uuid.v4();
 
   static InventoryItem buildInventoryItem(String code, DateTime expiryDate) {
@@ -139,7 +139,9 @@ class AppModel extends Model {
   CollectionReference _inventoryItemCollection;
   GoogleSignInAccount _gUser;
   GoogleSignIn _googleSignIn;
-  String _loadedUserId;
+
+  List<String> logMessages = List();
+  void logger(String log) { print(log); logMessages.add('- $log'); }
 
   set filter(String f) { _searchFilter = f?.trim()?.toLowerCase(); notifyListeners(); }
 
@@ -161,40 +163,71 @@ class AppModel extends Model {
   }
 
   void _loadFromPreferences() {
-    print('Loading last known user from shared preferences.');
+    logger('Loading last known user from shared preferences.');
     SharedPreferences.getInstance().then((save) {
       String userId = save.getString('inventorio.userId');
-      _loadCollections(userId);
+      if (userId != null) {
+        logger('Loading collection from preferences $userId');
+        _loadCollections(userId); // from pref
+      }
     });
   }
 
   AppModel() {
-    //imageCache.clear();
+    _ensureLogin();
+  }
+
+  void _ensureLogin() async {
     _googleSignIn = GoogleSignIn();
+    logger('Listening for account changes.');
     _googleSignIn.onCurrentUserChanged.listen((account) {
+
+      logger('Account changed.');
       if (account == null) {
-        _init();
+        logger('User account changed but is null. Asking for sign-in.');
+        _clearData();
         _googleSignIn.signIn();
         return;
       }
 
-      print('Google sign-in account id: ${account.id}');
-      _gUser = account;
-      _gUser.authentication.then((auth) {
-        print('Firebase sign-in with Google: ${account.id}');
-        FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
-      });
-
-      String userId = account.id;
-      SharedPreferences.getInstance().then((save) => save.setString('inventorio.userId', userId));
-      _loadCollections(userId);
+      _onLogin(account);
     });
 
-    _loadFromPreferences();
-    _googleSignIn.signInSilently(suppressErrors: true);
+    GoogleSignInAccount account = _googleSignIn.currentUser;
+    if (account == null) {
+      logger('Attempting silent sign-in.');
+      account = await _googleSignIn.signInSilently();
+    }
+
+    if (account == null) {
+      logger('Attempting proper sign-in.');
+      account = await _googleSignIn.signIn().timeout(Duration(milliseconds: 300), onTimeout: () {
+        logger('Timeout on sign-in');
+        _loadFromPreferences();
+      }).catchError((error) {
+        logger('Error on sign-in: $error');
+      });
+    }
+
+    logger('Current user: ${account?.id}');
   }
 
-  void _init() {
+  void _onLogin(GoogleSignInAccount account) {
+    if (account == null) return;
+    logger('Google sign-in account id: ${account.id}');
+    _gUser = account;
+    _gUser.authentication.then((auth) {
+      logger('Firebase sign-in with Google: ${account.id}');
+      FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
+    });
+
+    SharedPreferences.getInstance().then((save) => save.setString('inventorio.userId', account.id));
+    logger('Loading collection from Google Sign-in ${account.id}');
+    _loadCollections(account.id); // for user change
+  }
+
+  void _clearData() {
+    logger('Clearing data.');
     _gUser = null;
     _inventoryItems.clear();
     _products.clear();
@@ -218,6 +251,7 @@ class AppModel extends Model {
   InventoryDetails get currentInventory => inventoryDetails[userAccount?.currentInventoryId ?? 0] ?? null;
 
   void _createNewUserAccount(String userId) {
+    logger('Attempting to create user account for $userId');
     UserAccount userAccount = UserAccount(userId, AppModelUtils.generateUuid());
 
     Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).setData(InventoryDetails(
@@ -230,7 +264,7 @@ class AppModel extends Model {
   }
 
   void _loadCollections(String userId) {
-    if (userId == _loadedUserId) return;
+    logger('Loading inventory collection for $userId');
     _userCollection = Firestore.instance.collection('users');
     _userCollection.document(userId).snapshots().listen((userDoc) {
       if (!userDoc.exists) {
@@ -238,9 +272,9 @@ class AppModel extends Model {
         return;
       }
       userAccount = UserAccount.fromJson(userDoc.data);
+      logger('Retrieving inventory account ${userAccount.userId}');
       _loadData(userAccount);
     });
-    _loadedUserId = userId;
   }
 
   void _loadData(UserAccount userAccount) {
@@ -248,7 +282,7 @@ class AppModel extends Model {
     _productDictionary = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('productDictionary');
     _inventoryItemCollection = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('inventoryItems');
     _inventoryItemCollection.snapshots().listen((snap) {
-      print('New inventory snapshot from ${userAccount.currentInventoryId}. Clearing.');
+      logger('New inventory snapshot from ${userAccount.currentInventoryId}. Clearing.');
       _inventoryItems.clear();
       snap.documents.forEach((doc) {
         InventoryItem item = InventoryItem.fromJson(doc.data);
@@ -283,25 +317,25 @@ class AppModel extends Model {
   }
 
   Future<bool> isProductIdentified(String code) async {
-    print('Checking remote dictionary for $code');
+    logger('Checking remote dictionary for $code');
     var doc = await _productDictionary.document(code).get();
     if (doc.exists) { _syncProduct(doc, _products); return true; }
 
-    print('Checking remote master dictionary for $code');
+    logger('Checking remote master dictionary for $code');
     var masterDoc = await _masterProductDictionary.document(code).get();
     if (masterDoc.exists) { _syncProduct(masterDoc, _productsMaster); return true; }
 
-    print('$code not identified');
+    logger('$code not identified');
     return false;
   }
 
   void removeItem(String uuid) {
-    print('Trying to delete item $uuid');
+    logger('Trying to delete item $uuid');
     _inventoryItemCollection.document(uuid).delete();
   }
 
   void addItem(InventoryItem item) {
-    print('Trying to add item ${item.toJson()}');
+    logger('Trying to add item ${item.toJson()}');
     _inventoryItemCollection.document(item.uuid).setData(item.toJson());
   }
 
@@ -320,12 +354,12 @@ class AppModel extends Model {
     StorageUploadTask uploadTask = storage.putData(data);
     UploadTaskSnapshot uploadSnap = await uploadTask.future;
     String url = uploadSnap.downloadUrl.toString();
-    print('Uploaded $fileName to url');
+    logger('Uploaded $fileName to url');
     return url;
   }
 
   void _uploadProduct(Product product) {
-    print('Trying to set product ${product.code} with ${product.toJson()}');
+    logger('Trying to set product ${product.code} with ${product.toJson()}');
     _productDictionary.document(product.code).setData(product.toJson());
     _masterProductDictionary.document(product.code).setData(product.toJson());
   }
@@ -378,7 +412,7 @@ class AppModel extends Model {
 
     inventory.createdBy = userAccount.userId;
     Firestore.instance.collection('inventory').document(inventory.uuid).setData(inventory.toJson());
-    print('Setting inventory: ${inventory.uuid}');
+    logger('Setting inventory: ${inventory.uuid}');
   }
 
   void changeCurrentInventory(String code) {
@@ -394,7 +428,7 @@ class AppModel extends Model {
     userAccount.knownInventories.remove(code);
     userAccount.currentInventoryId = userAccount.knownInventories[0];
     _userCollection.document(userAccount.userId).setData(userAccount.toJson());
-    print('Unsubscribing ${userAccount.userId} from inventory $code');
+    logger('Unsubscribing ${userAccount.userId} from inventory $code');
   }
 
   Future<String> scanInventory() async {
@@ -402,7 +436,7 @@ class AppModel extends Model {
     String code = await BarcodeScanner.scan();
     if (!userAccount.knownInventories.contains(code)) userAccount.knownInventories.add(code);
     userAccount.currentInventoryId = code;
-    print('Scanned inventory code $code');
+    logger('Scanned inventory code $code');
     _userCollection.document(userAccount.userId).setData(userAccount.toJson());
     return code;
   }
