@@ -139,9 +139,14 @@ class AppModel extends Model {
   CollectionReference _inventoryItemCollection;
   GoogleSignInAccount _gUser;
   GoogleSignIn _googleSignIn;
+  String _loadedAccountId;
 
   List<String> logMessages = List();
-  void logger(String log) { print(log); logMessages.add('- $log'); }
+  void logger(String log) {
+    print(log);
+    log = _loadedAccountId == null? log : log.replaceAll(_loadedAccountId, '[${_loadedAccountId?.substring(0, 5)}...]');
+    logMessages.add('- $log');
+  }
 
   set filter(String f) { _searchFilter = f?.trim()?.toLowerCase(); notifyListeners(); }
 
@@ -167,7 +172,8 @@ class AppModel extends Model {
     SharedPreferences.getInstance().then((save) {
       String userId = save.getString('inventorio.userId');
       if (userId != null) {
-        logger('Loading collection from preferences $userId');
+        _loadedAccountId = userId;
+        logger('Loading collection from preferences $userId.');
         _loadCollections(userId); // from pref
       }
     });
@@ -196,24 +202,27 @@ class AppModel extends Model {
     GoogleSignInAccount account = _googleSignIn.currentUser;
     if (account == null) {
       logger('Attempting silent sign-in.');
-      account = await _googleSignIn.signInSilently();
+      account = await _googleSignIn.signInSilently().catchError((error) {
+        logger('Error on silent sign-in: $error');
+      });
     }
 
     if (account == null) {
       logger('Attempting proper sign-in.');
-      account = await _googleSignIn.signIn().timeout(Duration(milliseconds: 300), onTimeout: () {
-        logger('Timeout on sign-in');
-        _loadFromPreferences();
-      }).catchError((error) {
+      account = await _googleSignIn.signIn().catchError((error) {
         logger('Error on sign-in: $error');
+      }).timeout(Duration(seconds: 2), onTimeout: () {
+        logger('Timeout on proper sign-in');
+        _loadFromPreferences();
       });
     }
 
-    logger('Current user: ${account?.id}');
+    logger('Logged in as: ${account?.id}');
   }
 
   void _onLogin(GoogleSignInAccount account) {
     if (account == null) return;
+    _loadedAccountId = account.id;
     logger('Google sign-in account id: ${account.id}');
     _gUser = account;
     _gUser.authentication.then((auth) {
@@ -282,7 +291,6 @@ class AppModel extends Model {
     _productDictionary = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('productDictionary');
     _inventoryItemCollection = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('inventoryItems');
     _inventoryItemCollection.snapshots().listen((snap) {
-      logger('New inventory snapshot from ${userAccount.currentInventoryId}. Clearing.');
       _inventoryItems.clear();
       snap.documents.forEach((doc) {
         InventoryItem item = InventoryItem.fromJson(doc.data);
@@ -405,7 +413,9 @@ class AppModel extends Model {
 
   void addInventory(InventoryDetails inventory) {
     if (userAccount == null || inventory == null) return;
-    userAccount.knownInventories.add(inventory.uuid);
+    if (!userAccount.knownInventories.contains(inventory.uuid)) {
+      userAccount.knownInventories.add(inventory.uuid);
+    }
     userAccount.currentInventoryId = inventory.uuid;
     _userCollection.document(userAccount.userId).setData(userAccount.toJson());
     _loadData(userAccount);

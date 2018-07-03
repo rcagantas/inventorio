@@ -13,7 +13,10 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:loader_search_bar/loader_search_bar.dart';
 import 'package:date_utils/date_utils.dart';
 
-void main() => runApp(MyApp());
+void main() {
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
+    .then((_) => runApp(MyApp()));
+}
 
 class MyApp extends StatefulWidget {
   @override State<MyApp> createState() => MyAppState();
@@ -30,11 +33,6 @@ class MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
-
     return ScopedModel<AppModel>(
       model: appModel,
       child: MaterialApp(
@@ -522,7 +520,7 @@ class _ProductPageState extends State<ProductPage> {
             ListTile(
               title: TextField(
                 controller: _variant,
-                decoration: InputDecoration(hintText: 'Variant'),
+                decoration: InputDecoration(hintText: 'Variant/Flavor/Volume'),
                 style: Theme.of(context).primaryTextTheme.display1,
               ),
               trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _variant.clear(); staging.variant = null; }),
