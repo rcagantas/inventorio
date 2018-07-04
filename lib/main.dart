@@ -83,6 +83,21 @@ class ListingsPage extends StatelessWidget {
     Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryAddPage(product, newItem: !isProductIdentified),),);
   }
 
+  Widget _buildWelcome(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          Icon(Icons.add_a_photo, color: Colors.grey.shade400, size: 150.0,),
+          ListTile(title: Text('Welcome to Inventorio', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 20.0), textAlign: TextAlign.center,)),
+          ListTile(title: Text('Scanned items and expiration dates will appear here. ', style: Theme.of(context).primaryTextTheme.display1.copyWith(color: Colors.grey), textAlign: TextAlign.center,)),
+          ListTile(title: Text('Scan new items by clicking the button below.', style: Theme.of(context).primaryTextTheme.display1.copyWith(color: Colors.grey), textAlign: TextAlign.center,)),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MediaQuery(
@@ -100,13 +115,16 @@ class ListingsPage extends StatelessWidget {
         ),
         body:
           ScopedModelDescendant<AppModel>(
-            builder: (context, child, model) => ListView.builder(
-              itemExtent: 80.0,
+            builder: (context, child, model) {
+              return model.inventoryItems.length > 0
+              ? ListView.builder(
               itemCount: model.inventoryItems.length + 1,
               itemBuilder: (context, index) => index == model.inventoryItems.length
                 ? SizedBox(height: 80.0) // add an item for padding against floating button
                 : InventoryItemTile(context, index),
-            ),
+              )
+              : _buildWelcome(context);
+            },
           ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         floatingActionButton: Builder(
