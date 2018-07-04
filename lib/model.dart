@@ -292,6 +292,7 @@ class AppModel extends Model {
     _inventoryItemCollection = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('inventoryItems');
     _inventoryItemCollection.snapshots().listen((snap) {
       _inventoryItems.clear();
+      if (snap.documents.isEmpty) notifyListeners();
       snap.documents.forEach((doc) {
         InventoryItem item = InventoryItem.fromJson(doc.data);
         _inventoryItems[doc.documentID] = item;
