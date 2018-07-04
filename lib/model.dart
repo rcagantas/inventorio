@@ -213,10 +213,10 @@ class AppModel extends Model {
         logger('Error on sign-in: $error');
       }).timeout(Duration(seconds: 2), onTimeout: () {
         logger('Timeout on proper sign-in');
-        _loadFromPreferences();
       });
     }
 
+    if (account == null) _loadFromPreferences();
     logger('Logged in as: ${account?.id}');
   }
 
