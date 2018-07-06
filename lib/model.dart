@@ -129,6 +129,7 @@ class AppModel extends Model {
   Map<String, Product> _products = Map();
   Map<String, Product> _productsMaster = Map();
   Map<String, InventoryDetails> inventoryDetails = Map();
+  Map<String, int> inventoryItemCount = Map();
   String _searchFilter;
 
   UserAccount userAccount;
@@ -281,7 +282,6 @@ class AppModel extends Model {
         return;
       }
       userAccount = UserAccount.fromJson(userDoc.data);
-      logger('Retrieving inventory account ${userAccount.userId}');
       _loadData(userAccount);
     });
   }
@@ -289,15 +289,19 @@ class AppModel extends Model {
   void _loadData(UserAccount userAccount) {
     _masterProductDictionary = Firestore.instance.collection('productDictionary');
     _productDictionary = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('productDictionary');
+    _productDictionary.snapshots().listen((snap) { snap.documents.forEach((doc) { _syncProduct(doc, _products); }); });
     _inventoryItemCollection = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('inventoryItems');
     _inventoryItemCollection.snapshots().listen((snap) {
       _inventoryItems.clear();
-      if (snap.documents.isEmpty) notifyListeners();
+      inventoryItemCount[userAccount.currentInventoryId] = 0;
+      if (snap.documents.isEmpty) { notifyListeners(); }
+
       snap.documents.forEach((doc) {
         InventoryItem item = InventoryItem.fromJson(doc.data);
         _inventoryItems[doc.documentID] = item;
         notifyListeners();
         _syncProductCode(item.code);
+        inventoryItemCount[userAccount.currentInventoryId] = _inventoryItems.length;
       });
     });
 
@@ -321,7 +325,7 @@ class AppModel extends Model {
 
   void _syncProductCode(String code) {
     if (getAssociatedProduct(code) != null) return; // avoid multiple sync
-    _productDictionary.document(code).snapshots().listen((doc) => _syncProduct(doc, _products));
+    //_productDictionary.document(code).snapshots().listen((doc) => _syncProduct(doc, _products));
     _masterProductDictionary.document(code).snapshots().listen((doc) => _syncProduct(doc, _productsMaster));
   }
 

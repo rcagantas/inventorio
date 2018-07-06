@@ -37,6 +37,7 @@ class MyAppState extends State<MyApp> {
       model: appModel,
       child: MaterialApp(
         theme: ThemeData.light().copyWith(
+          selectedRowColor: Colors.lightBlueAccent,
           primaryColor: Colors.blue.shade700,
           primaryTextTheme: TextTheme(
             title: TextStyle(fontFamily: 'Montserrat', fontSize: 15.0, color: Colors.white),
@@ -149,15 +150,22 @@ class ListingsPage extends StatelessWidget {
 
   List<Widget> _buildDrawerItems(BuildContext context, AppModel model) {
     List<Widget> widgets = [
-      DrawerHeader(
-        decoration: BoxDecoration(color: Theme.of(context).primaryColor),
-        child: ListTile(
-          title: Text(model.currentInventory?.name ?? '', style: Theme.of(context).primaryTextTheme.title.copyWith(fontSize: 20.0, fontWeight: FontWeight.bold),),
-          subtitle: Text('${model.inventoryItems.length} items', style: Theme.of(context).primaryTextTheme.display2.copyWith(color: Colors.white),),
+      UserAccountsDrawerHeader(
+        accountName: Text(model.currentInventory?.name ?? '', style: Theme.of(context).primaryTextTheme.title.copyWith(fontSize: 20.0, fontWeight: FontWeight.bold),),
+        accountEmail: Text('${model.inventoryItems.length} items', style: Theme.of(context).primaryTextTheme.display2.copyWith(color: Colors.white),),
+        currentAccountPicture: CircleAvatar(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          backgroundImage: AssetImage('resources/icons/icon.png'),
         ),
+        otherAccountsPictures: <Widget>[
+          CircleAvatar(
+            backgroundColor: Theme.of(context).primaryColor,
+            backgroundImage: CachedNetworkImageProvider(model.userImageUrl)
+          ),
+        ],
       ),
       ListTile(
-        title: Text('Login with Google', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontWeight: FontWeight.bold),),
+        title: Text(model.isSignedIn? 'Log out': 'Login with Google', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontWeight: FontWeight.bold),),
         subtitle: !model.isSignedIn? null: Text('Currently logged in as ' + model.userDisplayName, style: Theme.of(context).primaryTextTheme.display2,),
         onTap: () {
           Navigator.of(context).pop(); model.signIn();
@@ -170,38 +178,40 @@ class ListingsPage extends StatelessWidget {
           }
         },
       ),
-      ListTile(
-        enabled: model.isSignedIn,
-        dense: true,
-        title: Text('Create New Inventory', style: Theme.of(context).primaryTextTheme.display1,),
-        onTap: () async {
-          InventoryDetails inventory = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(null)));
-          if (inventory != null) model.addInventory(inventory);
-        },
-      ),
-      ListTile(
-        enabled: model.isSignedIn,
-        dense: true,
-        title: Text('Scan Existing Inventory Code', style: Theme.of(context).primaryTextTheme.display1,),
-        onTap: () {
-          Navigator.of(context).pop();
-          model.scanInventory();
-        },
-      ),
-      ListTile(
-        enabled: model.isSignedIn,
-        dense: true,
-        title: Text('Edit/Share Inventory', style: Theme.of(context).primaryTextTheme.display1,),
-        onTap: () async {
-          InventoryDetails details = model.currentInventory;
-          InventoryDetails edited = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(details),));
-          if (edited != null) model.addInventory(edited);
-        },
-      ),
-      ListTile(
-        dense: true,
-          title: Text('Logs', style: Theme.of(context).primaryTextTheme.display1,),
-          onTap: () { Navigator.push(context, MaterialPageRoute(builder: (context) => LogPage())); }
+      ExpansionTile(
+        title: Text('Inventory Management', style: Theme.of(context).primaryTextTheme.display1),
+        children: <Widget>[
+          ListTile(
+            enabled: model.isSignedIn,
+            dense: true,
+            title: Text('Create New Inventory', style: Theme.of(context).primaryTextTheme.display1,),
+            onTap: () async {
+              InventoryDetails inventory = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(null)));
+              if (inventory != null) model.addInventory(inventory);
+            },
+          ),
+          ListTile(
+            enabled: model.isSignedIn,
+            dense: true,
+            title: Text('Scan Existing Inventory Code', style: Theme.of(context).primaryTextTheme.display1,),
+            onTap: () { model.scanInventory(); },
+          ),
+          ListTile(
+            enabled: model.isSignedIn,
+            dense: true,
+            title: Text('Edit/Share Inventory', style: Theme.of(context).primaryTextTheme.display1,),
+            onTap: () async {
+              InventoryDetails details = model.currentInventory;
+              InventoryDetails edited = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(details),));
+              if (edited != null) model.addInventory(edited);
+            },
+          ),
+          ListTile(
+            dense: true,
+            title: Text('Logs', style: Theme.of(context).primaryTextTheme.display1,),
+            onTap: () { Navigator.push(context, MaterialPageRoute(builder: (context) => LogPage())); }
+          ),
+        ],
       ),
       Divider(),
     ];
@@ -209,12 +219,19 @@ class ListingsPage extends StatelessWidget {
     model.userAccount?.knownInventories?.forEach((inventoryId) {
       widgets.add(
         ListTile(
+          selected: inventoryId == model.currentInventory.uuid,
+          isThreeLine: false,
           dense: true,
           title: Text(
-            model.inventoryDetails[inventoryId].toString(),
-            style: Theme.of(context).primaryTextTheme.display2
-              .copyWith(fontWeight: inventoryId == model.currentInventory.uuid? FontWeight.bold : FontWeight.normal),
-            softWrap: false,),
+            model.inventoryDetails[inventoryId]?.name ?? 'Inventory',
+            style: Theme.of(context).primaryTextTheme.display2.copyWith(fontWeight: inventoryId == model.currentInventory.uuid? FontWeight.bold : FontWeight.normal),
+            softWrap: false,
+          ),
+          subtitle: Text(
+            model.inventoryItemCount[inventoryId] == null? '' : '${model.inventoryItemCount[inventoryId]} items',
+            style: Theme.of(context).primaryTextTheme.display2.copyWith(color: Colors.grey),
+            softWrap: false,
+          ),
           onTap: () {
             model.changeCurrentInventory(inventoryId);
             Navigator.of(context).pop();
@@ -614,7 +631,7 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
       child: Scaffold(
-        appBar: AppBar(title: Text(staging.uuid, style: Theme.of(context).primaryTextTheme.title,),),
+        appBar: AppBar(title: Text('Inventory Settings', style: Theme.of(context).primaryTextTheme.title,),),
         body: ListView(
           children: <Widget>[
             ListTile(
@@ -634,6 +651,7 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
                 size: 250.0,
               ),
             ),
+            Text(staging.uuid, style: Theme.of(context).primaryTextTheme.display2, textAlign: TextAlign.center,),
             widget.inventoryDetails == null
             ? Container(width: 0.0, height: 0.0,)
             : ListTile(
@@ -647,7 +665,7 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
                   }
                 }
               ),
-            )
+            ),
           ],
         ),
         floatingActionButton: FloatingActionButton(
