@@ -157,12 +157,6 @@ class ListingsPage extends StatelessWidget {
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           backgroundImage: AssetImage('resources/icons/icon.png'),
         ),
-        otherAccountsPictures: <Widget>[
-          CircleAvatar(
-            backgroundColor: Theme.of(context).primaryColor,
-            backgroundImage: CachedNetworkImageProvider(model.userImageUrl)
-          ),
-        ],
       ),
       ListTile(
         title: Text(model.isSignedIn? 'Log out': 'Login with Google', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontWeight: FontWeight.bold),),
