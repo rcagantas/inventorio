@@ -152,7 +152,7 @@ class ListingsPage extends StatelessWidget {
     List<Widget> widgets = [
       UserAccountsDrawerHeader(
         accountName: Text(model.currentInventory?.name ?? '', style: Theme.of(context).primaryTextTheme.title.copyWith(fontSize: 20.0, fontWeight: FontWeight.bold),),
-        accountEmail: Text('${model.inventoryItems.length} items', style: Theme.of(context).primaryTextTheme.display2.copyWith(color: Colors.white),),
+        accountEmail: Text('${model.inventoryItems?.length ?? '?'} items', style: Theme.of(context).primaryTextTheme.display2.copyWith(color: Colors.white),),
         currentAccountPicture: CircleAvatar(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           backgroundImage: AssetImage('resources/icons/icon.png'),
@@ -160,7 +160,7 @@ class ListingsPage extends StatelessWidget {
       ),
       ListTile(
         title: Text(model.isSignedIn? 'Log out': 'Login with Google', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontWeight: FontWeight.bold),),
-        subtitle: !model.isSignedIn? null: Text('Currently logged in as ' + model.userDisplayName, style: Theme.of(context).primaryTextTheme.display2,),
+        subtitle: !model.isSignedIn? null: Text('Currently logged in as ${model.userDisplayName ?? '_'}', style: Theme.of(context).primaryTextTheme.display2,),
         onTap: () {
           Navigator.of(context).pop(); model.signIn();
           if (model.isSignedIn) {
@@ -188,7 +188,12 @@ class ListingsPage extends StatelessWidget {
             enabled: model.isSignedIn,
             dense: true,
             title: Text('Scan Existing Inventory Code', style: Theme.of(context).primaryTextTheme.display1,),
-            onTap: () { model.scanInventory(); },
+            onTap: () async {
+              String code = await BarcodeScanner.scan();
+              bool valid = await model.scanInventory(code);
+
+              if (!valid) { model.sureDialog(context, 'Invalid code $code. ', null, 'OK'); }
+            },
           ),
           ListTile(
             enabled: model.isSignedIn,
@@ -211,6 +216,7 @@ class ListingsPage extends StatelessWidget {
     ];
 
     model.userAccount?.knownInventories?.forEach((inventoryId) {
+      if (model.currentInventory == null) return;
       widgets.add(
         ListTile(
           selected: inventoryId == model.currentInventory.uuid,
@@ -222,7 +228,7 @@ class ListingsPage extends StatelessWidget {
             softWrap: false,
           ),
           subtitle: Text(
-            model.inventoryItemCount[inventoryId] == null? '' : '${model.inventoryItemCount[inventoryId]} items',
+            model.inventoryItemCount.containsKey(inventoryId)? '${model.inventoryItemCount[inventoryId]} items': '',
             style: Theme.of(context).primaryTextTheme.display2.copyWith(color: Colors.grey),
             softWrap: false,
           ),

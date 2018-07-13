@@ -4,6 +4,8 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>Inventorio</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -18,10 +20,27 @@
 	<string>1.0</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.603320845826-d8k3ofpnl094uf825ngj7bp3e2m550nd</string>
+				<string>com.rcagantas.inventorio</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Camera permission is required for barcode scanning.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Permission to take photos from photo library.</string>
+	<key>ITSAppUsesNonExemptEncryption</key><false/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -45,23 +64,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Permission to take photos from photo library.</string>
-	<key>NSCameraUsageDescription</key>
-    <string>Camera permission is required for barcode scanning.</string>
-    <key>CFBundleURLTypes</key>
-        <array>
-            <dict>
-                <key>CFBundleTypeRole</key>
-                <string>Editor</string>
-                <key>CFBundleURLSchemes</key>
-                <array>
-                    <!-- reverse url of your client id, for example: -->
-                    <string>com.googleusercontent.apps.603320845826-d8k3ofpnl094uf825ngj7bp3e2m550nd</string>
-                    <!-- bundle id, for example: -->
-                    <string>com.rcagantas.inventorio</string>
-                </array>
-            </dict>
-        </array>
 </dict>
 </plist>

@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:scoped_model/scoped_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-import 'package:barcode_scan/barcode_scan.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -401,7 +400,9 @@ class AppModel extends Model {
         return AlertDialog(
           title: Text(question, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
           actions: <Widget>[
-            FlatButton(
+            yes == null
+            ? Container()
+            : FlatButton(
               child: Text(yes, style: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0),),
               onPressed: () { Navigator.of(context).pop(true); },
             ),
@@ -446,13 +447,18 @@ class AppModel extends Model {
     logger('Unsubscribing ${userAccount.userId} from inventory $code');
   }
 
-  Future<String> scanInventory() async {
-    if (userAccount == null) return null;
-    String code = await BarcodeScanner.scan();
+  Future<bool> scanInventory(String code) async {
+    logger('Validating inventory code $code...');
+    if (userAccount == null) return false;
+    if (code.contains('/')) return false;
+
+    DocumentSnapshot scanned = await Firestore.instance.collection('inventory').document(code).get();
+    if (!scanned.exists) return false;
+
     if (!userAccount.knownInventories.contains(code)) userAccount.knownInventories.add(code);
-    userAccount.currentInventoryId = code;
+
     logger('Scanned inventory code $code');
     _userCollection.document(userAccount.userId).setData(userAccount.toJson());
-    return code;
+    return true;
   }
 }
