@@ -303,23 +303,23 @@ class InventoryItemTile extends StatelessWidget {
         )
       ),
       key: ObjectKey(item.uuid),
-      background: Container(
-        color: Colors.blueAccent,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            Icon(Icons.delete, color: Colors.white),
-            Text('Remove', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 12.0, color: Colors.white, fontWeight: FontWeight.bold),),
-          ],
-        ),
-      ),
       secondaryBackground: Container(
-        color: Colors.lightBlueAccent,
+        color: Colors.blueAccent,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: <Widget>[
-            Text('Edit Product', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 12.0, fontWeight: FontWeight.bold),),
+            Text('Remove', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 12.0, color: Colors.white, fontWeight: FontWeight.bold),),
+            Icon(Icons.delete, color: Colors.white),
+          ],
+        ),
+      ),
+      background: Container(
+        color: Colors.lightBlueAccent,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
             Icon(Icons.edit),
+            Text('Edit Product', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 12.0, fontWeight: FontWeight.bold),),
           ],
         ),
       ),
@@ -327,7 +327,7 @@ class InventoryItemTile extends StatelessWidget {
         AppModel model = ModelFinder<AppModel>().of(context);
         model.removeItem(item.uuid);
 
-        if (direction == DismissDirection.startToEnd) {
+        if (direction == DismissDirection.endToStart) {
           Scaffold.of(context).showSnackBar(
             SnackBar(
               content: Text('Removed item ${product?.name}'),
@@ -359,7 +359,7 @@ class InventoryAddPage extends StatefulWidget {
 
 class _InventoryAddPageState extends State<InventoryAddPage> {
 
-  List<String> monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October','November','December',];
+  List<String> monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct','Nov','Dec',];
   FixedExtentScrollController yearController, monthController, dayController;
   int yearIndex, monthIndex, dayIndex;
   DateTime selectedYearMonth;
@@ -402,6 +402,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
 
   @override
   Widget build(BuildContext context) {
+    TextStyle pickerStyle = Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 25.0);
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0,),
       child: Scaffold(
@@ -409,7 +410,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
         body: ListView(
           children: <Widget>[
             Container(
-              height: 180.0,
+              height: 160.0,
               child: ScopedModelDescendant<AppModel>(
                 builder: (context, child, model) => FlatButton(
                   onPressed: () async {
@@ -421,7 +422,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                       Expanded(
                         flex: 2,
                         child: SizedBox(
-                          width: 150.0, height: 150.0,
+                          width: 130.0, height: 130.0,
                           child: staging?.imageUrl == null
                           ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 80.0,)
                           : CachedNetworkImage(
@@ -433,14 +434,17 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                       ),
                       Expanded(
                         flex: 3,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: <Widget>[
-                            Text(staging.brand ?? '',   style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center,),
-                            Text(staging.name ?? '',    style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 18.0), textAlign: TextAlign.center,),
-                            Text(staging.variant ?? '', style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center,),
-                          ],
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              Text(staging.brand ?? '',   style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center,),
+                              Text(staging.name ?? '',    style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 18.0), textAlign: TextAlign.center,),
+                              Text(staging.variant ?? '', style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center),
+                            ],
+                          ),
                         ),
                       )
                     ],
@@ -456,9 +460,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                   onChange: (index) { yearIndex = index + now.year; selectedYearMonth = DateTime(yearIndex, monthIndex); },
                   scrollController: yearController,
                   children: List<Widget>.generate(10, (int index) {
-                    return Center(
-                      child: Text('${index + 2018}', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 18.0))
-                    );
+                    return Center(child: Text('${index + 2018}', style: pickerStyle));
                   })
                 ),
                 _createPicker(
@@ -471,9 +473,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                   },
                   scrollController: monthController,
                   children: List<Widget>.generate(12, (int index) {
-                    return Center(
-                      child: Text(monthNames[index], style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 18.0))
-                    );
+                    return Center(child: Text(monthNames[index], style: pickerStyle));
                   })
                 ),
                 _createPicker(
@@ -481,9 +481,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                   onChange: (index) { dayIndex = index + 1; },
                   scrollController: dayController,
                   children: List<Widget>.generate(Utils.lastDayOfMonth(selectedYearMonth).day, (int index) {
-                    return Center(
-                      child: Text('${index + 1}', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 18.0))
-                    );
+                    return Center(child: Text('${index + 1}', style: pickerStyle));
                   })
                 ),
               ],
