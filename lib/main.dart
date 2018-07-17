@@ -335,7 +335,7 @@ class InventoryItemTile extends StatelessWidget {
         } else {
           item.uuid = AppModelUtils.generateUuid();
           model.addItem(item); // edit product
-          Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(product),));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(product),)); // edit
         }
       },
     );
@@ -415,7 +415,10 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
               child: ScopedModelDescendant<AppModel>(
                 builder: (context, child, model) => FlatButton(
                   onPressed: () async {
-                    Product temp = await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(staging)));
+                    Product temp = await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ProductPage(staging != null? staging: Product(code: widget.code)))
+                    ); // edit from item
                     if (temp != null) setState(() { staging = temp; });
                   },
                   child: Row(
@@ -441,9 +444,9 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                             crossAxisAlignment: CrossAxisAlignment.center,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: <Widget>[
-                              Text(staging?.brand ?? '',   style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center,),
-                              Text(staging?.name ?? '?',    style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 18.0), textAlign: TextAlign.center,),
-                              Text(staging?.variant ?? '', style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center),
+                              Text(staging?.brand ?? '',            style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center,),
+                              Text(staging?.name ?? 'Unknown Item', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 18.0), textAlign: TextAlign.center,),
+                              Text(staging?.variant ?? '',          style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center),
                             ],
                           ),
                         ),
@@ -519,6 +522,7 @@ class _ProductPageState extends State<ProductPage> {
   Product staging;
   TextEditingController _brand, _name, _variant;
   Uint8List stagingImage;
+  bool isResizing = false;
 
   @override
   void initState() {
@@ -568,9 +572,15 @@ class _ProductPageState extends State<ProductPage> {
             FlatButton(
               onPressed: () {
                 ImagePicker.pickImage(source: ImageSource.camera).then((file) {
+                  setState(() { isResizing = true; });
                   AppModelUtils.resizeImage(file)
-                    .then((data) { setState(() { stagingImage = data; }); })
-                    .whenComplete(() { file.delete(); });
+                    .then((data) {
+                      setState(() { stagingImage = data; });
+                    })
+                    .whenComplete(() {
+                      file.delete();
+                      setState(() { isResizing = false; });
+                    });
                 });
               },
               child: Stack(
@@ -596,7 +606,7 @@ class _ProductPageState extends State<ProductPage> {
         floatingActionButton: FloatingActionButton(
           child: Icon(Icons.input),
           onPressed: () {
-            if (staging == null) return;
+            if (staging == null || isResizing) return;
             staging.brand = AppModelUtils.capitalizeWords(_brand.text);
             staging.name = AppModelUtils.capitalizeWords(_name.text);
             staging.variant = AppModelUtils.capitalizeWords(_variant.text);
@@ -605,7 +615,7 @@ class _ProductPageState extends State<ProductPage> {
               model.addProductImage(staging, stagingImage); // update with image;
             Navigator.pop(context, staging);
           },
-          backgroundColor: Theme.of(context).primaryColor,
+          backgroundColor: isResizing? Colors.grey: Theme.of(context).primaryColor,
         ),
       )
     );

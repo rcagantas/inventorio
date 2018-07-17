@@ -103,7 +103,7 @@ class AppModelUtils {
   }
 
   static String capitalizeWords(String sentence) {
-    if (sentence == null || sentence.trim() == '') return sentence;
+    if (sentence == null || sentence.trim() == '') return null;
     return sentence.trim().split(' ').map((w) => '${w[0].toUpperCase()}${w.substring(1)}').join(' ').trim();
   }
 
