@@ -104,17 +104,17 @@ class AppModelUtils {
 
   static String capitalizeWords(String sentence) {
     if (sentence == null || sentence.trim() == '') return sentence;
-    return sentence.split(' ').map((w) => '${w[0].toUpperCase()}${w.substring(1)}').join(' ').trim();
+    return sentence.trim().split(' ').map((w) => '${w[0].toUpperCase()}${w.substring(1)}').join(' ').trim();
   }
 
   static Future<Uint8List> resizeImage(File toResize) async {
-    int size = 1024;
+    int size = 512;
     ImageProperties properties = await FlutterNativeImage.getImageProperties(toResize.path);
 
     print('Resizing image ${toResize.path}');
     File thumbnail = await FlutterNativeImage.compressImage(toResize.path, quality: 100,
-        targetWidth: size,
-        targetHeight: (properties.height * size / properties.width).round()
+      targetWidth: size,
+      targetHeight: (properties.height * size / properties.width).round()
     );
 
     Uint8List data = thumbnail.readAsBytesSync();
@@ -377,6 +377,7 @@ class AppModel extends Model {
   }
 
   void addProduct(Product product) {
+    logger('Trying to add product ${product.code}');
     _syncProductCode(product.code);
     _productsMaster[product.code] = product;
     notifyListeners(); // temporarily set to trigger updates on UI while we wait for server.

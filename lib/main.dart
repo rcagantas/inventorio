@@ -59,7 +59,6 @@ class ListingsPage extends StatelessWidget {
     if (!model.isSignedIn) { model.signIn(); return; }
 
     print('Scanning new item...');
-
     String code = await BarcodeScanner.scan();
     if (code.contains('/')) {
       Scaffold.of(context).showSnackBar(
@@ -71,17 +70,8 @@ class ListingsPage extends StatelessWidget {
       return;
     }
 
-    bool isProductIdentified = await model.isProductIdentified(code);
-
-    Product product = isProductIdentified
-      ? model.getAssociatedProduct(code)
-      : await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(Product(code: code)),),);
-
-    print('Product $product');
-    if (product == null) return;
-
     print('Attempting to add new item');
-    Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryAddPage(product, newItem: !isProductIdentified),),);
+    Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryAddPage(code)));
   }
 
   Widget _buildWelcome(BuildContext context) {
@@ -119,10 +109,8 @@ class ListingsPage extends StatelessWidget {
             builder: (context, child, model) {
               return model.inventoryItems.length > 0
               ? ListView.builder(
-              itemCount: model.inventoryItems.length + 1,
-              itemBuilder: (context, index) => index == model.inventoryItems.length
-                ? SizedBox(height: 80.0) // add an item for padding against floating button
-                : InventoryItemTile(context, index),
+                itemCount: model.inventoryItems.length,
+                itemBuilder: (context, index) => InventoryItemTile(context, index)
               )
               : _buildWelcome(context);
             },
@@ -255,6 +243,10 @@ class InventoryItemTile extends StatelessWidget {
     return Colors.greenAccent;
   }
 
+  bool isNullOrEmpty(String test) {
+    return test == null || test == '';
+  }
+
   @override
   Widget build(BuildContext context) {
     AppModel model = ModelFinder<AppModel>().of(context);
@@ -280,9 +272,9 @@ class InventoryItemTile extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  product?.brand == null?   Container(): Text(product.brand,   style: Theme.of(context).primaryTextTheme.display2, textAlign: TextAlign.center,),
-                  product?.name == null?    Container(): Text(product.name,    style: Theme.of(context).primaryTextTheme.display1, textAlign: TextAlign.center,),
-                  product?.variant == null? Container(): Text(product.variant, style: Theme.of(context).primaryTextTheme.display2, textAlign: TextAlign.center,),
+                  isNullOrEmpty(product?.brand)?   Container(): Text(product.brand,   style: Theme.of(context).primaryTextTheme.display2, textAlign: TextAlign.center,),
+                  isNullOrEmpty(product?.name)?    Container(): Text(product.name,    style: Theme.of(context).primaryTextTheme.display1, textAlign: TextAlign.center,),
+                  isNullOrEmpty(product?.variant)? Container(): Text(product.variant, style: Theme.of(context).primaryTextTheme.display2, textAlign: TextAlign.center,),
                 ],
               ),
             ),
@@ -351,9 +343,8 @@ class InventoryItemTile extends StatelessWidget {
 }
 
 class InventoryAddPage extends StatefulWidget {
-  final Product product;
-  final bool newItem;
-  InventoryAddPage(this.product, {this.newItem = false});
+  final String code;
+  InventoryAddPage(this.code);
   @override _InventoryAddPageState createState() => _InventoryAddPageState();
 }
 
@@ -366,6 +357,8 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
   DateTime selectedDate;
   DateTime now = DateTime.now();
   Product staging;
+  bool isLoading = true;
+  bool known = false;
 
   @override
   void initState() {
@@ -377,7 +370,15 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
     yearIndex = now.year;
     monthIndex = now.month;
     dayIndex = now.day;
-    staging = widget.product;
+
+    AppModel model = ModelFinder<AppModel>().of(context);
+    model.isProductIdentified(widget.code).then((known) {
+      setState(() {
+        this.known = known;
+        this.staging = known? model.getAssociatedProduct(widget.code) : null;
+        this.isLoading = false;
+      });
+    });
   }
 
   Widget _createPicker(BuildContext context, {
@@ -406,7 +407,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0,),
       child: Scaffold(
-        appBar: AppBar(title: Text(widget.product.code ?? '', style: Theme.of(context).primaryTextTheme.title,),),
+        appBar: AppBar(title: Text(widget.code ?? '', style: Theme.of(context).primaryTextTheme.title,),),
         body: ListView(
           children: <Widget>[
             Container(
@@ -415,7 +416,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                 builder: (context, child, model) => FlatButton(
                   onPressed: () async {
                     Product temp = await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(staging)));
-                    if (temp != null) staging = temp;
+                    if (temp != null) setState(() { staging = temp; });
                   },
                   child: Row(
                     children: <Widget>[
@@ -436,13 +437,13 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                         flex: 3,
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Column(
+                          child: isLoading? Center(child: CircularProgressIndicator()) : Column(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: <Widget>[
-                              Text(staging.brand ?? '',   style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center,),
-                              Text(staging.name ?? '',    style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 18.0), textAlign: TextAlign.center,),
-                              Text(staging.variant ?? '', style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center),
+                              Text(staging?.brand ?? '',   style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center,),
+                              Text(staging?.name ?? '?',    style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 18.0), textAlign: TextAlign.center,),
+                              Text(staging?.variant ?? '', style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center),
                             ],
                           ),
                         ),
@@ -490,13 +491,18 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
         ),
         floatingActionButton: FloatingActionButton(
           child: Icon(Icons.input),
-          onPressed: () {
+          onPressed: isLoading? null: () async {
+            staging = staging == null
+              ? await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(Product(code: widget.code))))
+              : staging;
+
+            if (staging == null) return;
             DateTime expiryDate = DateTime(yearIndex, monthIndex, dayIndex);
             InventoryItem item = AppModelUtils.buildInventoryItem(staging.code, expiryDate);
             if (item != null) ModelFinder<AppModel>().of(context).addItem(item);
             Navigator.pop(context, expiryDate);
           },
-          backgroundColor: Theme.of(context).primaryColor,
+          backgroundColor: isLoading? Colors.grey: Theme.of(context).primaryColor,
         ),
       ),
     );
@@ -590,6 +596,7 @@ class _ProductPageState extends State<ProductPage> {
         floatingActionButton: FloatingActionButton(
           child: Icon(Icons.input),
           onPressed: () {
+            if (staging == null) return;
             staging.brand = AppModelUtils.capitalizeWords(_brand.text);
             staging.name = AppModelUtils.capitalizeWords(_name.text);
             staging.variant = AppModelUtils.capitalizeWords(_variant.text);
