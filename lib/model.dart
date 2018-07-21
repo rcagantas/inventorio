@@ -136,10 +136,10 @@ class AppModel extends Model {
 
   UserAccount userAccount;
 
-  CollectionReference _userCollection;
-  CollectionReference _masterProductDictionary;
-  CollectionReference _productDictionary;
-  CollectionReference _inventoryItemCollection;
+  CollectionReference get _userCollection => Firestore.instance.collection('users');
+  CollectionReference get _masterProductDictionary => Firestore.instance.collection('productDictionary');
+  CollectionReference get _productDictionary => userAccount == null? null : Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('productDictionary');
+  CollectionReference get _inventoryItemCollection => userAccount == null? null : Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('inventoryItems');
   GoogleSignInAccount _gUser;
   GoogleSignIn _googleSignIn;
   String _loadedAccountId;
@@ -258,11 +258,6 @@ class AppModel extends Model {
     _products.clear();
     _productsMaster.clear();
     _inventoryItems.clear();
-    _userCollection = null;
-    _masterProductDictionary = null;
-    _productDictionary = null;
-    _inventoryItemCollection = null;
-
     userAccount = null;
     notifyListeners();
   }
@@ -290,7 +285,6 @@ class AppModel extends Model {
 
   void _loadCollections(String userId) {
     logger('Loading inventory collection for $userId');
-    _userCollection = Firestore.instance.collection('users');
     _userCollection.document(userId).snapshots().listen((userDoc) {
       if (!userDoc.exists) {
         _createNewUserAccount(userId);
@@ -330,47 +324,48 @@ class AppModel extends Model {
     Product product = localProductDoc.exists? Product.fromJson(localProductDoc.data): Product.fromJson(masterProductDoc.data);
     _scheduleNotice(item, product, 7);
     _scheduleNotice(item, product, 30);
+    logger('Setting schedule for ${product.name}');
   }
 
-  void _setSchedulesForUserAccount(UserAccount userAccount) {
-    userAccount.knownInventories.forEach((inventoryId) {
-      Firestore.instance.collection('inventory').document(inventoryId).collection('inventoryItems').snapshots().listen((snap) {
-        // Meta actions. Do anytime any item in any inventory changes.
-        _flutterLocalNotificationsPlugin.cancelAll().then((_) {
-          userAccount.knownInventories.forEach((id) {
-            Firestore.instance.collection('inventory').document(id).collection('inventoryItems').getDocuments().then((snap) {
-              inventoryItemCount[id] = snap.documents.length;
-              snap.documents.forEach((doc) { _setProductSchedule(id, InventoryItem.fromJson(doc.data)); });
-            });
-          });
+  void _resetSchedulesForAllInventories() {
+    _flutterLocalNotificationsPlugin.cancelAll().then((_) {
+      logger('Clearing notifications');
+      userAccount.knownInventories.forEach((id) {
+        Firestore.instance.collection('inventory').document(id).collection('inventoryItems').getDocuments().then((snap) {
+          snap.documents.forEach((doc) { _setProductSchedule(id, InventoryItem.fromJson(doc.data)); });
         });
       });
     });
   }
 
   void _loadData(UserAccount userAccount) {
-    _setSchedulesForUserAccount(userAccount);
-    _masterProductDictionary = Firestore.instance.collection('productDictionary');
-    _productDictionary = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('productDictionary');
-    _inventoryItemCollection = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('inventoryItems');
-
-    _inventoryItemCollection.snapshots().listen((snap) {
-      _inventoryItems.clear();
-      if (snap.documents.isEmpty) { notifyListeners(); }
-
-      snap.documents.forEach((doc) {
-        InventoryItem item = InventoryItem.fromJson(doc.data);
-        _inventoryItems[doc.documentID] = item;
-        notifyListeners();
-        _syncProductCode(item.code);
-      });
-    });
-
     userAccount.knownInventories.forEach((inventoryId) {
       Firestore.instance.collection('inventory').document(inventoryId).snapshots().listen((doc) {
-        if (doc.exists && userAccount.knownInventories.contains(inventoryId)) {
+        if (doc.exists) {
           inventoryDetails[inventoryId] = InventoryDetails.fromJson(doc.data);
           notifyListeners();
+
+          doc.reference.collection('inventoryItems').snapshots().listen((snap) {
+            if (inventoryId == userAccount.currentInventoryId) _inventoryItems.clear();
+
+            snap.documents.forEach((doc) {
+              InventoryItem item = InventoryItem.fromJson(doc.data);
+              if (inventoryId == userAccount.currentInventoryId) {
+                _inventoryItems[doc.documentID] = item;
+                _syncProductCode(item.code);
+                notifyListeners();
+              }
+            });
+
+
+            if ((inventoryItemCount[inventoryId] != null && inventoryItemCount[inventoryId] != snap.documents.length) || // not the same
+                (inventoryItemCount[inventoryId] == null && inventoryId == userAccount.knownInventories[0]) // first known inventory
+            ) {
+              _resetSchedulesForAllInventories();
+            }
+
+            inventoryItemCount[inventoryId] = snap.documents.length;
+          });
         }
       });
     });
@@ -497,6 +492,7 @@ class AppModel extends Model {
   void changeCurrentInventory(String code) {
     if (userAccount == null || code == null) return;
     if (!userAccount.knownInventories.contains(code)) return;
+    logger('Changing current inventory to: $code');
     userAccount.currentInventoryId = code;
     _userCollection.document(userAccount.userId).setData(userAccount.toJson());
   }
