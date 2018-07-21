@@ -14,6 +14,7 @@ import 'package:quiver/core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_native_image/flutter_native_image.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 part 'model.g.dart';
 
@@ -31,6 +32,8 @@ class InventoryItem extends Object with _$InventoryItemSerializerMixin {
   String get month => DateFormat.MMM().format(expiryDate);
   String get day => DateFormat.d().format(expiryDate);
   int get daysFromToday => expiryDate.difference(DateTime.now()).inDays;
+  DateTime get weekNotification => expiryDate.subtract(Duration(days: 7)).add(Duration(hours: 9));
+  DateTime get monthNotification => expiryDate.subtract(Duration(days: 30)).add(Duration(hours: 9));
 }
 
 @JsonSerializable()
@@ -141,6 +144,8 @@ class AppModel extends Model {
   GoogleSignIn _googleSignIn;
   String _loadedAccountId;
 
+  FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin;
+
   List<String> logMessages = List();
   void logger(String log) {
     print(log);
@@ -180,7 +185,18 @@ class AppModel extends Model {
   }
 
   AppModel() {
+    _setupScheduling();
     _ensureLogin();
+  }
+
+  void _setupScheduling() {
+    _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin()
+      ..initialize(
+        InitializationSettings(
+          AndroidInitializationSettings('icon'),
+          IOSInitializationSettings()
+        )
+      );
   }
 
   void _ensureLogin() async {
@@ -285,14 +301,61 @@ class AppModel extends Model {
     });
   }
 
+  void _scheduleNotice(InventoryItem item, Product product, int daysBefore) {
+    DateTime expiry;
+    String indicator;
+    switch (daysBefore) {
+      case  7: indicator = 'Week';  expiry = item.weekNotification; break;
+      case 30: indicator = 'Month'; expiry = item.monthNotification; break;
+    }
+
+    NotificationDetails notificationDetails = NotificationDetails(
+      AndroidNotificationDetails(
+        'com.rcagantas.inventorio.scheduled.${indicator.toLowerCase()}Before',
+        'Inventorio $indicator Advance Notification',
+        'Notification a ${indicator.toLowerCase()} before expiration'
+      ),
+      IOSNotificationDetails()
+    );
+
+    if (expiry.compareTo(DateTime.now()) < 0) _flutterLocalNotificationsPlugin.schedule(
+      item.uuid.hashCode, '${product.name} ${product.variant}', 'is about to expire in $daysBefore days on ${item.expiry}',
+      expiry, notificationDetails
+    );
+  }
+
+  void _setProductSchedule(String inventoryId, InventoryItem item) async {
+    DocumentSnapshot localProductDoc = await Firestore.instance.collection('inventory').document(inventoryId).collection('productDictionary').document(item.code).get();
+    DocumentSnapshot masterProductDoc = await Firestore.instance.collection('productDictionary').document(item.code).get();
+    Product product = localProductDoc.exists? Product.fromJson(localProductDoc.data): Product.fromJson(masterProductDoc.data);
+    _scheduleNotice(item, product, 7);
+    _scheduleNotice(item, product, 30);
+  }
+
+  void _setSchedulesForUserAccount(UserAccount userAccount) {
+    userAccount.knownInventories.forEach((inventoryId) {
+      Firestore.instance.collection('inventory').document(inventoryId).collection('inventoryItems').snapshots().listen((snap) {
+        // Meta actions. Do anytime any item in any inventory changes.
+        _flutterLocalNotificationsPlugin.cancelAll().then((_) {
+          userAccount.knownInventories.forEach((id) {
+            Firestore.instance.collection('inventory').document(id).collection('inventoryItems').getDocuments().then((snap) {
+              inventoryItemCount[id] = snap.documents.length;
+              snap.documents.forEach((doc) { _setProductSchedule(id, InventoryItem.fromJson(doc.data)); });
+            });
+          });
+        });
+      });
+    });
+  }
+
   void _loadData(UserAccount userAccount) {
+    _setSchedulesForUserAccount(userAccount);
     _masterProductDictionary = Firestore.instance.collection('productDictionary');
     _productDictionary = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('productDictionary');
-    _productDictionary.snapshots().listen((snap) { snap.documents.forEach((doc) { _syncProduct(doc, _products); }); });
     _inventoryItemCollection = Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).collection('inventoryItems');
+
     _inventoryItemCollection.snapshots().listen((snap) {
       _inventoryItems.clear();
-      inventoryItemCount[userAccount.currentInventoryId] = 0;
       if (snap.documents.isEmpty) { notifyListeners(); }
 
       snap.documents.forEach((doc) {
@@ -300,7 +363,6 @@ class AppModel extends Model {
         _inventoryItems[doc.documentID] = item;
         notifyListeners();
         _syncProductCode(item.code);
-        inventoryItemCount[userAccount.currentInventoryId] = _inventoryItems.length;
       });
     });
 
@@ -324,7 +386,7 @@ class AppModel extends Model {
 
   void _syncProductCode(String code) {
     if (getAssociatedProduct(code) != null) return; // avoid multiple sync
-    //_productDictionary.document(code).snapshots().listen((doc) => _syncProduct(doc, _products));
+    _productDictionary.document(code).snapshots().listen((doc) => _syncProduct(doc, _products));
     _masterProductDictionary.document(code).snapshots().listen((doc) => _syncProduct(doc, _productsMaster));
   }
 
