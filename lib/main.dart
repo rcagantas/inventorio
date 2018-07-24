@@ -12,6 +12,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:loader_search_bar/loader_search_bar.dart';
 import 'package:date_utils/date_utils.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 void main() {
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
@@ -252,7 +253,9 @@ class InventoryItemTile extends StatelessWidget {
     AppModel model = ModelFinder<AppModel>().of(context);
     InventoryItem item = model.inventoryItems[index];
     Product product = model.getAssociatedProduct(item.code);
-    return Dismissible(
+    return Slidable(
+      delegate: SlidableDrawerDelegate(),
+      actionExtentRatio: 0.25,
       child: Container(
         height: 80.0,
         child: Row(
@@ -295,49 +298,37 @@ class InventoryItemTile extends StatelessWidget {
         )
       ),
       key: ObjectKey(item.uuid),
-      secondaryBackground: Container(
-        color: Colors.blueAccent,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: <Widget>[
-            Text('Remove', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 12.0, color: Colors.white, fontWeight: FontWeight.bold),),
-            Icon(Icons.delete, color: Colors.white),
-          ],
+      secondaryActions: <Widget>[
+        IconSlideAction(
+          caption: 'Edit Product',
+          color: Colors.lightBlueAccent,
+          icon: Icons.edit,
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(product),));
+          }
         ),
-      ),
-      background: Container(
-        color: Colors.lightBlueAccent,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            Icon(Icons.edit),
-            Text('Edit Product', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 12.0, fontWeight: FontWeight.bold),),
-          ],
-        ),
-      ),
-      onDismissed: (direction) {
-        AppModel model = ModelFinder<AppModel>().of(context);
-        model.removeItem(item.uuid);
-
-        if (direction == DismissDirection.endToStart) {
-          Scaffold.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Removed item ${product?.name}'),
-              action: SnackBarAction(
-                label: "UNDO",
-                onPressed: () {
-                  item.uuid = AppModelUtils.generateUuid();
-                  model.addItem(item); // undo remove
-                },
+        IconSlideAction(
+          caption: 'Delete',
+          color: Colors.red,
+          icon: Icons.delete,
+          onTap: () {
+            AppModel model = ModelFinder<AppModel>().of(context);
+            model.removeItem(item.uuid);
+            Scaffold.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Removed item ${product?.name}'),
+                action: SnackBarAction(
+                  label: "UNDO",
+                  onPressed: () {
+                    item.uuid = AppModelUtils.generateUuid();
+                    model.addItem(item); // undo remove
+                  },
+                )
               )
-            )
-          );
-        } else {
-          item.uuid = AppModelUtils.generateUuid();
-          model.addItem(item); // edit product
-          Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(product),)); // edit
-        }
-      },
+            );
+          },
+        ),
+      ],
     );
   }
 }

@@ -324,7 +324,7 @@ class AppModel extends Model {
     Product product = localProductDoc.exists? Product.fromJson(localProductDoc.data): Product.fromJson(masterProductDoc.data);
     _scheduleNotice(item, product, 7);
     _scheduleNotice(item, product, 30);
-    logger('Setting schedule for ${product.name}');
+    logger('Scheduling ${product.name}');
   }
 
   void _resetSchedulesForAllInventories() {
