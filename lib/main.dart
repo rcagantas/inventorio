@@ -41,9 +41,9 @@ class MyAppState extends State<MyApp> {
           selectedRowColor: Colors.lightBlueAccent,
           primaryColor: Colors.blue.shade700,
           primaryTextTheme: TextTheme(
-            title: TextStyle(fontFamily: 'Montserrat', fontSize: 15.0, color: Colors.white),
-            display1: TextStyle(fontFamily: 'Montserrat', fontSize: 15.0, color: Colors.black),
-            display2: TextStyle(fontFamily: 'Raleway', fontSize: 13.0, color: Colors.black),
+            title: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0, color: Colors.white),
+            display1: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0, color: Colors.black),
+            display2: TextStyle(fontFamily: 'Raleway', fontSize: 16.0, color: Colors.black),
           ),
         ),
         title: 'Inventorio',
@@ -92,45 +92,42 @@ class ListingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0,),
-      child: Scaffold(
-        appBar: SearchBar(
-          defaultAppBar: AppBar(
-            title: ScopedModelDescendant<AppModel>(
-              builder: (context, child, model) => Text(model.currentInventory?.name ?? 'Inventory', style: Theme.of(context).primaryTextTheme.title),
-            ),
-          ),
-          searchHint: 'Filter',
-          onActivatedChanged: (active) { if (!active) ModelFinder<AppModel>().of(context).filter = null; },
-          onQueryChanged: (query) { ModelFinder<AppModel>().of(context).filter = query; },
-        ),
-        body:
-          ScopedModelDescendant<AppModel>(
-            builder: (context, child, model) {
-              return model.inventoryItems.length > 0
-              ? ListView.builder(
-                itemCount: model.inventoryItems.length,
-                itemBuilder: (context, index) => InventoryItemTile(context, index)
-              )
-              : _buildWelcome(context);
-            },
-          ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-        floatingActionButton: Builder(
-          builder: (BuildContext context) => FloatingActionButton.extended(
-            icon: Icon(Icons.add_a_photo),
-            label: Text('Scan Barcode', style: Theme.of(context).primaryTextTheme.title),
-            backgroundColor: Theme.of(context).primaryColor,
-            onPressed: () { _addItem(context); },
+    return Scaffold(
+      appBar: SearchBar(
+        defaultAppBar: AppBar(
+          title: ScopedModelDescendant<AppModel>(
+            builder: (context, child, model) => Text(model.currentInventory?.name ?? 'Inventory', style: Theme.of(context).primaryTextTheme.title),
           ),
         ),
-        drawer: Drawer(
-          child: ScopedModelDescendant<AppModel>(
-            builder: (context, child, model) => ListView(
-              padding: EdgeInsets.zero,
-              children: _buildDrawerItems(context, model),
-            ),
+        searchHint: 'Filter',
+        onActivatedChanged: (active) { if (!active) ModelFinder<AppModel>().of(context).filter = null; },
+        onQueryChanged: (query) { ModelFinder<AppModel>().of(context).filter = query; },
+      ),
+      body:
+        ScopedModelDescendant<AppModel>(
+          builder: (context, child, model) {
+            return model.inventoryItems.length > 0
+            ? ListView.builder(
+              itemCount: model.inventoryItems.length,
+              itemBuilder: (context, index) => InventoryItemTile(context, index)
+            )
+            : _buildWelcome(context);
+          },
+        ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: Builder(
+        builder: (BuildContext context) => FloatingActionButton.extended(
+          icon: Icon(Icons.add_a_photo),
+          label: Text('Scan Barcode', style: Theme.of(context).primaryTextTheme.title),
+          backgroundColor: Theme.of(context).primaryColor,
+          onPressed: () { _addItem(context); },
+        ),
+      ),
+      drawer: Drawer(
+        child: ScopedModelDescendant<AppModel>(
+          builder: (context, child, model) => ListView(
+            padding: EdgeInsets.zero,
+            children: _buildDrawerItems(context, model),
           ),
         ),
       ),
@@ -253,15 +250,18 @@ class InventoryItemTile extends StatelessWidget {
     AppModel model = ModelFinder<AppModel>().of(context);
     InventoryItem item = model.inventoryItems[index];
     Product product = model.getAssociatedProduct(item.code);
+    double textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    double adjustedHeight = 100.0 * textScaleFactor;
+
     return Slidable(
       delegate: SlidableDrawerDelegate(),
       actionExtentRatio: 0.25,
       child: Container(
-        height: 80.0,
+        height: adjustedHeight,
         child: Row(
           children: <Widget>[
             SizedBox(
-              width: 78.0, height: 78.0,
+              width: 78.0, height: adjustedHeight - 2.0,
               child: product?.imageUrl == null
               ? Icon(Icons.camera_alt, color: Colors.grey.shade400,)
               : CachedNetworkImage(
@@ -291,7 +291,7 @@ class InventoryItemTile extends StatelessWidget {
               )
             ),
             Container(
-              width: 5.0, height: 80.0,
+              width: 5.0, height: adjustedHeight,
               color: _expiryColorScale(item.daysFromToday),
             ),
           ],
@@ -395,109 +395,106 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
   @override
   Widget build(BuildContext context) {
     TextStyle pickerStyle = Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 25.0);
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0,),
-      child: Scaffold(
-        appBar: AppBar(title: Text(widget.code ?? '', style: Theme.of(context).primaryTextTheme.title,),),
-        body: ListView(
-          children: <Widget>[
-            Container(
-              height: 160.0,
-              child: ScopedModelDescendant<AppModel>(
-                builder: (context, child, model) => FlatButton(
-                  onPressed: () async {
-                    Product temp = await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ProductPage(staging != null? staging: Product(code: widget.code)))
-                    ); // edit from item
-                    if (temp != null) setState(() { staging = temp; });
-                  },
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        flex: 2,
-                        child: SizedBox(
-                          width: 130.0, height: 130.0,
-                          child: staging?.imageUrl == null
-                          ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 80.0,)
-                          : CachedNetworkImage(
-                            imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
-                            placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 80.0,)),
-                            errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: 80.0,)),
-                          ),
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.code ?? '', style: Theme.of(context).primaryTextTheme.title,),),
+      body: ListView(
+        children: <Widget>[
+          Container(
+            height: 160.0,
+            child: ScopedModelDescendant<AppModel>(
+              builder: (context, child, model) => FlatButton(
+                onPressed: () async {
+                  Product temp = await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ProductPage(staging != null? staging: Product(code: widget.code)))
+                  ); // edit from item
+                  if (temp != null) setState(() { staging = temp; });
+                },
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      flex: 2,
+                      child: SizedBox(
+                        width: 130.0, height: 130.0,
+                        child: staging?.imageUrl == null
+                        ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 80.0,)
+                        : CachedNetworkImage(
+                          imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
+                          placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 80.0,)),
+                          errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: 80.0,)),
                         ),
                       ),
-                      Expanded(
-                        flex: 3,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: isLoading? Center(child: CircularProgressIndicator()) : Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              Text(staging?.brand ?? '',            style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center,),
-                              Text(staging?.name ?? 'Unknown Item', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 18.0), textAlign: TextAlign.center,),
-                              Text(staging?.variant ?? '',          style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center),
-                            ],
-                          ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: isLoading? Center(child: CircularProgressIndicator()) : Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Text(staging?.brand ?? '',            style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center,),
+                            Text(staging?.name ?? 'Unknown Item', style: Theme.of(context).primaryTextTheme.display1.copyWith(fontSize: 18.0), textAlign: TextAlign.center,),
+                            Text(staging?.variant ?? '',          style: Theme.of(context).primaryTextTheme.display2.copyWith(fontSize: 16.0), textAlign: TextAlign.center),
+                          ],
                         ),
-                      )
-                    ],
-                  ),
+                      ),
+                    )
+                  ],
                 ),
               ),
             ),
-            Divider(),
-            Row(
-              children: <Widget>[
-                _createPicker(
-                  context,
-                  onChange: (index) { yearIndex = index + now.year; selectedYearMonth = DateTime(yearIndex, monthIndex); },
-                  scrollController: yearController,
-                  children: List<Widget>.generate(10, (int index) {
-                    return Center(child: Text('${index + 2018}', style: pickerStyle));
-                  })
-                ),
-                _createPicker(
-                  context,
-                  onChange: (index) {
-                    monthIndex = index + 1;
-                    setState(() {
-                      selectedYearMonth = DateTime(now.year, monthIndex);
-                    });
-                  },
-                  scrollController: monthController,
-                  children: List<Widget>.generate(12, (int index) {
-                    return Center(child: Text(monthNames[index], style: pickerStyle));
-                  })
-                ),
-                _createPicker(
-                  context,
-                  onChange: (index) { dayIndex = index + 1; },
-                  scrollController: dayController,
-                  children: List<Widget>.generate(Utils.lastDayOfMonth(selectedYearMonth).day, (int index) {
-                    return Center(child: Text('${index + 1}', style: pickerStyle));
-                  })
-                ),
-              ],
-            ),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          child: Icon(Icons.input),
-          onPressed: isLoading? null: () async {
-            staging = staging == null
-              ? await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(Product(code: widget.code))))
-              : staging;
+          ),
+          Divider(),
+          Row(
+            children: <Widget>[
+              _createPicker(
+                context,
+                onChange: (index) { yearIndex = index + now.year; selectedYearMonth = DateTime(yearIndex, monthIndex); },
+                scrollController: yearController,
+                children: List<Widget>.generate(10, (int index) {
+                  return Center(child: Text('${index + 2018}', style: pickerStyle));
+                })
+              ),
+              _createPicker(
+                context,
+                onChange: (index) {
+                  monthIndex = index + 1;
+                  setState(() {
+                    selectedYearMonth = DateTime(now.year, monthIndex);
+                  });
+                },
+                scrollController: monthController,
+                children: List<Widget>.generate(12, (int index) {
+                  return Center(child: Text(monthNames[index], style: pickerStyle));
+                })
+              ),
+              _createPicker(
+                context,
+                onChange: (index) { dayIndex = index + 1; },
+                scrollController: dayController,
+                children: List<Widget>.generate(Utils.lastDayOfMonth(selectedYearMonth).day, (int index) {
+                  return Center(child: Text('${index + 1}', style: pickerStyle));
+                })
+              ),
+            ],
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.input),
+        onPressed: isLoading? null: () async {
+          staging = staging == null
+            ? await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(Product(code: widget.code))))
+            : staging;
 
-            if (staging == null) return;
-            DateTime expiryDate = DateTime(yearIndex, monthIndex, dayIndex);
-            InventoryItem item = AppModelUtils.buildInventoryItem(staging.code, expiryDate);
-            if (item != null) ModelFinder<AppModel>().of(context).addItem(item);
-            Navigator.pop(context, expiryDate);
-          },
-          backgroundColor: isLoading? Colors.grey: Theme.of(context).primaryColor,
-        ),
+          if (staging == null) return;
+          DateTime expiryDate = DateTime(yearIndex, monthIndex, dayIndex);
+          InventoryItem item = AppModelUtils.buildInventoryItem(staging.code, expiryDate);
+          if (item != null) ModelFinder<AppModel>().of(context).addItem(item);
+          Navigator.pop(context, expiryDate);
+        },
+        backgroundColor: isLoading? Colors.grey: Theme.of(context).primaryColor,
       ),
     );
   }
@@ -529,86 +526,83 @@ class _ProductPageState extends State<ProductPage> {
   Widget build(BuildContext context) {
     AppModel model = ModelFinder<AppModel>().of(context);
 
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
-      child: Scaffold(
-        appBar: AppBar(title: Text(staging.code, style: Theme.of(context).primaryTextTheme.title,),),
-        body: ListView(
-          children: <Widget>[
-            ListTile(
-              title: TextField(
-                controller: _brand,
-                decoration: InputDecoration(hintText: 'Brand'),
-                style: Theme.of(context).primaryTextTheme.display1,
-              ),
-              trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _brand.clear(); staging.brand = null; }),
+    return Scaffold(
+      appBar: AppBar(title: Text(staging.code, style: Theme.of(context).primaryTextTheme.title,),),
+      body: ListView(
+        children: <Widget>[
+          ListTile(
+            title: TextField(
+              controller: _brand,
+              decoration: InputDecoration(hintText: 'Brand'),
+              style: Theme.of(context).primaryTextTheme.display1,
             ),
-            ListTile(
-              title: TextField(
-                controller: _name,
-                decoration: InputDecoration(hintText: 'Product Name'),
-                style: Theme.of(context).primaryTextTheme.display1,
-              ),
-              trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _name.clear(); staging.name = null; }),
+            trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _brand.clear(); staging.brand = null; }),
+          ),
+          ListTile(
+            title: TextField(
+              controller: _name,
+              decoration: InputDecoration(hintText: 'Product Name'),
+              style: Theme.of(context).primaryTextTheme.display1,
             ),
-            ListTile(
-              title: TextField(
-                controller: _variant,
-                decoration: InputDecoration(hintText: 'Variant/Flavor/Volume'),
-                style: Theme.of(context).primaryTextTheme.display1,
-              ),
-              trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _variant.clear(); staging.variant = null; }),
+            trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _name.clear(); staging.name = null; }),
+          ),
+          ListTile(
+            title: TextField(
+              controller: _variant,
+              decoration: InputDecoration(hintText: 'Variant/Flavor/Volume'),
+              style: Theme.of(context).primaryTextTheme.display1,
             ),
-            Divider(),
-            FlatButton(
-              onPressed: () {
-                ImagePicker.pickImage(source: ImageSource.camera).then((file) {
-                  setState(() { isResizing = true; });
-                  AppModelUtils.resizeImage(file)
-                    .then((data) {
-                      setState(() { stagingImage = data; });
-                    })
-                    .whenComplete(() {
-                      file.delete();
-                      setState(() { isResizing = false; });
-                    });
-                });
-              },
-              child: Stack(
-                children: <Widget>[
-                  Center(
-                    child: SizedBox(
-                      width: 250.0, height: 250.0,
-                      child: staging?.imageUrl == null
-                      ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 200.0,)
-                      : CachedNetworkImage(
-                        imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
-                        placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 200.0)),
-                        errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: 200.0)),
-                      ),
+            trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _variant.clear(); staging.variant = null; }),
+          ),
+          Divider(),
+          FlatButton(
+            onPressed: () {
+              ImagePicker.pickImage(source: ImageSource.camera).then((file) {
+                setState(() { isResizing = true; });
+                AppModelUtils.resizeImage(file)
+                  .then((data) {
+                    setState(() { stagingImage = data; });
+                  })
+                  .whenComplete(() {
+                    file.delete();
+                    setState(() { isResizing = false; });
+                  });
+              });
+            },
+            child: Stack(
+              children: <Widget>[
+                Center(
+                  child: SizedBox(
+                    width: 250.0, height: 250.0,
+                    child: staging?.imageUrl == null
+                    ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 200.0,)
+                    : CachedNetworkImage(
+                      imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
+                      placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 200.0)),
+                      errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: 200.0)),
                     ),
                   ),
-                  Center(child: Image.memory(stagingImage, width: 250.0, height: 250.0, fit: BoxFit.cover,)),
-                ]
-              ),
-            )
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          child: Icon(Icons.input),
-          onPressed: () {
-            if (staging == null || isResizing) return;
-            staging.brand = AppModelUtils.capitalizeWords(_brand.text);
-            staging.name = AppModelUtils.capitalizeWords(_name.text);
-            staging.variant = AppModelUtils.capitalizeWords(_variant.text);
-            model.addProduct(staging); // add product
-            if (stagingImage != kTransparentImage)
-              model.addProductImage(staging, stagingImage); // update with image;
-            Navigator.pop(context, staging);
-          },
-          backgroundColor: isResizing? Colors.grey: Theme.of(context).primaryColor,
-        ),
-      )
+                ),
+                Center(child: Image.memory(stagingImage, width: 250.0, height: 250.0, fit: BoxFit.cover,)),
+              ]
+            ),
+          )
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.input),
+        onPressed: () {
+          if (staging == null || isResizing) return;
+          staging.brand = AppModelUtils.capitalizeWords(_brand.text);
+          staging.name = AppModelUtils.capitalizeWords(_name.text);
+          staging.variant = AppModelUtils.capitalizeWords(_variant.text);
+          model.addProduct(staging); // add product
+          if (stagingImage != kTransparentImage)
+            model.addProductImage(staging, stagingImage); // update with image;
+          Navigator.pop(context, staging);
+        },
+        backgroundColor: isResizing? Colors.grey: Theme.of(context).primaryColor,
+      ),
     );
   }
 }
@@ -634,50 +628,47 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
-      child: Scaffold(
-        appBar: AppBar(title: Text('Inventory Settings', style: Theme.of(context).primaryTextTheme.title,),),
-        body: ListView(
-          children: <Widget>[
-            ListTile(
-              title: TextField(
-                controller: _name,
-                onChanged: (s) => staging.name = AppModelUtils.capitalizeWords(s),
-                decoration: InputDecoration(hintText: 'New Inventory Name'),
-                style: Theme.of(context).primaryTextTheme.display1,
-              ),
-              trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _name.clear(); staging.name = null; }),
+    return Scaffold(
+      appBar: AppBar(title: Text('Inventory Settings', style: Theme.of(context).primaryTextTheme.title,),),
+      body: ListView(
+        children: <Widget>[
+          ListTile(
+            title: TextField(
+              controller: _name,
+              onChanged: (s) => staging.name = AppModelUtils.capitalizeWords(s),
+              decoration: InputDecoration(hintText: 'New Inventory Name'),
+              style: Theme.of(context).primaryTextTheme.display1,
             ),
-            Divider(),
-            ListTile(title: Text('Share this inventory by scanning the image below.', style: Theme.of(context).primaryTextTheme.display1,),),
-            Center(
-              child: QrImage(
-                data: staging.uuid,
-                size: 250.0,
-              ),
+            trailing: IconButton(icon: Icon(Icons.cancel, size: 20.0,), onPressed: () { _name.clear(); staging.name = null; }),
+          ),
+          Divider(),
+          ListTile(title: Text('Share this inventory by scanning the image below.', style: Theme.of(context).primaryTextTheme.display1,),),
+          Center(
+            child: QrImage(
+              data: staging.uuid,
+              size: 250.0,
             ),
-            Text(staging.uuid, style: Theme.of(context).primaryTextTheme.display2, textAlign: TextAlign.center,),
-            widget.inventoryDetails == null
-            ? Container(width: 0.0, height: 0.0,)
-            : ListTile(
-              title: RaisedButton(
-                child: Text('Unsubscribe to inventory', style: Theme.of(context).primaryTextTheme.display1,),
-                onPressed: () async {
-                  AppModel model = ModelFinder<AppModel>().of(context);
-                  if (await model.sureDialog(context, 'Are you sure?', 'Unsubscribe', 'Cancel')) {
-                    model.unsubscribeInventory(staging.uuid);
-                    Navigator.pop(context, null);
-                  }
+          ),
+          Text(staging.uuid, style: Theme.of(context).primaryTextTheme.display2, textAlign: TextAlign.center,),
+          widget.inventoryDetails == null
+          ? Container(width: 0.0, height: 0.0,)
+          : ListTile(
+            title: RaisedButton(
+              child: Text('Unsubscribe to inventory', style: Theme.of(context).primaryTextTheme.display1,),
+              onPressed: () async {
+                AppModel model = ModelFinder<AppModel>().of(context);
+                if (await model.sureDialog(context, 'Are you sure?', 'Unsubscribe', 'Cancel')) {
+                  model.unsubscribeInventory(staging.uuid);
+                  Navigator.pop(context, null);
                 }
-              ),
+              }
             ),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          child: Icon(Icons.input),
-          onPressed: () => Navigator.pop(context, staging),
-        ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.input),
+        onPressed: () => Navigator.pop(context, staging),
       ),
     );
   }
@@ -686,15 +677,12 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
 class LogPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
-      child: Scaffold(
-        appBar: AppBar(title: Text('Logs', style: Theme.of(context).primaryTextTheme.title,),),
-        body: ScopedModelDescendant<AppModel>(
-          builder: (context, child, model) => ListView.builder(
-            itemCount: model.logMessages.length,
-            itemBuilder: (context, index) => Text(model.logMessages[index])
-          ),
+    return Scaffold(
+      appBar: AppBar(title: Text('Logs', style: Theme.of(context).primaryTextTheme.title,),),
+      body: ScopedModelDescendant<AppModel>(
+        builder: (context, child, model) => ListView.builder(
+          itemCount: model.logMessages.length,
+          itemBuilder: (context, index) => Text(model.logMessages[index])
         ),
       ),
     );
