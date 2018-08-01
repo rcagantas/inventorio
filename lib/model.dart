@@ -314,7 +314,7 @@ class AppModel extends Model {
     );
 
     DateTime now = DateTime.now();
-    expiry = expiry.add(Duration(hours: now.hour, minutes: now.minute, seconds: now.second + 10));
+    expiry = expiry.add(Duration(hours: now.hour, minutes: now.minute + 5));
     
     if (expiry.compareTo(DateTime.now()) > 0) {
       logger('Alerting ${product.name} ${product.variant} on $expiry');
