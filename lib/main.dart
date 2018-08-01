@@ -41,9 +41,9 @@ class MyAppState extends State<MyApp> {
           selectedRowColor: Colors.lightBlueAccent,
           primaryColor: Colors.blue.shade700,
           primaryTextTheme: TextTheme(
-            title: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0, color: Colors.white),
-            display1: TextStyle(fontFamily: 'Montserrat', fontSize: 18.0, color: Colors.black),
-            display2: TextStyle(fontFamily: 'Raleway', fontSize: 16.0, color: Colors.black),
+            title: TextStyle(fontFamily: 'Montserrat', fontSize: 16.0, color: Colors.white),
+            display1: TextStyle(fontFamily: 'Montserrat', fontSize: 16.0, color: Colors.black),
+            display2: TextStyle(fontFamily: 'Raleway', fontSize: 14.0, color: Colors.black),
           ),
         ),
         title: 'Inventorio',
@@ -210,7 +210,7 @@ class ListingsPage extends StatelessWidget {
           dense: true,
           title: Text(
             model.inventoryDetails[inventoryId]?.name ?? 'Inventory',
-            style: Theme.of(context).primaryTextTheme.display2.copyWith(fontWeight: inventoryId == model.currentInventory.uuid? FontWeight.bold : FontWeight.normal),
+            style: Theme.of(context).primaryTextTheme.display1.copyWith(fontWeight: inventoryId == model.currentInventory.uuid? FontWeight.bold : FontWeight.normal),
             softWrap: false,
           ),
           subtitle: Text(

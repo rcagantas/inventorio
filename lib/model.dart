@@ -32,8 +32,8 @@ class InventoryItem extends Object with _$InventoryItemSerializerMixin {
   String get month => DateFormat.MMM().format(expiryDate);
   String get day => DateFormat.d().format(expiryDate);
   int get daysFromToday => expiryDate.difference(DateTime.now()).inDays;
-  DateTime get weekNotification => expiryDate.subtract(Duration(days: 7)).add(Duration(hours: 9));
-  DateTime get monthNotification => expiryDate.subtract(Duration(days: 30)).add(Duration(hours: 9));
+  DateTime get weekNotification => expiryDate.subtract(Duration(days: 7));
+  DateTime get monthNotification => expiryDate.subtract(Duration(days: 30));
 }
 
 @JsonSerializable()
@@ -195,7 +195,8 @@ class AppModel extends Model {
         InitializationSettings(
           AndroidInitializationSettings('icon'),
           IOSInitializationSettings()
-        )
+        ),
+        selectNotification: (inventoryId) { changeCurrentInventory(inventoryId); },
       );
   }
 
@@ -295,7 +296,7 @@ class AppModel extends Model {
     });
   }
 
-  void _scheduleNotice(InventoryItem item, Product product, int daysBefore) {
+  void _scheduleNotice(InventoryItem item, Product product, int daysBefore, String inventoryId) {
     DateTime expiry;
     String indicator;
     switch (daysBefore) {
@@ -312,19 +313,27 @@ class AppModel extends Model {
       IOSNotificationDetails()
     );
 
-    if (expiry.compareTo(DateTime.now()) < 0) _flutterLocalNotificationsPlugin.schedule(
-      item.uuid.hashCode, '${product.name} ${product.variant}', 'is about to expire in $daysBefore days on ${item.expiry}',
-      expiry, notificationDetails
-    );
+    DateTime now = DateTime.now();
+    expiry = expiry.add(Duration(hours: now.hour, minutes: now.minute, seconds: now.second + 10));
+    
+    if (expiry.compareTo(DateTime.now()) > 0) {
+      logger('Alerting ${product.name} ${product.variant} on $expiry');
+      _flutterLocalNotificationsPlugin.schedule(
+        hashObjects([item, indicator]),
+        '${product.name ?? ''} ${product.variant ?? ''}',
+        'is about to expire within $daysBefore days on ${item.year} ${item.month} ${item.day}',
+        expiry, notificationDetails,
+        payload: inventoryId
+      );
+    }
   }
 
   void _setProductSchedule(String inventoryId, InventoryItem item) async {
     DocumentSnapshot localProductDoc = await Firestore.instance.collection('inventory').document(inventoryId).collection('productDictionary').document(item.code).get();
     DocumentSnapshot masterProductDoc = await Firestore.instance.collection('productDictionary').document(item.code).get();
     Product product = localProductDoc.exists? Product.fromJson(localProductDoc.data): Product.fromJson(masterProductDoc.data);
-    _scheduleNotice(item, product, 7);
-    _scheduleNotice(item, product, 30);
-    logger('Scheduling ${product.name}');
+    _scheduleNotice(item, product, 7, inventoryId);
+    _scheduleNotice(item, product, 30, inventoryId);
   }
 
   void _resetSchedulesForAllInventories() {
