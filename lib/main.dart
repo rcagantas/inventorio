@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:barcode_scan/barcode_scan.dart';
+//import 'package:barcode_scan/barcode_scan.dart';
+import 'package:qr_mobile_vision/qr_camera.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -53,6 +54,38 @@ class MyAppState extends State<MyApp> {
   }
 }
 
+class ScanningPage extends StatefulWidget {
+  @override _ScanningState createState() => _ScanningState();
+}
+
+class _ScanningState extends State<ScanningPage> {
+  String code;
+
+  void _onDetection(BuildContext context, String code) {
+    if (this.code == null) {
+      print('Popping code $code');
+      this.code = code;
+      Navigator.pop(context, code);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Scan Barcode', style: Theme.of(context).primaryTextTheme.title),),
+      body: Column(
+        children: <Widget>[
+          Container(
+            height: 300.0,
+            child: QrCamera(qrCodeCallback: (code) { _onDetection(context, code); })
+          ),
+          ListTile(title: Text('Center Barcode to Scan', style: Theme.of(context).primaryTextTheme.display1, textAlign: TextAlign.center,)),
+        ],
+      )
+    );
+  }
+}
+
 class ListingsPage extends StatelessWidget {
 
   void _addItem(BuildContext context) async {
@@ -60,7 +93,9 @@ class ListingsPage extends StatelessWidget {
     if (!model.isSignedIn) { model.signIn(); return; }
 
     print('Scanning new item...');
-    String code = await BarcodeScanner.scan();
+    //String code = await BarcodeScanner.scan();
+    String code = await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanningPage()));
+    if (code == null) return;
     if (code.contains('/')) {
       Scaffold.of(context).showSnackBar(
         SnackBar(
@@ -175,7 +210,8 @@ class ListingsPage extends StatelessWidget {
             dense: true,
             title: Text('Scan Existing Inventory Code', style: Theme.of(context).primaryTextTheme.display1,),
             onTap: () async {
-              String code = await BarcodeScanner.scan();
+              //String code = await BarcodeScanner.scan();
+              String code = await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanningPage()));
               bool valid = await model.scanInventory(code);
 
               if (!valid) { model.sureDialog(context, 'Invalid code $code. ', null, 'OK'); }

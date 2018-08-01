@@ -6,7 +6,8 @@ dependencies:
     sdk: flutter
   scoped_model: ^0.2.0
   uuid: ^0.5.3
-  barcode_scan: ^0.0.4
+  # barcode_scan: ^0.0.4
+  qr_mobile_vision: ^0.0.7
   image_picker: ^0.4.0
   path_provider: ^0.4.0
   quiver_hashcode: ^1.0.0
