@@ -1,16 +1,17 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'model.dart';
+part of 'definitions.dart';
 
 // **************************************************************************
 // JsonSerializableGenerator
 // **************************************************************************
 
-InventoryItem _$InventoryItemFromJson(Map<String, dynamic> json) =>
-    new InventoryItem(
-        uuid: json['uuid'] as String,
-        code: json['code'] as String,
-        expiry: json['expiry'] as String);
+InventoryItem _$InventoryItemFromJson(Map<String, dynamic> json) {
+  return new InventoryItem(
+      uuid: json['uuid'] as String,
+      code: json['code'] as String,
+      expiry: json['expiry'] as String);
+}
 
 abstract class _$InventoryItemSerializerMixin {
   String get uuid;
@@ -20,12 +21,14 @@ abstract class _$InventoryItemSerializerMixin {
       <String, dynamic>{'uuid': uuid, 'code': code, 'expiry': expiry};
 }
 
-Product _$ProductFromJson(Map<String, dynamic> json) => new Product(
-    code: json['code'] as String,
-    name: json['name'] as String,
-    brand: json['brand'] as String,
-    variant: json['variant'] as String,
-    imageUrl: json['imageUrl'] as String);
+Product _$ProductFromJson(Map<String, dynamic> json) {
+  return new Product(
+      code: json['code'] as String,
+      brand: json['brand'] as String,
+      name: json['name'] as String,
+      variant: json['variant'] as String,
+      imageUrl: json['imageUrl'] as String);
+}
 
 abstract class _$ProductSerializerMixin {
   String get code;
@@ -42,11 +45,12 @@ abstract class _$ProductSerializerMixin {
       };
 }
 
-InventoryDetails _$InventoryDetailsFromJson(Map<String, dynamic> json) =>
-    new InventoryDetails(
-        uuid: json['uuid'] as String,
-        name: json['name'] as String,
-        createdBy: json['createdBy'] as String);
+InventoryDetails _$InventoryDetailsFromJson(Map<String, dynamic> json) {
+  return new InventoryDetails(
+      uuid: json['uuid'] as String,
+      name: json['name'] as String,
+      createdBy: json['createdBy'] as String);
+}
 
 abstract class _$InventoryDetailsSerializerMixin {
   String get uuid;
@@ -56,10 +60,12 @@ abstract class _$InventoryDetailsSerializerMixin {
       <String, dynamic>{'uuid': uuid, 'name': name, 'createdBy': createdBy};
 }
 
-UserAccount _$UserAccountFromJson(Map<String, dynamic> json) => new UserAccount(
-    json['userId'] as String, json['currentInventoryId'] as String)
-  ..knownInventories =
-      (json['knownInventories'] as List)?.map((e) => e as String)?.toList();
+UserAccount _$UserAccountFromJson(Map<String, dynamic> json) {
+  return new UserAccount(
+      json['userId'] as String, json['currentInventoryId'] as String)
+    ..knownInventories =
+        (json['knownInventories'] as List)?.map((e) => e as String)?.toList();
+}
 
 abstract class _$UserAccountSerializerMixin {
   List<String> get knownInventories;
