@@ -159,10 +159,7 @@ class InventoryModel extends Model {
                   _syncProduct(doc, InventorySet.masterProductDictionary);
                 });
 
-                isProductIdentified(item.code).whenComplete(() {
-                  _setProductScheduleFromMemory(inventoryId, item);
-                });
-
+                _asyncSetSchedule(inventoryId, item);
               });
             });
 
@@ -384,7 +381,7 @@ class InventoryModel extends Model {
     log.fine('Creating InventoryModel');
   }
 
-  DateTime _scheduleNotice(InventoryItem item, Product product, String inventoryId, int daysBefore) {
+  Future<DateTime> _scheduleNotice(InventoryItem item, Product product, String inventoryId, int daysBefore) async {
     DateTime expiry;
     String indicator;
     switch (daysBefore) {
@@ -419,11 +416,17 @@ class InventoryModel extends Model {
     return expiry;
   }
 
-  void _setProductScheduleFromMemory(String inventoryId, InventoryItem item) {
+  Future _setProductScheduleFromMemory(String inventoryId, InventoryItem item) async {
     Product product = inventories[inventoryId].getAssociatedProduct(item.code);
-    var expiryWeek =  _scheduleNotice(item, product, inventoryId, 7);
-    var expiryMonth = _scheduleNotice(item, product, inventoryId, 30);
+    var expiryWeek =  await _scheduleNotice(item, product, inventoryId, 7);
+    var expiryMonth = await _scheduleNotice(item, product, inventoryId, 30);
     log.fine('Alerting ${product.name} ${product.variant} on $expiryWeek and $expiryMonth');
+  }
+
+  void _asyncSetSchedule(String inventoryId, InventoryItem item) {
+    isProductIdentified(item.code).whenComplete(() {
+      _setProductScheduleFromMemory(inventoryId, item);
+    });
   }
 
 }

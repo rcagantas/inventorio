@@ -37,6 +37,7 @@ class InventoryAppState extends State<InventoryApp> {
         theme: ThemeData.light().copyWith(
           selectedRowColor: Colors.lightBlueAccent,
           primaryColor: Colors.blue.shade700,
+          accentColor: Colors.blue.shade700,
           accentTextTheme: TextTheme(
             button: ThemeData.light().accentTextTheme.button.copyWith(fontFamily: 'Montserrat', fontSize: 18.0), // floating button
           ),
@@ -85,9 +86,12 @@ class ListingsPage extends StatelessWidget {
             return (model.userAccount == null || model.selected?.items?.length == 0)
             ? _buildWelcome()
             : ListView.builder(
-                itemCount: model.selected?.items?.length ?? 0,
-                itemBuilder: (context, index) =>
-                  InventoryTile(model, model.selected.items[index]),
+                itemCount: (model.selected?.items?.length ?? 0) + 1, // add space at the bottom
+                itemBuilder: (context, index) {
+                  return index >= model?.selected?.items?.length ?? 0
+                  ? Container(height: 80.0,)
+                  : InventoryTile(model, model.selected.items[index]);
+                },
             );
           }
       ),
@@ -280,45 +284,54 @@ class InventoryTile extends StatelessWidget {
     double textScaleFactor = MediaQuery.of(context).textScaleFactor;
     double adjustedHeight = 98.0 * textScaleFactor;
 
-    return product == null ? Container() : Slidable(
+    return product == null ? Container(height: adjustedHeight,) : Slidable(
       delegate: SlidableDrawerDelegate(),
       actionExtentRatio: 0.25,
-      child: Container(
-        child: Row(
-          children: <Widget>[
-            SizedBox(
-              height: adjustedHeight,
-              width: 80.0,
-              child: product?.imageUrl == null
-              ? Center(child: Icon(Icons.camera_alt, color: Colors.grey))
-              : CachedNetworkImage(
-                  imageUrl: product?.imageUrl ?? '', fit: BoxFit.cover,
-                  placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey)),
-                  errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
+      child: FlatButton(
+        padding: EdgeInsets.zero,
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(
+              builder: (context) => InventoryAddPage(product.code, replace: item))
+          );
+        },
+        child: Container(
+          padding: EdgeInsets.only(bottom: 2.0),
+          child: Row(
+            children: <Widget>[
+              SizedBox(
+                height: adjustedHeight,
+                width: 80.0,
+                child: product?.imageUrl == null
+                ? Center(child: Icon(Icons.camera_alt, color: Colors.grey))
+                : CachedNetworkImage(
+                    imageUrl: product?.imageUrl ?? '', fit: BoxFit.cover,
+                    placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey)),
+                    errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
+                ),
               ),
-            ),
-            Expanded(
-              flex: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(0.5),
-                child: buildProductLabel(context, product),
+              Expanded(
+                flex: 3,
+                child: Padding(
+                  padding: const EdgeInsets.all(0.5),
+                  child: buildProductLabel(context, product),
+                ),
               ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Text('${item.year}', style: body1Bold, textAlign: alignment,),
-                  Text('${item.month} ${item.day}', style: body1Bold, textAlign: alignment,),
-                ],
+              Expanded(
+                flex: 1,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text('${item.year}', style: body1Bold, textAlign: alignment,),
+                    Text('${item.month} ${item.day}', style: body1Bold, textAlign: alignment,),
+                  ],
+                ),
               ),
-            ),
-            Container(
-              width: 5.0, height: adjustedHeight,
-              color: _expiryColorScale(item.daysFromToday),
-            ),
-          ],
+              Container(
+                width: 5.0, height: adjustedHeight,
+                color: _expiryColorScale(item.daysFromToday),
+              ),
+            ],
+          ),
         ),
       ),
       key: ObjectKey(item.uuid),
@@ -550,7 +563,8 @@ class _ScanningPageState extends State<ScanningPage> {
 
 class InventoryAddPage extends StatefulWidget {
   final String code;
-  InventoryAddPage(this.code);
+  final InventoryItem replace;
+  InventoryAddPage(this.code, {this.replace});
   @override State<InventoryAddPage> createState() => _InventoryAddPageState();
 }
 
@@ -560,22 +574,21 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
   FixedExtentScrollController yearController, monthController, dayController;
   int yearIndex, monthIndex, dayIndex;
   DateTime selectedYearMonth;
-  DateTime selectedDate;
-  DateTime now = DateTime.now();
+  DateTime ref;
   Product staging;
   bool isLoading = true;
   bool known = false;
 
   @override
   void initState() {
-    super.initState();
-    yearController = FixedExtentScrollController();
-    monthController = FixedExtentScrollController(initialItem: now.month - 1);
-    dayController = FixedExtentScrollController(initialItem: now.day - 1);
-    selectedYearMonth = DateTime(now.year, now.month);
-    yearIndex = now.year;
-    monthIndex = now.month;
-    dayIndex = now.day;
+    ref = widget.replace?.expiryDate ?? DateTime.now();
+    yearController = FixedExtentScrollController(initialItem: ref.year - DateTime.now().year - 1);
+    monthController = FixedExtentScrollController(initialItem: ref.month - 1);
+    dayController = FixedExtentScrollController(initialItem: ref.day - 1);
+    selectedYearMonth = DateTime(ref.year, ref.month);
+    yearIndex = ref.year;
+    monthIndex = ref.month;
+    dayIndex = ref.day;
 
     InventoryModel model = ScopedModel.of(context);
     model.isProductIdentified(widget.code).then((known) {
@@ -585,6 +598,8 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
         this.isLoading = false;
       });
     });
+
+    super.initState();
   }
 
   Widget _createPicker(BuildContext context, {
@@ -661,15 +676,15 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
               children: <Widget>[
                 _createPicker(
                   context,
-                  onChange: (index) { yearIndex = index + now.year; selectedYearMonth = DateTime(yearIndex, monthIndex); },
+                  onChange: (index) { yearIndex = index + ref.year; selectedYearMonth = DateTime(yearIndex, monthIndex); },
                   scrollController: yearController,
                   children: List<Widget>.generate(10, (int index) {
-                    return Center(child: Text('${index + 2018}', style: pickerStyle));
+                    return Center(child: Text('${index + ref.year}', style: pickerStyle));
                   })
                 ),
                 _createPicker(
                   context,
-                  onChange: (index) { monthIndex = index + 1; setState(() {selectedYearMonth = DateTime(now.year, monthIndex); }); },
+                  onChange: (index) { monthIndex = index + 1; setState(() {selectedYearMonth = DateTime(ref.year, monthIndex); }); },
                   scrollController: monthController,
                   children: List<Widget>.generate(12, (int index) {
                     return Center(child: Text(monthNames[index], style: pickerStyle));
@@ -699,7 +714,10 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
             DateTime expiryDate = DateTime(yearIndex, monthIndex, dayIndex);
             InventoryModel model = ScopedModel.of(context);
             InventoryItem item = model.buildInventoryItem(staging.code, expiryDate);
-            if (item != null) model.addItem(item);
+            if (item != null) {
+              if (widget.replace != null) model.removeItem(widget.replace);
+              model.addItem(item);
+            }
             Navigator.of(context).pop();
           },
           backgroundColor: isLoading? Colors.grey: Theme.of(context).primaryColor,
