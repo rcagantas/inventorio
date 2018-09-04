@@ -49,9 +49,12 @@ class InventoryModel extends Model {
           .collection('inventoryItems');
 
   Map<String, InventorySet> inventories = {};
-  int get totalItemCount => inventories.values
-        .map((i) => i.itemMap.length)
-        .reduce((l, l1) => l+l1);
+  List<InventoryItem> get allItems => inventories?.values
+      ?.map((inv) => inv?.itemMap?.values?.toList())
+      ?.expand((i) => i)
+      ?.toList();
+
+  //int get totalItemCount => allItems.length;
 
   InventorySet get selected =>
       inventories[userAccount?.currentInventoryId];
@@ -117,26 +120,27 @@ class InventoryModel extends Model {
   }
 
   void _loadUserAccount(String accountId) {
+
+    _flutterLocalNotificationsPlugin.cancelAll();
+
     userCollection.document(accountId).snapshots().listen((userDoc) {
       if (!userDoc.exists) {
         _createNewUserAccount(accountId);
         return;
       }
 
-      var previousInventories = userAccount?.knownInventories;
       userAccount = UserAccount.fromJson(userDoc.data);
       log.fine('Loaded account changes ${userDoc.data}');
 
-      if (previousInventories?.length != userAccount.knownInventories.length) {
-        log.fine('previous = $previousInventories');
-        log.fine('current = ${userAccount.knownInventories}');
-        _flutterLocalNotificationsPlugin.cancelAll().then((_) {
-          log.fine('Clearing all notifications');
-        });
-      }
+      inventories?.keys?.forEach((id) {
+        if (!userAccount.knownInventories.contains(id)) {
+          inventories.remove(id);
+        }
+      });
 
       userAccount.knownInventories.forEach((inventoryId) {
         log.fine('Loading inventory $inventoryId');
+
         inventoryCollection.document(inventoryId).snapshots().listen((doc) {
           if (!doc.exists) return;
 
@@ -159,7 +163,7 @@ class InventoryModel extends Model {
                   _syncProduct(doc, InventorySet.masterProductDictionary);
                 });
 
-                _asyncSetSchedule(inventoryId, item);
+                _delayedNotification();
               });
             });
 
@@ -168,6 +172,7 @@ class InventoryModel extends Model {
         });
 
       });
+
     });
   }
 
@@ -206,7 +211,7 @@ class InventoryModel extends Model {
     notifyListeners();
   }
 
-  void insertUpdateProduct(String code,
+  Product insertUpdateProduct(String code,
       String brand, String name,
       String variant, String imageUrl, File file) {
     Product product = Product(code: code, brand: brand, name: name, variant: variant, imageUrl: imageUrl);
@@ -219,6 +224,8 @@ class InventoryModel extends Model {
         _uploadProduct(product);
       });
     });
+
+    return product;
   }
 
   Future<Uint8List> _resizeImage(File toResize) async {
@@ -420,13 +427,28 @@ class InventoryModel extends Model {
     Product product = inventories[inventoryId].getAssociatedProduct(item.code);
     var expiryWeek =  await _scheduleNotice(item, product, inventoryId, 7);
     var expiryMonth = await _scheduleNotice(item, product, inventoryId, 30);
-    log.fine('Alerting ${product.name} ${product.variant} on $expiryWeek and $expiryMonth');
+    String logMessage = 'Alerting ${product.name ?? ''} ${product.variant ?? ''} on [$expiryWeek, $expiryMonth]';
+    log.fine(logMessage);
   }
 
-  void _asyncSetSchedule(String inventoryId, InventoryItem item) {
-    isProductIdentified(item.code).whenComplete(() {
-      _setProductScheduleFromMemory(inventoryId, item);
+  Timer _schedulingTimer;
+  void _delayedNotification() {
+    if (_schedulingTimer != null) _schedulingTimer.cancel();
+    _schedulingTimer = Timer(Duration(seconds: 2), () {
+      if (inventories.isEmpty) return;
+
+      _flutterLocalNotificationsPlugin.cancelAll().then((_) {
+        inventories.forEach((inventoryId, inventory) {
+          inventory.itemMap.values.forEach((item) {
+            isProductIdentified(item.code).whenComplete(() {
+              _setProductScheduleFromMemory(inventoryId, item);
+            });
+          });
+        });
+      }).whenComplete(() {
+        log.fine('Scheduled notifications for ${allItems.length} items.');
+      });
+
     });
   }
-
 }

@@ -88,7 +88,7 @@ class ListingsPage extends StatelessWidget {
             : ListView.builder(
                 itemCount: (model.selected?.items?.length ?? 0) + 1, // add space at the bottom
                 itemBuilder: (context, index) {
-                  return index >= model?.selected?.items?.length ?? 0
+                  return index >= (model?.selected?.items?.length ?? 0)
                   ? Container(height: 80.0,)
                   : InventoryTile(model, model.selected.items[index]);
                 },
@@ -515,14 +515,14 @@ class _ProductPageState extends State<ProductPage> {
         child: Icon(Icons.input),
         onPressed: () {
           InventoryModel model = ScopedModel.of(context);
-          model.insertUpdateProduct(
+          Product product = model.insertUpdateProduct(
               _code,
               capitalizeWords(_brandCtrl.text),
               capitalizeWords(_nameCtrl.text),
               capitalizeWords(_variantCtrl.text),
               _imageUrl,
               _stagingImage);
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(product);
         }
       ),
     );
@@ -582,7 +582,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
   @override
   void initState() {
     ref = widget.replace?.expiryDate ?? DateTime.now();
-    yearController = FixedExtentScrollController(initialItem: ref.year - DateTime.now().year - 1);
+    yearController = FixedExtentScrollController(initialItem: ref.year - DateTime.now().year);
     monthController = FixedExtentScrollController(initialItem: ref.month - 1);
     dayController = FixedExtentScrollController(initialItem: ref.day - 1);
     selectedYearMonth = DateTime(ref.year, ref.month);
@@ -676,10 +676,10 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
               children: <Widget>[
                 _createPicker(
                   context,
-                  onChange: (index) { yearIndex = index + ref.year; selectedYearMonth = DateTime(yearIndex, monthIndex); },
+                  onChange: (index) { yearIndex = index + DateTime.now().year; selectedYearMonth = DateTime(yearIndex, monthIndex); },
                   scrollController: yearController,
                   children: List<Widget>.generate(10, (int index) {
-                    return Center(child: Text('${index + ref.year}', style: pickerStyle));
+                    return Center(child: Text('${index + DateTime.now().year}', style: pickerStyle));
                   })
                 ),
                 _createPicker(
