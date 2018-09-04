@@ -206,9 +206,12 @@ class ListingsPage extends StatelessWidget {
             selected: inventoryId == model.selected.details.uuid,
             title: Text(inventory.details.name ?? 'Inventory', softWrap: false,),
             subtitle: Text('${inventory.items.length} items', softWrap: false,),
-            onTap: () {
-              model.changeCurrentInventory(inventoryId);
+            onTap: () async {
               Navigator.of(context).pop();
+              // let the animation finish before changing the inventory.
+              Future.delayed(Duration(milliseconds: 300), () {
+                model.changeCurrentInventory(inventoryId);
+              });
             },
           )
       );

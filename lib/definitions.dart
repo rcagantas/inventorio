@@ -97,10 +97,21 @@ class InventorySet {
   String _searchFilter;
   set filter(String f) => _searchFilter = f?.trim()?.toLowerCase();
 
+  List<InventoryItem> _items = [];
   get items {
-    List<InventoryItem> subList = itemMap?.values?.toList() ?? [];
-    subList.sort((item1, item2) => item1.expiryDate.compareTo(item2.expiryDate));
-    return subList.where((item) {
+    if (_items.isEmpty || _items.length != itemMap.length) {
+      _items = itemMap?.values?.toList() ?? [];
+      _items.sort((item1, item2) {
+        if (item1.expiryDate == item2.expiryDate) {
+          Product product1 = getAssociatedProduct(item1.code);
+          Product product2 = getAssociatedProduct(item2.code);
+          return product1.toString().compareTo(product2.toString());
+        }
+        else return item1.expiryDate.compareTo(item2.expiryDate);
+      });
+    }
+
+    return _items.where((item) {
       Product product = getAssociatedProduct(item.code);
       bool test = (
         _searchFilter == null ||
@@ -108,7 +119,6 @@ class InventorySet {
         (product.name != null &&  product.name.toLowerCase().contains(_searchFilter)) ||
         (product.variant != null && product.variant.toLowerCase().contains(_searchFilter))
       );
-
       return test;
     }).toList();
   }
@@ -119,5 +129,9 @@ class InventorySet {
         : masterProductDictionary[code];
 
     return product;
+  }
+
+  void itemReset() {
+    _items.clear();
   }
 }

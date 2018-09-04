@@ -54,8 +54,6 @@ class InventoryModel extends Model {
       ?.expand((i) => i)
       ?.toList();
 
-  //int get totalItemCount => allItems.length;
-
   InventorySet get selected =>
       inventories[userAccount?.currentInventoryId];
 
@@ -132,9 +130,17 @@ class InventoryModel extends Model {
       userAccount = UserAccount.fromJson(userDoc.data);
       log.fine('Loaded account changes ${userDoc.data}');
 
+      if (_inventoryChange) {
+        _inventoryChange = false;
+        notifyListeners();
+        return;
+      }
+
       inventories?.keys?.forEach((id) {
         if (!userAccount.knownInventories.contains(id)) {
+          log.fine('Removing inventory $id');
           inventories.remove(id);
+          _delayedNotification();
         }
       });
 
@@ -152,14 +158,21 @@ class InventoryModel extends Model {
             doc.reference.collection('inventoryItems').snapshots().listen((snap) {
               inventory.itemMap.clear();
               snap.documents.forEach((doc) {
+
                 InventoryItem item = InventoryItem.fromJson(doc.data);
                 inventory.itemMap[item.uuid] = item;
 
-                doc.reference.collection('productDictionary').document(item.code).snapshots().listen((doc) {
+                doc.reference.collection('productDictionary')
+                    .document(item.code)
+                    .snapshots()
+                    .listen((doc) {
                   _syncProduct(doc, inventory.productDictionary);
                 });
 
-                masterProductDictionary.document(item.code).snapshots().listen((doc) {
+                masterProductDictionary
+                    .document(item.code)
+                    .snapshots()
+                    .listen((doc) {
                   _syncProduct(doc, InventorySet.masterProductDictionary);
                 });
 
@@ -173,6 +186,7 @@ class InventoryModel extends Model {
 
       });
 
+      notifyListeners();
     });
   }
 
@@ -199,10 +213,13 @@ class InventoryModel extends Model {
     return userId;
   }
 
+  bool _inventoryChange = false;
   void changeCurrentInventory(String code) {
     if (userAccount == null || code == null) return;
     log.fine('Changing current inventory to: $code');
     userAccount.currentInventoryId = code;
+    selected.itemReset();
+    _inventoryChange = true;
     userCollection.document(userAccount.userId).setData(userAccount.toJson());
   }
 
@@ -378,12 +395,13 @@ class InventoryModel extends Model {
   void _initLogging() {
     Logger.root.level = Level.ALL;
     Logger.root.onRecord.listen((LogRecord rec) {
-      var logMessage = '${rec.time}: ${rec.message}';
-
-      while (_logMessages.length >= 1000) _logMessages.removeAt(0);
-      print(logMessage);
-      _logMessages.add(logMessage);
-      notifyListeners();
+      Future.delayed(Duration(milliseconds: 1), () {
+        var logMessage = '${rec.time}: ${rec.message}';
+        print(logMessage);
+        _logMessages.insert(0, logMessage);
+        if (_logMessages.length > 1000)
+          _logMessages.removeRange(1000, _logMessages.length);
+      });
     });
     log.fine('Creating InventoryModel');
   }
