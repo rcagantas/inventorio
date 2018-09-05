@@ -386,11 +386,7 @@ class InventoryModel extends Model {
   }
 
   List<String> _logMessages = List();
-
-  List<String> get logMessages =>
-      _logMessages
-          .map((s) => userAccount == null ? s : s.replaceAll(userAccount.userId, '[-]'))
-          .toList();
+  List<String> get logMessages => _logMessages;
 
   void _initLogging() {
     Logger.root.level = Level.ALL;
@@ -398,7 +394,12 @@ class InventoryModel extends Model {
       Future.delayed(Duration(milliseconds: 1), () {
         var logMessage = '${rec.time}: ${rec.message}';
         print(logMessage);
-        _logMessages.insert(0, logMessage);
+
+        logMessage = userAccount == null
+            ? logMessage
+            : logMessage.replaceAll(userAccount.userId, '[-]');
+
+        _logMessages.add(logMessage);
         if (_logMessages.length > 1000)
           _logMessages.removeRange(1000, _logMessages.length);
       });

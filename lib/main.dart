@@ -817,10 +817,22 @@ class LogPage extends StatelessWidget {
       appBar: AppBar(title: Text('Logs', style: Theme.of(context).primaryTextTheme.title,),),
       body: ScopedModelDescendant<InventoryModel>(
         builder: (context, child, model) => ListView.builder(
+            reverse: true,
             itemCount: model.logMessages.length,
-            itemBuilder: (context, index) => Text('${model.logMessages[index]}',
-              style: ThemeData.light().textTheme.body2,
-            ),
+            itemBuilder: (context, index) {
+              String time = model.logMessages[index].substring(0, 19);
+              String message = model.logMessages[index].substring(28);
+              TextStyle style = ThemeData.light().textTheme.body2.copyWith(fontSize: 12.0); // default theme
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 3.0),
+                child: Row(
+                  children: <Widget>[
+                    Expanded(child: Text('$time', style: style,),),
+                    Expanded(child: Text('$message', style: style), flex: 3,),
+                  ],
+                ),
+              );
+            }
         ),
       ),
     );
