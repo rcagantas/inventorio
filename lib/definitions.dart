@@ -86,32 +86,20 @@ class UserAccount extends Object with _$UserAccountSerializerMixin {
 
 class InventorySet {
   InventoryDetails details;
-  Map<String, InventoryItem> itemMap;
+  List<InventoryItem> itemList;
   Map<String, Product> productDictionary;
   static Map<String, Product> masterProductDictionary = {};
 
   InventorySet(this.details)
-      : itemMap = {},
+      : itemList= [],
         productDictionary = {};
 
   String _searchFilter;
   set filter(String f) => _searchFilter = f?.trim()?.toLowerCase();
 
-  List<InventoryItem> _items = [];
   get items {
-    if (_items.isEmpty || _items.length != itemMap.length) {
-      _items = itemMap?.values?.toList() ?? [];
-      _items.sort((item1, item2) {
-        if (item1.expiryDate == item2.expiryDate) {
-          Product product1 = getAssociatedProduct(item1.code);
-          Product product2 = getAssociatedProduct(item2.code);
-          return product1.toString().compareTo(product2.toString());
-        }
-        else return item1.expiryDate.compareTo(item2.expiryDate);
-      });
-    }
-
-    return _items.where((item) {
+    sortItems();
+    return itemList.where((item) {
       Product product = getAssociatedProduct(item.code);
       bool test = (
         _searchFilter == null ||
@@ -123,7 +111,7 @@ class InventorySet {
     }).toList();
   }
 
-  Product getAssociatedProduct(String code) {
+  Product  getAssociatedProduct(String code) {
     Product product = productDictionary.containsKey(code)
         ? productDictionary[code]
         : masterProductDictionary[code];
@@ -131,7 +119,30 @@ class InventorySet {
     return product;
   }
 
-  void itemReset() {
-    _items.clear();
+
+  void sortItems() {
+    itemList?.sort((item1, item2) {
+      int compare = item1.expiryDate.year.compareTo(item2.expiryDate.year);
+      if (compare != 0) return compare;
+
+      compare = item1.expiryDate.month.compareTo(item2.expiryDate.month);
+      if (compare != 0) return compare;
+
+      compare = item1.expiryDate.day.compareTo(item2.expiryDate.day);
+      if (compare != 0) return compare;
+
+      Product product1 = getAssociatedProduct(item1.code);
+      Product product2 = getAssociatedProduct(item2.code);
+      if (product1 == null || product2 == null) return compare;
+
+      compare = product1.brand.compareTo(product2.brand);
+      if (compare != 0) return compare;
+
+      compare = product1.name.compareTo(product2.name);
+      if (compare != 0) return compare;
+
+      compare = product1.variant.compareTo(product2.variant);
+      return compare;
+    });
   }
 }

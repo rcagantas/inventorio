@@ -62,6 +62,8 @@ class InventoryAppState extends State<InventoryApp> {
 }
 
 class ListingsPage extends StatelessWidget {
+  final ScrollController _scrollController = ScrollController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -86,11 +88,13 @@ class ListingsPage extends StatelessWidget {
             return (model.userAccount == null || model.selected?.items?.length == 0)
             ? _buildWelcome()
             : ListView.builder(
+                controller: _scrollController,
+                shrinkWrap: true,
                 itemCount: (model.selected?.items?.length ?? 0) + 1, // add space at the bottom
                 itemBuilder: (context, index) {
                   return index >= (model?.selected?.items?.length ?? 0)
                   ? Container(height: 80.0,)
-                  : InventoryTile(model, model.selected.items[index]);
+                  : InventoryTile(model.selected.items[index]);
                 },
             );
           }
@@ -207,11 +211,16 @@ class ListingsPage extends StatelessWidget {
             title: Text(inventory.details.name ?? 'Inventory', softWrap: false,),
             subtitle: Text('${inventory.items.length} items', softWrap: false,),
             onTap: () async {
-              Navigator.of(context).pop();
               // let the animation finish before changing the inventory.
               Future.delayed(Duration(milliseconds: 300), () {
                 model.changeCurrentInventory(inventoryId);
               });
+              // scroll to top to avoid animation problems with scrolling.
+              _scrollController.animateTo(0.0,
+                curve: Curves.easeOut,
+                duration: const Duration(milliseconds: 200),
+              );
+              Navigator.of(context).pop();
             },
           )
       );
@@ -274,11 +283,11 @@ class ListingsPage extends StatelessWidget {
 
 class InventoryTile extends StatelessWidget {
   final InventoryItem item;
-  final InventoryModel model;
-  InventoryTile(this.model, this.item);
+  InventoryTile(this.item);
 
   @override
   Widget build(BuildContext context) {
+    InventoryModel model = ScopedModel.of(context);
     Product product = model.selected.getAssociatedProduct(item.code);
     TextStyle body1Bold = Theme.of(context).textTheme.body1
         .copyWith(fontWeight: FontWeight.bold);
@@ -412,6 +421,21 @@ class _ProductPageState extends State<ProductPage> {
   TextEditingController _brandCtrl, _nameCtrl, _variantCtrl;
   File _stagingImage;
 
+  bool _isUnModified() {
+    return widget.product != null &&
+      widget.product.name.toLowerCase() == _nameCtrl.text.toLowerCase() &&
+      widget.product.brand.toLowerCase() == _brandCtrl.text.toLowerCase() &&
+      widget.product.variant.toLowerCase() == _variantCtrl.text.toLowerCase() &&
+      _stagingImage == null;
+  }
+
+  bool _isUnset() {
+    return _nameCtrl.text == null &&
+      _brandCtrl.text == null &&
+      _variantCtrl.text == null &&
+      _stagingImage == null;
+  }
+
   @override
   void initState() {
     _code = widget.product.code;
@@ -419,6 +443,11 @@ class _ProductPageState extends State<ProductPage> {
     _brandCtrl    = TextEditingController(text: widget.product.brand);
     _nameCtrl     = TextEditingController(text: widget.product.name);
     _variantCtrl  = TextEditingController(text: widget.product.variant);
+
+    var callBack = () => setState(() {});
+    _brandCtrl.addListener(callBack);
+    _nameCtrl.addListener(callBack);
+    _variantCtrl.addListener(callBack);
     super.initState();
   }
 
@@ -516,7 +545,11 @@ class _ProductPageState extends State<ProductPage> {
       ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.input),
+        backgroundColor: _isUnModified() || _isUnset()
+            ? Colors.grey
+            : Theme.of(context).accentColor,
         onPressed: () {
+          if (_isUnModified() || _isUnset()) return;
           InventoryModel model = ScopedModel.of(context);
           Product product = model.insertUpdateProduct(
               _code,
@@ -581,6 +614,14 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
   Product staging;
   bool isLoading = true;
   bool known = false;
+
+  bool _isUnModified() {
+    if (widget.replace == null) return false;
+    return widget.replace != null &&
+        widget.replace.expiryDate.year == yearIndex &&
+        widget.replace.expiryDate.month == monthIndex &&
+        widget.replace.expiryDate.day == dayIndex;
+  }
 
   @override
   void initState() {
@@ -679,7 +720,12 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
               children: <Widget>[
                 _createPicker(
                   context,
-                  onChange: (index) { yearIndex = index + DateTime.now().year; selectedYearMonth = DateTime(yearIndex, monthIndex); },
+                  onChange: (index) {
+                    setState(() {
+                      yearIndex = index + DateTime.now().year;
+                      selectedYearMonth = DateTime(yearIndex, monthIndex);
+                    });
+                  },
                   scrollController: yearController,
                   children: List<Widget>.generate(10, (int index) {
                     return Center(child: Text('${index + DateTime.now().year}', style: pickerStyle));
@@ -687,7 +733,12 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                 ),
                 _createPicker(
                   context,
-                  onChange: (index) { monthIndex = index + 1; setState(() {selectedYearMonth = DateTime(ref.year, monthIndex); }); },
+                  onChange: (index) {
+                    setState(() {
+                      monthIndex = index + 1;
+                      selectedYearMonth = DateTime(ref.year, monthIndex);
+                    });
+                  },
                   scrollController: monthController,
                   children: List<Widget>.generate(12, (int index) {
                     return Center(child: Text(monthNames[index], style: pickerStyle));
@@ -695,7 +746,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                 ),
                 _createPicker(
                   context,
-                  onChange: (index) { dayIndex = index + 1; },
+                  onChange: (index) { setState(() { dayIndex = index + 1; }); },
                   scrollController: dayController,
                   children: List<Widget>.generate(Utils.lastDayOfMonth(selectedYearMonth).day, (int index) {
                     return Center(child: Text('${index + 1}', style: pickerStyle));
@@ -713,17 +764,15 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
               : staging;
 
             if (staging == null) return;
+            if (_isUnModified()) return;
 
             DateTime expiryDate = DateTime(yearIndex, monthIndex, dayIndex);
             InventoryModel model = ScopedModel.of(context);
-            InventoryItem item = model.buildInventoryItem(staging.code, expiryDate);
-            if (item != null) {
-              if (widget.replace != null) model.removeItem(widget.replace);
-              model.addItem(item);
-            }
+            InventoryItem item = model.buildInventoryItem(staging.code, expiryDate, uuid: widget?.replace?.uuid);
+            if (item != null) { model.addItem(item); }
             Navigator.of(context).pop();
           },
-          backgroundColor: isLoading? Colors.grey: Theme.of(context).primaryColor,
+          backgroundColor: isLoading || _isUnModified()? Colors.grey: Theme.of(context).primaryColor,
         ),
     );
   }
@@ -817,7 +866,6 @@ class LogPage extends StatelessWidget {
       appBar: AppBar(title: Text('Logs', style: Theme.of(context).primaryTextTheme.title,),),
       body: ScopedModelDescendant<InventoryModel>(
         builder: (context, child, model) => ListView.builder(
-            reverse: true,
             itemCount: model.logMessages.length,
             itemBuilder: (context, index) {
               String time = model.logMessages[index].substring(0, 19);

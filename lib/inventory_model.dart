@@ -50,7 +50,7 @@ class InventoryModel extends Model {
 
   Map<String, InventorySet> inventories = {};
   List<InventoryItem> get allItems => inventories?.values
-      ?.map((inv) => inv?.itemMap?.values?.toList())
+      ?.map((inv) => inv?.items)
       ?.expand((i) => i)
       ?.toList();
 
@@ -130,11 +130,7 @@ class InventoryModel extends Model {
       userAccount = UserAccount.fromJson(userDoc.data);
       log.fine('Loaded account changes ${userDoc.data}');
 
-      if (_inventoryChange) {
-        _inventoryChange = false;
-        notifyListeners();
-        return;
-      }
+      if (_inventoryChange) { _inventoryChange = false; notifyListeners(); return; }
 
       inventories?.keys?.forEach((id) {
         if (!userAccount.knownInventories.contains(id)) {
@@ -156,11 +152,13 @@ class InventoryModel extends Model {
             InventorySet inventory = InventorySet(details);
 
             doc.reference.collection('inventoryItems').snapshots().listen((snap) {
-              inventory.itemMap.clear();
+              inventory.itemList.clear();
+              notifyListeners();
               snap.documents.forEach((doc) {
 
                 InventoryItem item = InventoryItem.fromJson(doc.data);
-                inventory.itemMap[item.uuid] = item;
+                inventory.itemList.add(item);
+                notifyListeners();
 
                 doc.reference.collection('productDictionary')
                     .document(item.code)
@@ -178,6 +176,7 @@ class InventoryModel extends Model {
 
                 _delayedNotification();
               });
+
             });
 
             return inventory;
@@ -217,9 +216,8 @@ class InventoryModel extends Model {
   void changeCurrentInventory(String code) {
     if (userAccount == null || code == null) return;
     log.fine('Changing current inventory to: $code');
-    userAccount.currentInventoryId = code;
-    selected.itemReset();
     _inventoryChange = true;
+    userAccount.currentInventoryId = code;
     userCollection.document(userAccount.userId).setData(userAccount.toJson());
   }
 
@@ -232,7 +230,6 @@ class InventoryModel extends Model {
       String brand, String name,
       String variant, String imageUrl, File file) {
     Product product = Product(code: code, brand: brand, name: name, variant: variant, imageUrl: imageUrl);
-    log.fine('Trying to set product ${product.code} with ${product.toJson()}');
     _uploadProduct(product);
 
     if (file != null) _resizeImage(file).then((resized) {
@@ -309,14 +306,16 @@ class InventoryModel extends Model {
     if (doc.exists) {
       Product product = Product.fromJson(doc.data);
       productMap[product.code] = product;
+      log.fine('Synced product: ${selected.productDictionary[product.code].toJson()}');
       notifyListeners();
       return product;
     }
     return null;
   }
 
-  InventoryItem buildInventoryItem(String code, DateTime expiryDate) {
-    return InventoryItem(uuid: generateUuid(), code: code, expiry: expiryDate.toIso8601String().substring(0, 10));
+  InventoryItem buildInventoryItem(String code, DateTime expiryDate, {String uuid}) {
+    uuid = uuid == null? generateUuid(): uuid;
+    return InventoryItem(uuid: uuid, code: code, expiry: expiryDate.toIso8601String().substring(0, 10));
   }
 
   void addItem(InventoryItem item) {
@@ -399,7 +398,7 @@ class InventoryModel extends Model {
             ? logMessage
             : logMessage.replaceAll(userAccount.userId, '[-]');
 
-        _logMessages.add(logMessage);
+        _logMessages.insert(0, logMessage);
         if (_logMessages.length > 1000)
           _logMessages.removeRange(1000, _logMessages.length);
       });
@@ -451,14 +450,16 @@ class InventoryModel extends Model {
   }
 
   Timer _schedulingTimer;
-  void _delayedNotification() {
+  void _delayedNotification({Duration duration = const Duration(seconds: 2)}) {
+
     if (_schedulingTimer != null) _schedulingTimer.cancel();
-    _schedulingTimer = Timer(Duration(seconds: 2), () {
+    _schedulingTimer = Timer(duration, () {
       if (inventories.isEmpty) return;
 
       _flutterLocalNotificationsPlugin.cancelAll().then((_) {
+        //inventories.values.forEach((inventory) => inventory.sortItems());
         inventories.forEach((inventoryId, inventory) {
-          inventory.itemMap.values.forEach((item) {
+          inventory.items.forEach((item) {
             isProductIdentified(item.code).whenComplete(() {
               _setProductScheduleFromMemory(inventoryId, item);
             });
