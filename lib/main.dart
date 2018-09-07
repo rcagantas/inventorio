@@ -85,11 +85,12 @@ class ListingsPage extends StatelessWidget {
       ),
       body: ScopedModelDescendant<InventoryModel>(
           builder: (context, child, model) {
-            return (model.userAccount == null || model.selected?.items?.length == 0)
+            return (model.userAccount == null
+                || model.selected?.items?.length == 0
+            )
             ? _buildWelcome()
             : ListView.builder(
                 controller: _scrollController,
-                shrinkWrap: true,
                 itemCount: (model.selected?.items?.length ?? 0) + 1, // add space at the bottom
                 itemBuilder: (context, index) {
                   return index >= (model?.selected?.items?.length ?? 0)
@@ -215,11 +216,7 @@ class ListingsPage extends StatelessWidget {
               Future.delayed(Duration(milliseconds: 300), () {
                 model.changeCurrentInventory(inventoryId);
               });
-              // scroll to top to avoid animation problems with scrolling.
-              _scrollController.animateTo(0.0,
-                curve: Curves.easeOut,
-                duration: const Duration(milliseconds: 200),
-              );
+              _scrollToTop();
               Navigator.of(context).pop();
             },
           )
@@ -278,6 +275,11 @@ class ListingsPage extends StatelessWidget {
 
     print('Attempting to add new item');
     Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryAddPage(code)));
+  }
+
+  void _scrollToTop() {
+    _scrollController.animateTo(0.0, curve: Curves.easeOut,
+      duration: const Duration(milliseconds: 10),);
   }
 }
 
@@ -423,9 +425,9 @@ class _ProductPageState extends State<ProductPage> {
 
   bool _isUnModified() {
     return widget.product != null &&
-      widget.product.name.toLowerCase() == _nameCtrl.text.toLowerCase() &&
-      widget.product.brand.toLowerCase() == _brandCtrl.text.toLowerCase() &&
-      widget.product.variant.toLowerCase() == _variantCtrl.text.toLowerCase() &&
+      (widget.product.name?.toLowerCase() ?? '') == _nameCtrl.text.toLowerCase() &&
+      (widget.product.brand?.toLowerCase() ?? '') == _brandCtrl.text.toLowerCase() &&
+      (widget.product.variant?.toLowerCase() ?? '') == _variantCtrl.text.toLowerCase() &&
       _stagingImage == null;
   }
 
@@ -635,10 +637,10 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
     dayIndex = ref.day;
 
     InventoryModel model = ScopedModel.of(context);
-    model.isProductIdentified(widget.code).then((known) {
+    model.identifyProduct(widget.code).then((known) {
       setState(() {
-        this.known = known;
-        this.staging = known? model.selected.getAssociatedProduct(widget.code) : null;
+        this.known = known != null;
+        this.staging = known != null? known : null;
         this.isLoading = false;
       });
     });

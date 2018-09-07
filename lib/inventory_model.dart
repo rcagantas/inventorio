@@ -130,8 +130,6 @@ class InventoryModel extends Model {
       userAccount = UserAccount.fromJson(userDoc.data);
       log.fine('Loaded account changes ${userDoc.data}');
 
-      if (_inventoryChange) { _inventoryChange = false; notifyListeners(); return; }
-
       inventories?.keys?.forEach((id) {
         if (!userAccount.knownInventories.contains(id)) {
           log.fine('Removing inventory $id');
@@ -153,30 +151,17 @@ class InventoryModel extends Model {
 
             doc.reference.collection('inventoryItems').snapshots().listen((snap) {
               inventory.itemList.clear();
-              notifyListeners();
               snap.documents.forEach((doc) {
 
                 InventoryItem item = InventoryItem.fromJson(doc.data);
-                inventory.itemList.add(item);
-                notifyListeners();
-
-                doc.reference.collection('productDictionary')
-                    .document(item.code)
-                    .snapshots()
-                    .listen((doc) {
-                  _syncProduct(doc, inventory.productDictionary);
-                });
-
-                masterProductDictionary
-                    .document(item.code)
-                    .snapshots()
-                    .listen((doc) {
-                  _syncProduct(doc, InventorySet.masterProductDictionary);
+                identifyProduct(item.code, inventoryId: inventoryId).then((product) {
+                  inventory.itemList.add(item);
                 });
 
                 _delayedNotification();
               });
 
+              notifyListeners();
             });
 
             return inventory;
@@ -212,11 +197,11 @@ class InventoryModel extends Model {
     return userId;
   }
 
-  bool _inventoryChange = false;
+  bool inventoryChange = false;
   void changeCurrentInventory(String code) {
     if (userAccount == null || code == null) return;
     log.fine('Changing current inventory to: $code');
-    _inventoryChange = true;
+    inventoryChange = true;
     userAccount.currentInventoryId = code;
     userCollection.document(userAccount.userId).setData(userAccount.toJson());
   }
@@ -286,31 +271,42 @@ class InventoryModel extends Model {
     return url;
   }
 
-  Future<bool> isProductIdentified(String code) async {
-    if (selected.getAssociatedProduct(code) != null) return true;
+  Future<Product> identifyProduct(String code, {String inventoryId}) async {
+    inventoryId = inventoryId == null ? userAccount?.currentInventoryId : inventoryId;
+    if (inventoryId == null) return null;
 
-    log.fine('Checking remote dictionary for $code');
+    if (inventories[inventoryId].getAssociatedProduct(code) != null)
+      return inventories[inventoryId].getAssociatedProduct(code);
 
-    var doc = await productDictionary.document(code).get();
-    _syncProduct(doc, selected.productDictionary);
+    var localizedDictionary = Firestore.instance.collection('inventory')
+        .document(inventoryId)
+        .collection('productDictionary');
 
-    log.fine('Checking remote master dictionary for $code');
-    var masterDoc = await masterProductDictionary.document(code).get();
-    _syncProduct(masterDoc, InventorySet.masterProductDictionary);
-
-    if (selected.getAssociatedProduct(code) == null) log.fine('$code not identified');
-    return selected.getAssociatedProduct(code) != null;
-  }
-
-  Product _syncProduct(DocumentSnapshot doc, Map productMap) {
+    var doc = await localizedDictionary.document(code).get();
     if (doc.exists) {
-      Product product = Product.fromJson(doc.data);
-      productMap[product.code] = product;
-      log.fine('Synced product: ${selected.productDictionary[product.code].toJson()}');
-      notifyListeners();
-      return product;
+      log.fine('Localized data for $code');
+      inventories[inventoryId].productDictionary.putIfAbsent(code, () {
+        localizedDictionary.document(code).snapshots().listen((doc) {
+          inventories[inventoryId].productDictionary[code] = Product.fromJson(doc.data);
+          notifyListeners();
+        });
+        return Product.fromJson(doc.data);
+      });
     }
-    return null;
+
+    var masterDoc = await masterProductDictionary.document(code).get();
+    if (masterDoc.exists) {
+      if (!doc.exists) log.fine('Master data for $code');
+      InventorySet.masterProductDictionary.putIfAbsent(code, () {
+        masterProductDictionary.document(code).snapshots().listen((doc) {
+          InventorySet.masterProductDictionary[code] = Product.fromJson(doc.data);
+          notifyListeners();
+        });
+        return Product.fromJson(masterDoc.data);
+      });
+    }
+
+    return inventories[inventoryId].getAssociatedProduct(code);
   }
 
   InventoryItem buildInventoryItem(String code, DateTime expiryDate, {String uuid}) {
@@ -451,16 +447,16 @@ class InventoryModel extends Model {
 
   Timer _schedulingTimer;
   void _delayedNotification({Duration duration = const Duration(seconds: 2)}) {
+    if (inventoryChange) { inventoryChange = false; return; }
 
     if (_schedulingTimer != null) _schedulingTimer.cancel();
     _schedulingTimer = Timer(duration, () {
       if (inventories.isEmpty) return;
 
       _flutterLocalNotificationsPlugin.cancelAll().then((_) {
-        //inventories.values.forEach((inventory) => inventory.sortItems());
         inventories.forEach((inventoryId, inventory) {
           inventory.items.forEach((item) {
-            isProductIdentified(item.code).whenComplete(() {
+            identifyProduct(item.code, inventoryId: inventoryId).then((product) {
               _setProductScheduleFromMemory(inventoryId, item);
             });
           });
