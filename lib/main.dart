@@ -166,9 +166,10 @@ class ListingsPage extends StatelessWidget {
             dense: true,
             title: Text('Create New Inventory'),
             onTap: () async {
+              Navigator.of(context).pop();
               InventoryDetails inventory = await Navigator.push(context,
-                  MaterialPageRoute(
-                      builder: (context) => InventoryDetailsPage(null)));
+                  MaterialPageRoute(builder: (context) => InventoryDetailsPage(null))
+              );
               model.addInventory(inventory, createNew: true).catchError((error) {
                 Scaffold.of(context).showSnackBar(SnackBar(content: Text("Error: $error")));
               });
@@ -179,7 +180,10 @@ class ListingsPage extends StatelessWidget {
             dense: true,
             title: Text('Scan Existing Inventory Code'),
             onTap: () async {
-              String code = await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanningPage()));
+              Navigator.of(context).pop();
+              String code = await Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => ScanningPage())
+              );
               bool valid = await model.scanInventory(code);
               if (!valid) { sureDialog(context, 'Invalid code $code. ', null, 'OK'); }
             },
@@ -189,15 +193,21 @@ class ListingsPage extends StatelessWidget {
             dense: true,
             title: Text('Edit/Share Inventory'),
             onTap: () async {
+              Navigator.of(context).pop();
               InventoryDetails details = model.selected.details;
-              InventoryDetails edited = await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(details),));
+              InventoryDetails edited = await Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => InventoryDetailsPage(details),)
+              );
               model.addInventory(edited);
             },
           ),
           ListTile(
               dense: true,
               title: Text('Logs'),
-              onTap: () { Navigator.push(context, MaterialPageRoute(builder: (context) => LogPage())); }
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.push(context, MaterialPageRoute(builder: (context) => LogPage()));
+              }
           ),
         ],
       ),
@@ -212,12 +222,12 @@ class ListingsPage extends StatelessWidget {
             title: Text(inventory.details.name ?? 'Inventory', softWrap: false,),
             subtitle: Text('${inventory.items.length} items', softWrap: false,),
             onTap: () async {
+              Navigator.of(context).pop();
+              _scrollToTop();
               // let the animation finish before changing the inventory.
               Future.delayed(Duration(milliseconds: 300), () {
                 model.changeCurrentInventory(inventoryId);
               });
-              _scrollToTop();
-              Navigator.of(context).pop();
             },
           )
       );

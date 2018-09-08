@@ -156,14 +156,14 @@ class InventoryModel extends Model {
                 InventoryItem item = InventoryItem.fromJson(doc.data);
                 identifyProduct(item.code, inventoryId: inventoryId).then((product) {
                   inventory.itemList.add(item);
+                  inventory.buildSortedList().then((_) {
+                    notifyListeners();
+                  });
                 });
-
                 _delayedNotification();
               });
 
-              notifyListeners();
             });
-
             return inventory;
           });
         });
@@ -386,14 +386,12 @@ class InventoryModel extends Model {
   void _initLogging() {
     Logger.root.level = Level.ALL;
     Logger.root.onRecord.listen((LogRecord rec) {
-      Future.delayed(Duration(milliseconds: 1), () {
-        var logMessage = '${rec.time}: ${rec.message}';
-        print(logMessage);
-
+      var logMessage = '${rec.time}: ${rec.message}';
+      print(logMessage);
+      Future.delayed(Duration(milliseconds: 100), () {
         logMessage = userAccount == null
             ? logMessage
             : logMessage.replaceAll(userAccount.userId, '[-]');
-
         _logMessages.insert(0, logMessage);
         if (_logMessages.length > 1000)
           _logMessages.removeRange(1000, _logMessages.length);
