@@ -102,23 +102,23 @@ class UserAccount extends Object with _$UserAccountSerializerMixin {
 
 class InventorySet {
   InventoryDetails details;
-  List<InventoryItem> itemList;
+  List<InventoryItem> _itemList;
   List<InventoryItem> _sortedList;
   Map<String, Product> productDictionary;
   static Map<String, Product> masterProductDictionary = {};
 
   InventorySet(this.details) :
-        itemList= [],
-        productDictionary = {},
-        _sortedList = []
+        _itemList= [],
+        _sortedList = [],
+        productDictionary = {}
   ;
 
   String _searchFilter;
   set filter(String f) => _searchFilter = f?.trim()?.toLowerCase();
 
   get items {
-    if (_sortedList.length != itemList.length)
-      _sortedList.addAll(itemList);
+    if (_sortedList.length != _itemList.length)
+      _sortedList.addAll(_itemList);
 
     return _sortedList.where((item) {
       Product product = getAssociatedProduct(item.code);
@@ -131,8 +131,11 @@ class InventorySet {
     }).toList();
   }
 
-  Future buildSortedList() {
+  void clearItems() { _itemList.clear(); }
+
+  Future buildSortedList(InventoryItem item) {
     return Future(() {
+      _itemList.add(item);
       _sortedList = [];
       sortSync();
     });
@@ -147,7 +150,7 @@ class InventorySet {
   }
 
   void sortSync() {
-    itemList.sort((item1, item2) {
+    _itemList.sort((item1, item2) {
       int compare = item1.compareTo(item2);
       if (compare != 0) return compare;
 

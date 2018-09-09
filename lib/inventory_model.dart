@@ -49,10 +49,6 @@ class InventoryModel extends Model {
           .collection('inventoryItems');
 
   Map<String, InventorySet> inventories = {};
-  List<InventoryItem> get allItems => inventories?.values
-      ?.map((inv) => inv?.items)
-      ?.expand((i) => i)
-      ?.toList();
 
   InventorySet get selected =>
       inventories[userAccount?.currentInventoryId];
@@ -150,13 +146,12 @@ class InventoryModel extends Model {
             InventorySet inventory = InventorySet(details);
 
             doc.reference.collection('inventoryItems').snapshots().listen((snap) {
-              inventory.itemList.clear();
+              inventory.clearItems();
               snap.documents.forEach((doc) {
 
                 InventoryItem item = InventoryItem.fromJson(doc.data);
                 identifyProduct(item.code, inventoryId: inventoryId).then((product) {
-                  inventory.itemList.add(item);
-                  inventory.buildSortedList().then((_) {
+                  inventory.buildSortedList(item).then((_) {
                     notifyListeners();
                   });
                 });
@@ -450,17 +445,18 @@ class InventoryModel extends Model {
     if (_schedulingTimer != null) _schedulingTimer.cancel();
     _schedulingTimer = Timer(duration, () {
       if (inventories.isEmpty) return;
-
+      int totalItems;
       _flutterLocalNotificationsPlugin.cancelAll().then((_) {
         inventories.forEach((inventoryId, inventory) {
           inventory.items.forEach((item) {
             identifyProduct(item.code, inventoryId: inventoryId).then((product) {
               _setProductScheduleFromMemory(inventoryId, item);
+              totalItems++;
             });
           });
         });
       }).whenComplete(() {
-        log.fine('Scheduled notifications for ${allItems.length} items.');
+        log.fine('Scheduled notifications for $totalItems items.');
       });
 
     });

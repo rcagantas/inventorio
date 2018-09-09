@@ -62,8 +62,6 @@ class InventoryAppState extends State<InventoryApp> {
 }
 
 class ListingsPage extends StatelessWidget {
-  final ScrollController _scrollController = ScrollController();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -90,7 +88,6 @@ class ListingsPage extends StatelessWidget {
             )
             ? _buildWelcome()
             : ListView.builder(
-                controller: _scrollController,
                 itemCount: (model.selected?.items?.length ?? 0) + 1, // add space at the bottom
                 itemBuilder: (context, index) {
                   return index >= (model?.selected?.items?.length ?? 0)
@@ -223,7 +220,6 @@ class ListingsPage extends StatelessWidget {
             subtitle: Text('${inventory.items.length} items', softWrap: false,),
             onTap: () async {
               Navigator.of(context).pop();
-              _scrollToTop();
               // let the animation finish before changing the inventory.
               Future.delayed(Duration(milliseconds: 300), () {
                 model.changeCurrentInventory(inventoryId);
@@ -285,11 +281,6 @@ class ListingsPage extends StatelessWidget {
 
     print('Attempting to add new item');
     Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryAddPage(code)));
-  }
-
-  void _scrollToTop() {
-    _scrollController.animateTo(0.0, curve: Curves.easeOut,
-      duration: const Duration(milliseconds: 10),);
   }
 }
 
@@ -887,7 +878,7 @@ class LogPage extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 3.0),
                 child: Row(
                   children: <Widget>[
-                    Expanded(child: Text('$time', style: style,),),
+                    Expanded(child: Text('$time', style: style, textAlign: TextAlign.center,),),
                     Expanded(child: Text('$message', style: style), flex: 3,),
                   ],
                 ),
