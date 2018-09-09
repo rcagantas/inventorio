@@ -216,6 +216,7 @@ class InventoryModel extends Model {
       _uploadProductImage(product, resized).then((product) {
         log.fine('Reuploading with image URL data.');
         _uploadProduct(product);
+        identifyProduct(product.code);
       });
     });
 
@@ -270,8 +271,10 @@ class InventoryModel extends Model {
     inventoryId = inventoryId == null ? userAccount?.currentInventoryId : inventoryId;
     if (inventoryId == null) return null;
 
-    if (inventories[inventoryId].getAssociatedProduct(code) != null)
+    if (inventories[inventoryId].getAssociatedProduct(code) != null) {
+      print('Cached data for $code');
       return inventories[inventoryId].getAssociatedProduct(code);
+    }
 
     var localizedDictionary = Firestore.instance.collection('inventory')
         .document(inventoryId)

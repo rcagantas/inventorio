@@ -636,14 +636,21 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
     yearIndex = ref.year;
     monthIndex = ref.month;
     dayIndex = ref.day;
+
+    InventoryModel model = ScopedModel.of(context);
+    model.identifyProduct(widget.code).then((product) {
+      setStaging(product);
+    });
+
     super.initState();
   }
 
-  Future setStaging(InventoryModel model) async {
-    Product product = model.selected.getAssociatedProduct(widget.code);
-    this.staging = product;
-    this.known = staging != null;
-    this.isLoading = false;
+  void setStaging(Product product) {
+    setState(() {
+      this.staging = product;
+      this.known = staging != null;
+      this.isLoading = false;
+    });
   }
 
   Widget _createPicker(BuildContext context, {
@@ -677,16 +684,13 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
               height: 160.0,
               child: ScopedModelDescendant<InventoryModel>(
                 builder: (context, child, model) {
-                  InventoryModel model = ScopedModel.of(context);
-                  setStaging(model);
-
                   return FlatButton(
                     onPressed: () async {
                       Product temp = await Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => ProductPage(staging != null? staging: Product(code: widget.code)))
                       ); // edit from item
-                      if (temp != null) setState(() { staging = temp; });
+                      if (temp != null) setState(() { setStaging(temp); });
                     },
                     child: Row(
                       children: <Widget>[
