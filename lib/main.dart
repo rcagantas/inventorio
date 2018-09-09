@@ -135,7 +135,7 @@ class ListingsPage extends StatelessWidget {
     List<Widget> widgets = [
       UserAccountsDrawerHeader(
         accountName: Text(model?.selected?.details?.name ?? 'Current Inventory Name'),
-        accountEmail: Text('items',),
+        accountEmail: Text('${model?.selected?.items?.length ?? '?'} items',),
         currentAccountPicture: CircleAvatar(
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           backgroundImage: AssetImage('resources/icons/icon.png'),
