@@ -636,17 +636,14 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
     yearIndex = ref.year;
     monthIndex = ref.month;
     dayIndex = ref.day;
-
-    InventoryModel model = ScopedModel.of(context);
-    model.identifyProduct(widget.code).then((known) {
-      setState(() {
-        this.known = known != null;
-        this.staging = known != null? known : null;
-        this.isLoading = false;
-      });
-    });
-
     super.initState();
+  }
+
+  Future setStaging(InventoryModel model) async {
+    Product product = model.selected.getAssociatedProduct(widget.code);
+    this.staging = product;
+    this.known = staging != null;
+    this.isLoading = false;
   }
 
   Widget _createPicker(BuildContext context, {
@@ -679,43 +676,48 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
             Container(
               height: 160.0,
               child: ScopedModelDescendant<InventoryModel>(
-                builder: (context, child, model) => FlatButton(
-                  onPressed: () async {
-                    Product temp = await Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => ProductPage(staging != null? staging: Product(code: widget.code)))
-                    ); // edit from item
-                    if (temp != null) setState(() { staging = temp; });
-                  },
-                  child: Row(
-                    children: <Widget>[
-                      Expanded(
-                        flex: 2,
-                        child: SizedBox(
-                            width: 130.0, height: 130.0,
-                            child: staging?.imageUrl == null
-                            ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 80.0,)
-                            : CachedNetworkImage(
-                              imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
-                              placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 80.0,)),
-                              errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: 80.0,)),
-                            ),
+                builder: (context, child, model) {
+                  InventoryModel model = ScopedModel.of(context);
+                  setStaging(model);
+
+                  return FlatButton(
+                    onPressed: () async {
+                      Product temp = await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => ProductPage(staging != null? staging: Product(code: widget.code)))
+                      ); // edit from item
+                      if (temp != null) setState(() { staging = temp; });
+                    },
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          flex: 2,
+                          child: SizedBox(
+                              width: 130.0, height: 130.0,
+                              child: staging?.imageUrl == null
+                              ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 80.0,)
+                              : CachedNetworkImage(
+                                imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
+                                placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 80.0,)),
+                                errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: 80.0,)),
+                              ),
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        flex: 3,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: isLoading
-                              ? Center(child: CircularProgressIndicator())
-                              : staging == null
-                                ? Text('Add Product Information', style: pickerStyle, textAlign: TextAlign.center,)
-                                : InventoryTile.buildProductLabel(context, staging),
-                        ),
-                      )
-                    ],
-                  ),
-                ),
+                        Expanded(
+                          flex: 3,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: isLoading
+                                ? Center(child: CircularProgressIndicator())
+                                : staging == null
+                                  ? Text('Add Product Information', style: pickerStyle, textAlign: TextAlign.center,)
+                                  : InventoryTile.buildProductLabel(context, staging),
+                          ),
+                        )
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
             Divider(),

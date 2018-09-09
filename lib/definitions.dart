@@ -118,8 +118,10 @@ class InventorySet {
   set filter(String f) => _searchFilter = f?.trim()?.toLowerCase();
 
   List<InventoryItem> get items {
-    if (_sortedList.length != _itemList.length)
+    if (_sortedList.length != _itemList.length) {
+      _sortedList.clear();
       _sortedList.addAll(_itemList);
+    }
 
     return _sortedList.where((item) {
       Product product = getAssociatedProduct(item.code);
@@ -132,12 +134,14 @@ class InventorySet {
     }).toList();
   }
 
-  void clearItems() { _itemList.clear(); }
+  void clearItems() {
+    _itemList.clear();
+    _sortedList.clear();
+  }
 
   Future buildSortedList(InventoryItem item) {
     return Future(() {
       _itemList.add(item);
-      _sortedList = [];
       sortSync();
     });
   }
