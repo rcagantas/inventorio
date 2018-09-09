@@ -12,8 +12,9 @@ class InventoryItem extends Object with _$InventoryItemSerializerMixin {
   String uuid;
   String code;
   String expiry;
+  String dateAdded;
 
-  InventoryItem({this.uuid, this.code, this.expiry});
+  InventoryItem({this.uuid, this.code, this.expiry, this.dateAdded});
   factory InventoryItem.fromJson(Map<String, dynamic> json) => _$InventoryItemFromJson(json);
 
   DateTime get expiryDate => DateTime.parse(expiry.replaceAll('-', ''));
@@ -25,7 +26,7 @@ class InventoryItem extends Object with _$InventoryItemSerializerMixin {
   DateTime get monthNotification => expiryDate.subtract(Duration(days: 30));
 
   int compareTo(InventoryItem other) {
-    return this.expiryDate.compareTo(other.expiryDate);
+    return this.daysFromToday.compareTo(other.daysFromToday);
   }
 }
 
@@ -116,7 +117,7 @@ class InventorySet {
   String _searchFilter;
   set filter(String f) => _searchFilter = f?.trim()?.toLowerCase();
 
-  get items {
+  List<InventoryItem> get items {
     if (_sortedList.length != _itemList.length)
       _sortedList.addAll(_itemList);
 

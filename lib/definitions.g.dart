@@ -10,15 +10,21 @@ InventoryItem _$InventoryItemFromJson(Map<String, dynamic> json) {
   return new InventoryItem(
       uuid: json['uuid'] as String,
       code: json['code'] as String,
-      expiry: json['expiry'] as String);
+      expiry: json['expiry'] as String,
+      dateAdded: json['dateAdded'] as String);
 }
 
 abstract class _$InventoryItemSerializerMixin {
   String get uuid;
   String get code;
   String get expiry;
-  Map<String, dynamic> toJson() =>
-      <String, dynamic>{'uuid': uuid, 'code': code, 'expiry': expiry};
+  String get dateAdded;
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'uuid': uuid,
+        'code': code,
+        'expiry': expiry,
+        'dateAdded': dateAdded
+      };
 }
 
 Product _$ProductFromJson(Map<String, dynamic> json) {

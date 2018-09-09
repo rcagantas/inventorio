@@ -306,7 +306,10 @@ class InventoryModel extends Model {
 
   InventoryItem buildInventoryItem(String code, DateTime expiryDate, {String uuid}) {
     uuid = uuid == null? generateUuid(): uuid;
-    return InventoryItem(uuid: uuid, code: code, expiry: expiryDate.toIso8601String().substring(0, 10));
+    return InventoryItem(uuid: uuid, code: code,
+        expiry: expiryDate.toIso8601String().substring(0, 10),
+        dateAdded: DateTime.now().toIso8601String()
+    );
   }
 
   void addItem(InventoryItem item) {
@@ -412,8 +415,10 @@ class InventoryModel extends Model {
         IOSNotificationDetails()
     );
 
-    DateTime now = DateTime.now();
-    expiry = expiry.add(Duration(hours: now.hour, minutes: now.minute + 1));
+    DateTime added = item.dateAdded != null
+        ? DateTime.parse(item.dateAdded.substring(0, 19).replaceAll('-', '').replaceAll(':', ''))
+        : DateTime.now();
+    expiry = expiry.add(Duration(hours: added.hour, minutes: added.minute + 1));
 
     if (expiry.compareTo(DateTime.now()) > 0) {
       var scheduleId = hashObjects([item, indicator]);
@@ -445,17 +450,16 @@ class InventoryModel extends Model {
     if (_schedulingTimer != null) _schedulingTimer.cancel();
     _schedulingTimer = Timer(duration, () {
       if (inventories.isEmpty) return;
-      int totalItems;
       _flutterLocalNotificationsPlugin.cancelAll().then((_) {
         inventories.forEach((inventoryId, inventory) {
           inventory.items.forEach((item) {
             identifyProduct(item.code, inventoryId: inventoryId).then((product) {
               _setProductScheduleFromMemory(inventoryId, item);
-              totalItems++;
             });
           });
         });
       }).whenComplete(() {
+        int totalItems = inventories.values.map((s) => s.items.length).reduce((i, i2) => i + i2);
         log.fine('Scheduled notifications for $totalItems items.');
       });
 
