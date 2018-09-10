@@ -153,9 +153,9 @@ class InventoryModel extends Model {
                 identifyProduct(item.code, inventoryId: inventoryId).then((product) {
                   inventory.buildSortedList(item).then((_) {
                     notifyListeners();
+                    _delayedNotification();
                   });
                 });
-                _delayedNotification();
               });
 
             });
@@ -272,7 +272,7 @@ class InventoryModel extends Model {
     if (inventoryId == null) return null;
 
     if (inventories[inventoryId].getAssociatedProduct(code) != null) {
-      print('Cached data for $code');
+      print('Cached data   $code');
       return inventories[inventoryId].getAssociatedProduct(code);
     }
 
@@ -282,7 +282,7 @@ class InventoryModel extends Model {
 
     var doc = await localizedDictionary.document(code).get();
     if (doc.exists) {
-      log.fine('Localized data for $code');
+      log.fine('Specific data $code');
       inventories[inventoryId].productDictionary.putIfAbsent(code, () {
         localizedDictionary.document(code).snapshots().listen((doc) {
           inventories[inventoryId].productDictionary[code] = Product.fromJson(doc.data);
@@ -294,7 +294,7 @@ class InventoryModel extends Model {
 
     var masterDoc = await masterProductDictionary.document(code).get();
     if (masterDoc.exists) {
-      if (!doc.exists) log.fine('Master data for $code');
+      if (!doc.exists) log.fine('Master data   $code');
       InventorySet.masterProductDictionary.putIfAbsent(code, () {
         masterProductDictionary.document(code).snapshots().listen((doc) {
           InventorySet.masterProductDictionary[code] = Product.fromJson(doc.data);
@@ -387,7 +387,7 @@ class InventoryModel extends Model {
   void _initLogging() {
     Logger.root.level = Level.ALL;
     Logger.root.onRecord.listen((LogRecord rec) {
-      var logMessage = '${rec.time}: ${rec.message}';
+      var logMessage = '${rec.time.toString().substring(0, 19)}: ${rec.message}';
       print(logMessage);
       Future.delayed(Duration(milliseconds: 100), () {
         logMessage = userAccount == null
@@ -447,25 +447,28 @@ class InventoryModel extends Model {
   }
 
   Timer _schedulingTimer;
-  void _delayedNotification({Duration duration = const Duration(seconds: 2)}) {
+  void _delayedNotification({Duration duration = const Duration(seconds: 10)}) {
     if (inventoryChange) { inventoryChange = false; return; }
 
     if (_schedulingTimer != null) _schedulingTimer.cancel();
     _schedulingTimer = Timer(duration, () {
       if (inventories.isEmpty) return;
       _flutterLocalNotificationsPlugin.cancelAll().then((_) {
+        int totalItems = inventories.values.map((s) => s.items.length).reduce((i, i2) => i + i2);
+        int scheduled = 0;
         inventories.forEach((inventoryId, inventory) {
           inventory.items.forEach((item) {
             identifyProduct(item.code, inventoryId: inventoryId).then((product) {
-              _setProductScheduleFromMemory(inventoryId, item);
+              _setProductScheduleFromMemory(inventoryId, item).then((_) {
+                scheduled++;
+                if (scheduled == totalItems) {
+                  log.fine('Scheduled notifications for $totalItems items.');
+                }
+              });
             });
           });
         });
-      }).whenComplete(() {
-        int totalItems = inventories.values.map((s) => s.items.length).reduce((i, i2) => i + i2);
-        log.fine('Scheduled notifications for $totalItems items.');
       });
-
     });
   }
 }
