@@ -81,11 +81,7 @@ class InventoryModel extends Model {
           log.fine('Error on sign-in: $error');
         }).timeout(Duration(seconds: 2), onTimeout: () {
           log.fine('Timeout on proper sign-in');
-          _loadFromPreferences().then((accountId) {
-            _loadUserAccount(accountId);
-          });
         });
-        return;
       } else {
         _doLogin(account);
       }
@@ -93,6 +89,14 @@ class InventoryModel extends Model {
 
     _googleSignIn.signInSilently().catchError((error) {
       log.fine('Error on silent sign-in: $error');
+    });
+
+    Future.delayed(Duration(seconds: 5), () {
+      if (userAccount == null) {
+        _loadFromPreferences().then((accountId) {
+          _loadUserAccount(accountId);
+        });
+      }
     });
 
   }
@@ -387,7 +391,7 @@ class InventoryModel extends Model {
   void _initLogging() {
     Logger.root.level = Level.ALL;
     Logger.root.onRecord.listen((LogRecord rec) {
-      var logMessage = '${rec.time.toString().substring(0, 19)}: ${rec.message}';
+      var logMessage = '${rec.time}: ${rec.message}';
       print(logMessage);
       Future.delayed(Duration(milliseconds: 100), () {
         logMessage = userAccount == null
