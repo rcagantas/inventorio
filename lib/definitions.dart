@@ -118,11 +118,6 @@ class InventorySet {
   set filter(String f) => _searchFilter = f?.trim()?.toLowerCase();
 
   List<InventoryItem> get items {
-    if (_sortedList.length != _itemList.length) {
-      _sortedList.clear();
-      _sortedList.addAll(_itemList);
-    }
-
     return _sortedList.where((item) {
       Product product = getAssociatedProduct(item.code);
       bool test = (_searchFilter == null
@@ -165,5 +160,7 @@ class InventorySet {
 
       return 0;
     });
+    _sortedList.clear();
+    _sortedList.addAll(_itemList);
   }
 }
