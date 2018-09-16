@@ -150,15 +150,15 @@ class InventoryModel extends Model {
             InventorySet inventory = InventorySet(details);
 
             doc.reference.collection('inventoryItems').snapshots().listen((snap) {
-              inventory.clearItems();
+              inventory.itemTree.clear();
+
               snap.documents.forEach((doc) {
 
                 InventoryItem item = InventoryItem.fromJson(doc.data);
                 identifyProduct(item.code, inventoryId: inventoryId).then((product) {
-                  inventory.buildSortedList(item).then((_) {
-                    notifyListeners();
-                    _delayedNotification();
-                  });
+                  inventory.itemTree.add(item);
+                  notifyListeners();
+                  _delayedNotification();
                 });
               });
 

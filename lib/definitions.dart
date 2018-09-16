@@ -1,14 +1,17 @@
-import 'dart:async';
-
 import 'package:json_annotation/json_annotation.dart';
 import 'package:intl/intl.dart';
 import 'package:meta/meta.dart';
 import 'package:quiver/core.dart';
+import 'package:quiver/collection.dart';
 
 part 'definitions.g.dart';
 
 @JsonSerializable()
-class InventoryItem extends Object with _$InventoryItemSerializerMixin {
+class InventoryItem
+    extends Object
+    with _$InventoryItemSerializerMixin
+    implements Comparable<InventoryItem>
+{
   String uuid;
   String code;
   String expiry;
@@ -25,13 +28,18 @@ class InventoryItem extends Object with _$InventoryItemSerializerMixin {
   DateTime get weekNotification => expiryDate.subtract(Duration(days: 7));
   DateTime get monthNotification => expiryDate.subtract(Duration(days: 30));
 
+  @override
   int compareTo(InventoryItem other) {
     return this.daysFromToday.compareTo(other.daysFromToday);
   }
 }
 
 @JsonSerializable()
-class Product extends Object with _$ProductSerializerMixin {
+class Product
+    extends Object
+    with _$ProductSerializerMixin
+    implements Comparable<Product>
+{
   String code;
   String name;
   String brand;
@@ -55,6 +63,7 @@ class Product extends Object with _$ProductSerializerMixin {
     ;
   }
 
+  @override
   int compareTo(Product other) {
     if (other == null) return 1;
     int compare = this.brand?.compareTo(other.brand) ?? 0;
@@ -103,22 +112,30 @@ class UserAccount extends Object with _$UserAccountSerializerMixin {
 
 class InventorySet {
   InventoryDetails details;
-  List<InventoryItem> _itemList;
-  List<InventoryItem> _sortedList;
   Map<String, Product> productDictionary;
+  TreeSet<InventoryItem> itemTree = new TreeSet();
   static Map<String, Product> masterProductDictionary = {};
 
   InventorySet(this.details) :
-        _itemList= [],
-        _sortedList = [],
         productDictionary = {}
-  ;
+  {
+    itemTree = new TreeSet(comparator: (item1, item2) {
+      int compare = item1.compareTo(item2);
+      if (compare != 0) return compare;
+
+      Product product1 = getAssociatedProduct(item1.code);
+      Product product2 = getAssociatedProduct(item2.code);
+      if (product1 != null) return product1.compareTo(product2);
+
+      return 0;
+    });
+  }
 
   String _searchFilter;
   set filter(String f) => _searchFilter = f?.trim()?.toLowerCase();
 
   List<InventoryItem> get items {
-    return _sortedList.where((item) {
+    return itemTree.where((item) {
       Product product = getAssociatedProduct(item.code);
       bool test = (_searchFilter == null
         || (product.brand?.toLowerCase()?.contains(_searchFilter) ?? false)
@@ -129,38 +146,11 @@ class InventorySet {
     }).toList();
   }
 
-  void clearItems() {
-    _itemList.clear();
-    _sortedList.clear();
-  }
-
-  Future buildSortedList(InventoryItem item) {
-    return Future(() {
-      _itemList.add(item);
-      sortSync();
-    });
-  }
-
   Product  getAssociatedProduct(String code) {
     Product product = productDictionary.containsKey(code)
         ? productDictionary[code]
         : masterProductDictionary[code];
 
     return product;
-  }
-
-  void sortSync() {
-    _itemList.sort((item1, item2) {
-      int compare = item1.compareTo(item2);
-      if (compare != 0) return compare;
-
-      Product product1 = getAssociatedProduct(item1.code);
-      Product product2 = getAssociatedProduct(item2.code);
-      if (product1 != null) return product1.compareTo(product2);
-
-      return 0;
-    });
-    _sortedList.clear();
-    _sortedList.addAll(_itemList);
   }
 }
