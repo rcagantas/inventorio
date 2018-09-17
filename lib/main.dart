@@ -64,6 +64,7 @@ class InventoryAppState extends State<InventoryApp> {
 class ListingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    InventoryModel searchModel = ScopedModel.of(context);
     return Scaffold(
       appBar: SearchBar(
         defaultAppBar: AppBar(
@@ -73,12 +74,10 @@ class ListingsPage extends StatelessWidget {
         ),
         searchHint: 'Filter',
         onActivatedChanged: (active) {
-          InventoryModel model = ScopedModel.of(context);
-          if (!active) model.setFilter(null);
+          if (!active) searchModel.setFilter(null);
         },
         onQueryChanged: (query) {
-          InventoryModel model = ScopedModel.of(context);
-          model.setFilter(query);
+          searchModel.setFilter(query);
         },
       ),
       body: ScopedModelDescendant<InventoryModel>(
@@ -299,7 +298,7 @@ class InventoryTile extends StatelessWidget {
     double textScaleFactor = MediaQuery.of(context).textScaleFactor;
     double adjustedHeight = 98.0 * textScaleFactor;
 
-    return product == null ? Container(height: adjustedHeight,) : Slidable(
+    return Slidable(
       delegate: SlidableDrawerDelegate(),
       actionExtentRatio: 0.25,
       child: FlatButton(
@@ -328,7 +327,7 @@ class InventoryTile extends StatelessWidget {
                 flex: 3,
                 child: Padding(
                   padding: const EdgeInsets.all(0.5),
-                  child: buildProductLabel(context, product),
+                  child: buildProductLabel(context, product, item.code),
                 ),
               ),
               Expanded(
@@ -391,7 +390,7 @@ class InventoryTile extends StatelessWidget {
     return Colors.greenAccent;
   }
 
-  static Widget buildProductLabel(BuildContext context, Product product) {
+  static Widget buildProductLabel(BuildContext context, Product product, String code) {
     TextStyle body1 = Theme.of(context).textTheme.body1;
     TextStyle body2 = Theme.of(context).textTheme.body2;
 
@@ -405,6 +404,10 @@ class InventoryTile extends StatelessWidget {
       Text text = widget as Text;
       return text.data.isNotEmpty;
     });
+
+    if (labels.length == 0) {
+      labels.add(Text('$code',          style: body1, textAlign: TextAlign.center,));
+    }
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -715,7 +718,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                                 ? Center(child: CircularProgressIndicator())
                                 : staging == null
                                   ? Text('Add Product Information', style: pickerStyle, textAlign: TextAlign.center,)
-                                  : InventoryTile.buildProductLabel(context, staging),
+                                  : InventoryTile.buildProductLabel(context, staging, widget.code),
                           ),
                         )
                       ],

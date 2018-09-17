@@ -125,9 +125,10 @@ class InventorySet {
 
       Product product1 = getAssociatedProduct(item1.code);
       Product product2 = getAssociatedProduct(item2.code);
-      if (product1 != null) return product1.compareTo(product2);
+      if (product1 != null && product2 != null)
+        return product1.compareTo(product2);
 
-      return 0;
+      return item1.code.compareTo(item2.code);
     });
   }
 
@@ -138,9 +139,9 @@ class InventorySet {
     return itemTree.where((item) {
       Product product = getAssociatedProduct(item.code);
       bool test = (_searchFilter == null
-        || (product.brand?.toLowerCase()?.contains(_searchFilter) ?? false)
-        || (product.name?.toLowerCase()?.contains(_searchFilter) ?? false)
-        || (product.variant?.toLowerCase()?.contains(_searchFilter) ?? false)
+        || (product?.brand?.toLowerCase()?.contains(_searchFilter) ?? false)
+        || (product?.name?.toLowerCase()?.contains(_searchFilter) ?? false)
+        || (product?.variant?.toLowerCase()?.contains(_searchFilter) ?? false)
       );
       return test;
     }).toList();

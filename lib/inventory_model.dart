@@ -155,11 +155,13 @@ class InventoryModel extends Model {
               snap.documents.forEach((doc) {
 
                 InventoryItem item = InventoryItem.fromJson(doc.data);
+                inventory.itemTree.add(item);
+                notifyListeners();
+
                 identifyProduct(item.code, inventoryId: inventoryId).then((product) {
-                  inventory.itemTree.add(item);
-                  notifyListeners();
                   _delayedNotification();
                 });
+
               });
 
             });
