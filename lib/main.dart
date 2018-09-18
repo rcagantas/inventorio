@@ -305,22 +305,29 @@ class InventoryTile extends StatelessWidget {
         padding: EdgeInsets.zero,
         onPressed: () {
           Navigator.push(context, MaterialPageRoute(
-              builder: (context) => InventoryAddPage(product.code, replace: item))
+              builder: (context) => InventoryAddPage(
+                product.code,
+                replace: item,
+                productReference: product,
+              ))
           );
         },
         child: Container(
           padding: EdgeInsets.only(bottom: 2.0),
           child: Row(
             children: <Widget>[
-              SizedBox(
-                height: adjustedHeight,
-                width: 80.0,
-                child: product?.imageUrl == null
-                ? Center(child: Icon(Icons.camera_alt, color: Colors.grey))
-                : CachedNetworkImage(
-                    imageUrl: product?.imageUrl ?? '', fit: BoxFit.cover,
-                    placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey)),
-                    errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
+              Hero(
+                tag: product?.code ?? 'placeholder',
+                child: SizedBox(
+                  height: adjustedHeight,
+                  width: 80.0,
+                  child: product?.imageUrl == null
+                  ? Center(child: Icon(Icons.camera_alt, color: Colors.grey))
+                  : CachedNetworkImage(
+                      imageUrl: product?.imageUrl ?? '', fit: BoxFit.cover,
+                      placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey)),
+                      errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
+                  ),
                 ),
               ),
               Expanded(
@@ -426,6 +433,7 @@ class _ProductPageState extends State<ProductPage> {
   String _code, _imageUrl;
   TextEditingController _brandCtrl, _nameCtrl, _variantCtrl;
   File _stagingImage;
+  final double imageSize = 250.0;
 
   bool _isUnModified() {
     return widget.product != null &&
@@ -464,7 +472,6 @@ class _ProductPageState extends State<ProductPage> {
 
   @override
   Widget build(BuildContext context) {
-    double imageSize = 250.0;
     return Scaffold(
       appBar: AppBar(
         title: Text('$_code'),
@@ -525,24 +532,26 @@ class _ProductPageState extends State<ProductPage> {
                   setState(() { _stagingImage = file; });
                 });
               },
-              child: Center(
-                child: Stack(
-                  alignment: AlignmentDirectional.center,
-                  children: <Widget>[
-                    Column(
-                      children: <Widget>[
-                        Icon(Icons.camera_alt, size: imageSize * .60, color: Colors.grey,),
-                        Text('Add Photo')
-                      ],
-                    ),
-                    _imageUrl == null? Container(): CachedNetworkImage(
-                      imageUrl: _imageUrl , fit: BoxFit.cover,
-                      height: imageSize, width: imageSize,
-                    ),
-                    _stagingImage == null
-                    ? Container()
-                    : Image.file(_stagingImage, width: imageSize, height: imageSize, fit: BoxFit.cover,)
-                  ],
+              child: Hero(
+                tag: _code ?? 'placeholder',
+                child: Center(
+                  child: Stack(
+                    alignment: AlignmentDirectional.center,
+                    children: <Widget>[
+                      Icon(Icons.camera_alt, size: imageSize * .60, color: Colors.grey,),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 130.0),
+                        child: Text('Add Photo', style: Theme.of(context).textTheme.body1,),
+                      ),
+                      _imageUrl == null? Container(): CachedNetworkImage(
+                        imageUrl: _imageUrl , fit: BoxFit.cover,
+                        height: imageSize, width: imageSize,
+                      ),
+                      _stagingImage == null
+                      ? Container()
+                      : Image.file(_stagingImage, width: imageSize, height: imageSize, fit: BoxFit.cover,)
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -606,7 +615,8 @@ class _ScanningPageState extends State<ScanningPage> {
 class InventoryAddPage extends StatefulWidget {
   final String code;
   final InventoryItem replace;
-  InventoryAddPage(this.code, {this.replace});
+  final Product productReference;
+  InventoryAddPage(this.code, {this.replace, this.productReference});
   @override State<InventoryAddPage> createState() => _InventoryAddPageState();
 }
 
@@ -640,20 +650,24 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
     monthIndex = ref.month;
     dayIndex = ref.day;
 
-    InventoryModel model = ScopedModel.of(context);
-    model.identifyProduct(widget.code).then((product) {
-      setStaging(product);
-    });
+    if (widget.productReference != null) {
+      setStaging(widget.productReference);
+    } else {
+      InventoryModel model = ScopedModel.of(context);
+      model.identifyProduct(widget.code).then((product) {
+        setState(() {
+          setStaging(product);
+        });
+      });
+    }
 
     super.initState();
   }
 
   void setStaging(Product product) {
-    setState(() {
-      this.staging = product;
-      this.known = staging != null;
-      this.isLoading = false;
-    });
+    this.staging = product;
+    this.known = staging != null;
+    this.isLoading = false;
   }
 
   Widget _createPicker(BuildContext context, {
@@ -699,15 +713,18 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                       children: <Widget>[
                         Expanded(
                           flex: 2,
-                          child: SizedBox(
-                              width: 130.0, height: 130.0,
-                              child: staging?.imageUrl == null
-                              ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 80.0,)
-                              : CachedNetworkImage(
-                                imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
-                                placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 80.0,)),
-                                errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: 80.0,)),
-                              ),
+                          child: Hero(
+                            tag: widget.code ?? 'placeholder',
+                            child: SizedBox(
+                                width: 130.0, height: 130.0,
+                                child: staging?.imageUrl == null
+                                ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 80.0,)
+                                : CachedNetworkImage(
+                                  imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
+                                  placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 80.0,)),
+                                  errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: 80.0,)),
+                                ),
+                            ),
                           ),
                         ),
                         Expanded(
