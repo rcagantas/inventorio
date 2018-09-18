@@ -304,6 +304,7 @@ class InventoryTile extends StatelessWidget {
       child: FlatButton(
         padding: EdgeInsets.zero,
         onPressed: () {
+          if (product == null) return;
           Navigator.push(context, MaterialPageRoute(
               builder: (context) => InventoryAddPage(
                 product.code,
