@@ -118,6 +118,7 @@ class InventoryModel extends Model {
   }
 
   void _loadUserAccount(String accountId) {
+    if (accountId == null || accountId == "") return;
 
     _flutterLocalNotificationsPlugin.cancelAll();
 
