@@ -211,10 +211,10 @@ class ListingsPage extends StatelessWidget {
     ];
 
     model.inventories?.values?.forEach((inventory) {
-      String inventoryId = inventory.details.uuid;
+      String inventoryId = inventory?.details?.uuid;
       widgets.add(
           ListTile(
-            selected: inventoryId == model.selected.details.uuid,
+            selected: inventoryId == model.selected?.details?.uuid,
             title: Text(inventory.details.name ?? 'Inventory', softWrap: false,),
             subtitle: Text('${inventory.items.length} items', softWrap: false,),
             onTap: () async {

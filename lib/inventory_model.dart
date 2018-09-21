@@ -25,7 +25,12 @@ class InventoryModel extends Model {
   bool get isSignedIn => _googleSignIn.currentUser != null;
   String get userDisplayName => _googleSignIn.currentUser?.displayName ?? '';
   void signIn() { _googleSignIn.signIn(); }
-  void signOut() { _googleSignIn.signOut(); }
+  void signOut() {
+    _googleSignIn.signOut().whenComplete(() {
+      inventories.clear();
+      notifyListeners();
+    });
+  }
 
   UserAccount userAccount;
 
@@ -128,16 +133,16 @@ class InventoryModel extends Model {
         return;
       }
 
+
       userAccount = UserAccount.fromJson(userDoc.data);
       log.fine('Loaded account changes ${userDoc.data}');
 
-      inventories?.keys?.forEach((id) {
-        if (!userAccount.knownInventories.contains(id)) {
-          log.fine('Removing inventory $id');
-          inventories.remove(id);
-          _delayedNotification();
-        }
-      });
+      if (userDoc.documentID != userAccount?.userId
+        || inventories.length != userAccount.knownInventories.length
+      ) {
+        inventories.clear();
+        _delayedNotification();
+      }
 
       userAccount.knownInventories.forEach((inventoryId) {
         log.fine('Loading inventory $inventoryId');
