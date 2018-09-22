@@ -245,7 +245,7 @@ class InventoryModel extends Model {
     log.fine('Resizing image ${toResize.path}');
     DateTime startTime = DateTime.now();
 
-    int size = 256;
+    int size = 512;
     ImageProperties properties = await FlutterNativeImage.getImageProperties(toResize.path);
 
     log.fine('Resizing image ${basename(toResize.path)}');
