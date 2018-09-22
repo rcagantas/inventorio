@@ -67,7 +67,7 @@ class ListingsPage extends StatelessWidget {
     InventoryModel searchModel = ScopedModel.of(context);
     return Scaffold(
       appBar: SearchBar(
-        defaultAppBar: AppBar(
+        defaultBar: AppBar(
           title: ScopedModelDescendant<InventoryModel>(
               builder: (context, child, model) => Text(model.selected?.details?.name ?? 'Inventory')
           ),
