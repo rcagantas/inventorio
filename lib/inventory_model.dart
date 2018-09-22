@@ -225,10 +225,16 @@ class InventoryModel extends Model {
     _uploadProduct(product);
 
     if (file != null) _resizeImage(file).then((resized) {
+      selected.replacedImage[product.code] = resized;
+      notifyListeners();
+
       _uploadProductImage(product, resized).then((product) {
         log.fine('Reuploading with image URL data.');
         _uploadProduct(product);
         identifyProduct(product.code);
+        Future.delayed(Duration(minutes: 2), () {
+          selected.replacedImage.remove(product.code);
+        });
       });
     });
 
@@ -239,7 +245,7 @@ class InventoryModel extends Model {
     log.fine('Resizing image ${toResize.path}');
     DateTime startTime = DateTime.now();
 
-    int size = 512;
+    int size = 256;
     ImageProperties properties = await FlutterNativeImage.getImageProperties(toResize.path);
 
     log.fine('Resizing image ${basename(toResize.path)}');

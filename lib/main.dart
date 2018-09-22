@@ -323,7 +323,7 @@ class InventoryTile extends StatelessWidget {
                   height: adjustedHeight,
                   width: 80.0,
                   child: product?.imageUrl == null
-                  ? Center(child: Icon(Icons.camera_alt, color: Colors.grey))
+                  ? Center(child: Icon(Icons.camera_alt, color: Colors.grey.shade400))
                   : CachedNetworkImage(
                       imageUrl: product?.imageUrl ?? '', fit: BoxFit.cover,
                       placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey)),
@@ -539,7 +539,7 @@ class _ProductPageState extends State<ProductPage> {
                   child: Stack(
                     alignment: AlignmentDirectional.center,
                     children: <Widget>[
-                      Icon(Icons.camera_alt, size: imageSize * .60, color: Colors.grey,),
+                      Icon(Icons.camera_alt, size: imageSize * .60, color: Colors.grey.shade400,),
                       Padding(
                         padding: const EdgeInsets.only(top: 130.0),
                         child: Text('Add Photo', style: Theme.of(context).textTheme.body1,),
@@ -547,6 +547,8 @@ class _ProductPageState extends State<ProductPage> {
                       _imageUrl == null? Container(): CachedNetworkImage(
                         imageUrl: _imageUrl , fit: BoxFit.cover,
                         height: imageSize, width: imageSize,
+                        placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: imageSize * .60,)),
+                        errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: imageSize * .60,)),
                       ),
                       _stagingImage == null
                       ? Container()
@@ -691,6 +693,19 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
     );
   }
 
+  Widget imageSupplier(BuildContext context) {
+    InventoryModel model = ScopedModel.of(context);
+    if (model.selected.replacedImage.containsKey(widget.code)) {
+      return Image.memory(model.selected.replacedImage[widget.code], fit: BoxFit.cover,);
+    } else if (staging?.imageUrl != null) {
+      return CachedNetworkImage(
+        imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
+        placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 80.0,)),
+        errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: 80.0,)));
+    }
+    return Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 80.0,);
+  }
+
   @override
   Widget build(BuildContext context) {
     TextStyle pickerStyle = Theme.of(context).textTheme.body2.copyWith(fontSize: 25.0);
@@ -718,13 +733,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                             tag: widget.code ?? 'placeholder',
                             child: SizedBox(
                                 width: 130.0, height: 130.0,
-                                child: staging?.imageUrl == null
-                                ? Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 80.0,)
-                                : CachedNetworkImage(
-                                  imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
-                                  placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 80.0,)),
-                                  errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: 80.0,)),
-                                ),
+                                child: imageSupplier(context)
                             ),
                           ),
                         ),

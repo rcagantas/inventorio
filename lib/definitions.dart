@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:json_annotation/json_annotation.dart';
 import 'package:intl/intl.dart';
 import 'package:meta/meta.dart';
@@ -112,13 +114,13 @@ class UserAccount extends Object with _$UserAccountSerializerMixin {
 
 class InventorySet {
   InventoryDetails details;
-  Map<String, Product> productDictionary;
+  Map<String, Product> productDictionary = {};
   TreeSet<InventoryItem> itemTree = new TreeSet();
   static Map<String, Product> masterProductDictionary = {};
 
-  InventorySet(this.details) :
-        productDictionary = {}
-  {
+  Map<String, Uint8List> replacedImage = {};
+
+  InventorySet(this.details) {
     itemTree = new TreeSet(comparator: (item1, item2) {
       int compare = item1.compareTo(item2);
       if (compare != 0) return compare;
