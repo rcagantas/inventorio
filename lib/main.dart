@@ -318,7 +318,7 @@ class InventoryTile extends StatelessWidget {
           child: Row(
             children: <Widget>[
               Hero(
-                tag: product?.code ?? 'placeholder',
+                tag: item.uuid,
                 child: SizedBox(
                   height: adjustedHeight,
                   width: 80.0,
@@ -364,7 +364,7 @@ class InventoryTile extends StatelessWidget {
           icon: Icons.edit,
             onTap: () {
               Navigator.push(context, MaterialPageRoute(
-                  builder: (context) => ProductPage(product))
+                  builder: (context) => ProductPage(product, heroCode: item.uuid,))
               );
             }
         ),
@@ -426,7 +426,8 @@ class InventoryTile extends StatelessWidget {
 
 class ProductPage extends StatefulWidget {
   final Product product;
-  ProductPage(this.product);
+  final String heroCode;
+  ProductPage(this.product, {this.heroCode});
   @override State<ProductPage> createState() => _ProductPageState();
 }
 
@@ -534,7 +535,7 @@ class _ProductPageState extends State<ProductPage> {
                 });
               },
               child: Hero(
-                tag: _code ?? 'placeholder',
+                tag: widget.heroCode,
                 child: Center(
                   child: Stack(
                     alignment: AlignmentDirectional.center,
@@ -721,7 +722,12 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                     onPressed: () async {
                       Product temp = await Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => ProductPage(staging != null? staging: Product(code: widget.code)))
+                          MaterialPageRoute(builder: (context) =>
+                              ProductPage(staging != null
+                                  ? staging
+                                  : Product(code: widget.code),
+                                heroCode: widget.replace?.uuid ?? widget.code,)
+                          )
                       ); // edit from item
                       if (temp != null) setState(() { setStaging(temp); });
                     },
@@ -730,7 +736,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
                         Expanded(
                           flex: 2,
                           child: Hero(
-                            tag: widget.code ?? 'placeholder',
+                            tag: widget.replace?.uuid ?? widget.code,
                             child: SizedBox(
                                 width: 130.0, height: 130.0,
                                 child: imageSupplier(context)
@@ -799,7 +805,10 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
           child: Icon(Icons.input),
           onPressed: isLoading? null: () async {
             staging = staging == null
-              ? await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(Product(code: widget.code))))
+              ? await Navigator.push(context, MaterialPageRoute(builder: (context) =>
+                ProductPage(
+                  Product(code: widget.code),
+                  heroCode: widget?.replace?.uuid,)))
               : staging;
 
             if (staging == null) return;

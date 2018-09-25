@@ -77,33 +77,27 @@ class InventoryModel extends Model {
       );
   }
 
-  void _ensureLogin() {
+  void _ensureLogin() async {
     _googleSignIn.onCurrentUserChanged.listen((account) {
       log.fine('Account changed.');
-      if (account == null) {
-        log.fine('Attempting proper sign-in.');
-        _googleSignIn.signIn().catchError((error) {
-          log.fine('Error on sign-in: $error');
-        }).timeout(Duration(seconds: 2), onTimeout: () {
-          log.fine('Timeout on proper sign-in');
-        });
-      } else {
+      if (account != null) {
         _doLogin(account);
       }
     });
 
-    _googleSignIn.signInSilently().catchError((error) {
-      log.fine('Error on silent sign-in: $error');
-    });
 
-    Future.delayed(Duration(seconds: 5), () {
-      if (userAccount == null) {
+    try {
+      GoogleSignInAccount user = _googleSignIn.currentUser;
+      user = user == null ? await _googleSignIn.signInSilently() : user;
+      user = user == null ? await _googleSignIn.signIn() : user;
+      if (user == null) {
         _loadFromPreferences().then((accountId) {
           _loadUserAccount(accountId);
         });
       }
-    });
-
+    } catch (error) {
+      log.severe('Something wrong with login', error);
+    }
   }
 
   void _doLogin(GoogleSignInAccount account) {
