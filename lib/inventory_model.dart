@@ -90,13 +90,11 @@ class InventoryModel extends Model {
       GoogleSignInAccount user = _googleSignIn.currentUser;
       user = user == null ? await _googleSignIn.signInSilently() : user;
       user = user == null ? await _googleSignIn.signIn() : user;
-      if (user == null) {
-        _loadFromPreferences().then((accountId) {
-          _loadUserAccount(accountId);
-        });
-      }
     } catch (error) {
       log.severe('Something wrong with login', error);
+      _loadFromPreferences().then((accountId) {
+        _loadUserAccount(accountId);
+      });
     }
   }
 
