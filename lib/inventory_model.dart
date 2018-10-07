@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -14,6 +15,7 @@ import 'package:scoped_model/scoped_model.dart';
 import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter_native_image/flutter_native_image.dart';
 
 class InventoryModel extends Model {
@@ -28,6 +30,8 @@ class InventoryModel extends Model {
   void signOut() {
     _googleSignIn.signOut().whenComplete(() {
       inventories.clear();
+      SharedPreferences.getInstance()
+          .then((save) => save.remove('inventorio.userId'));
       notifyListeners();
     });
   }
@@ -60,8 +64,19 @@ class InventoryModel extends Model {
 
   FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin;
 
+  Future<String> get _localPath async {
+    final directory = await getApplicationDocumentsDirectory();
+    return directory.path;
+  }
+
+  Future<File> get _localMasterDictionaryFile async {
+    final path = await _localPath;
+    return File('$path/master.json');
+  }
+
   InventoryModel() {
     _initLogging();
+    _loadMasterDictionary();
     _setupNotifications();
     _ensureLogin();
   }
@@ -85,10 +100,9 @@ class InventoryModel extends Model {
       }
     });
 
-
     try {
       GoogleSignInAccount user = _googleSignIn.currentUser;
-      user = user == null ? await _googleSignIn.signInSilently() : user;
+      user = user == null ? await _googleSignIn.signInSilently(suppressErrors: true) : user;
       user = user == null ? await _googleSignIn.signIn() : user;
     } catch (error) {
       log.severe('Something wrong with login', error);
@@ -107,8 +121,7 @@ class InventoryModel extends Model {
           idToken: auth.idToken, accessToken: auth.accessToken);
     });
 
-    SharedPreferences
-        .getInstance()
+    SharedPreferences.getInstance()
         .then((save) => save.setString('inventorio.userId', account.id));
 
     _loadUserAccount(account.id);
@@ -133,7 +146,7 @@ class InventoryModel extends Model {
         || inventories.length != userAccount.knownInventories.length
       ) {
         inventories.clear();
-        _delayedNotification();
+        _delayedActions();
       }
 
       userAccount.knownInventories.forEach((inventoryId) {
@@ -157,7 +170,7 @@ class InventoryModel extends Model {
                 notifyListeners();
 
                 identifyProduct(item.code, inventoryId: inventoryId).then((product) {
-                  _delayedNotification();
+                  _delayedActions();
                 });
 
               });
@@ -399,14 +412,13 @@ class InventoryModel extends Model {
     Logger.root.onRecord.listen((LogRecord rec) {
       var logMessage = '${rec.time}: ${rec.message}';
       print(logMessage);
-      Future.delayed(Duration(milliseconds: 100), () {
-        logMessage = userAccount == null
-            ? logMessage
-            : logMessage.replaceAll(userAccount.userId, '[-]');
-        _logMessages.insert(0, logMessage);
-        if (_logMessages.length > 1000)
-          _logMessages.removeRange(1000, _logMessages.length);
-      });
+      logMessage = userAccount == null
+          ? logMessage
+          : logMessage.replaceAll(userAccount.userId, '[-]');
+      _logMessages.insert(0, logMessage);
+      if (_logMessages.length > 1000)
+        _logMessages.removeRange(1000, _logMessages.length);
+      notifyListeners();
     });
     log.fine('Creating InventoryModel');
   }
@@ -456,29 +468,57 @@ class InventoryModel extends Model {
     log.fine(logMessage);
   }
 
-  Timer _schedulingTimer;
-  void _delayedNotification({Duration duration = const Duration(seconds: 10)}) {
-    if (inventoryChange) { inventoryChange = false; return; }
-
-    if (_schedulingTimer != null) _schedulingTimer.cancel();
-    _schedulingTimer = Timer(duration, () {
-      if (inventories.isEmpty) return;
-      _flutterLocalNotificationsPlugin.cancelAll().then((_) {
-        int totalItems = inventories.values.map((s) => s.items.length).reduce((i, i2) => i + i2);
-        int scheduled = 0;
-        inventories.forEach((inventoryId, inventory) {
-          inventory.items.forEach((item) {
-            identifyProduct(item.code, inventoryId: inventoryId).then((product) {
-              _setProductScheduleFromMemory(inventoryId, item).then((_) {
-                scheduled++;
-                if (scheduled == totalItems) {
-                  log.fine('Scheduled notifications for $totalItems items.');
-                }
-              });
+  void _resetNotifications() {
+    if (inventories.isEmpty) return;
+    _flutterLocalNotificationsPlugin.cancelAll().then((_) {
+      int totalItems = inventories.values.map((s) => s.items.length).reduce((i, i2) => i + i2);
+      int scheduled = 0;
+      inventories.forEach((inventoryId, inventory) {
+        inventory.items.forEach((item) {
+          identifyProduct(item.code, inventoryId: inventoryId).then((product) {
+            _setProductScheduleFromMemory(inventoryId, item).then((_) {
+              scheduled++;
+              if (scheduled == totalItems) {
+                log.fine('Scheduled notifications for $totalItems items.');
+              }
             });
           });
         });
       });
+    });
+  }
+
+  void _saveMasterDictionary() {
+    _localMasterDictionaryFile.then((f) {
+      log.info('Saving master dictionary in ${f.path}');
+      f.writeAsString(json.encode(InventorySet.masterProductDictionary));
+    });
+  }
+
+  void _loadMasterDictionary() {
+    _localMasterDictionaryFile.then((f) {
+      f.exists().then((exists) {
+        if (exists) {
+          f.readAsString().then((j) {
+            log.info('Loading master dictionary from ${f.path}');
+            Map<String, dynamic> temp = json.decode(j);
+            InventorySet.masterProductDictionary = temp.map((k, v) => MapEntry(k, Product.fromJson(v)));
+            log.info('Master dictionary populated with ${InventorySet.masterProductDictionary?.length} items');
+            notifyListeners();
+          });
+        }
+      });
+    });
+  }
+
+  Timer _schedulingTimer;
+  void _delayedActions({Duration duration = const Duration(seconds: 10)}) {
+    if (inventoryChange) { inventoryChange = false; return; }
+
+    if (_schedulingTimer != null) _schedulingTimer.cancel();
+    _schedulingTimer = Timer(duration, () {
+      _resetNotifications();
+      _saveMasterDictionary();
     });
   }
 }
