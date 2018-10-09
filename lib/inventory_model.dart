@@ -512,7 +512,7 @@ class InventoryModel extends Model {
   }
 
   Timer _schedulingTimer;
-  void _delayedActions({Duration duration = const Duration(seconds: 10)}) {
+  void _delayedActions({Duration duration = const Duration(seconds: 2)}) {
     if (inventoryChange) { inventoryChange = false; return; }
 
     if (_schedulingTimer != null) _schedulingTimer.cancel();
