@@ -42,7 +42,7 @@ class InventoryAppState extends State<InventoryApp> {
             button: ThemeData.light().accentTextTheme.button.copyWith(fontFamily: 'Montserrat', fontSize: 18.0), // floating button
           ),
           primaryTextTheme: TextTheme(
-            title: ThemeData.light().primaryTextTheme.title.copyWith(fontFamily: 'Montserrat', fontSize: 18.0), // appbar
+            title: ThemeData.light().primaryTextTheme.title.copyWith(fontFamily: 'Montserrat', fontSize: 19.0, fontWeight: FontWeight.bold), // appbar
             body2: ThemeData.light().primaryTextTheme.body2.copyWith(fontFamily: 'Montserrat', fontSize: 16.0, color: Colors.white, fontWeight: FontWeight.bold), // accountName
             body1: ThemeData.light().primaryTextTheme.body1.copyWith(fontFamily: 'Montserrat', fontSize: 16.0, color: Colors.white), // accountEmail
           ),
@@ -210,7 +210,10 @@ class ListingsPage extends StatelessWidget {
       Divider()
     ];
 
-    model.inventories?.values?.forEach((inventory) {
+    var inventoryDrawerList = model.inventories?.values?.toList() ?? [];
+    inventoryDrawerList.sort((inv1, inv2) => inv2.items.length.compareTo(inv1.items.length));
+
+    inventoryDrawerList.forEach((inventory) {
       String inventoryId = inventory?.details?.uuid;
       widgets.add(
           ListTile(
