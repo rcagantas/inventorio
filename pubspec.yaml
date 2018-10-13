@@ -59,6 +59,11 @@ flutter:
     - family: Montserrat
       fonts:
         - asset: resources/fonts/Montserrat/Montserrat-Regular.ttf
+    - family: Prompt
+      fonts:
+        - asset: resources/fonts/Prompt/Prompt-Regular.ttf
+        - asset: resources/fonts/Prompt/Prompt-Bold.ttf
+          weight: 700
 
 
   # The following line ensures that the Material Icons font is

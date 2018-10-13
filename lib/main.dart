@@ -39,19 +39,19 @@ class InventoryAppState extends State<InventoryApp> {
           primaryColor: Colors.blue.shade700,
           accentColor: Colors.blue.shade700,
           accentTextTheme: TextTheme(
-            button: ThemeData.light().accentTextTheme.button.copyWith(fontFamily: 'Montserrat', fontSize: 18.0), // floating button
+            button: ThemeData.light().accentTextTheme.button.copyWith(fontFamily: 'Prompt', fontSize: 18.0), // floating button
           ),
           primaryTextTheme: TextTheme(
-            title: ThemeData.light().primaryTextTheme.title.copyWith(fontFamily: 'Montserrat', fontSize: 19.0, fontWeight: FontWeight.bold), // appbar
-            body2: ThemeData.light().primaryTextTheme.body2.copyWith(fontFamily: 'Montserrat', fontSize: 16.0, color: Colors.white, fontWeight: FontWeight.bold), // accountName
-            body1: ThemeData.light().primaryTextTheme.body1.copyWith(fontFamily: 'Montserrat', fontSize: 16.0, color: Colors.white), // accountEmail
+            title: ThemeData.light().primaryTextTheme.title.copyWith(fontFamily: 'Prompt', fontSize: 19.0, fontWeight: FontWeight.bold), // appbar
+            body2: ThemeData.light().primaryTextTheme.body2.copyWith(fontFamily: 'Prompt', fontSize: 16.0, color: Colors.white, fontWeight: FontWeight.bold), // accountName
+            body1: ThemeData.light().primaryTextTheme.body1.copyWith(fontFamily: 'Prompt', fontSize: 16.0, color: Colors.white), // accountEmail
           ),
           textTheme: TextTheme(
-            title: ThemeData.light().textTheme.title.copyWith(fontFamily: 'Montserrat', fontSize: 16.0), // dialog
-            subhead: ThemeData.light().textTheme.subhead.copyWith(fontFamily: 'Montserrat', fontSize: 16.0), // welcome
-            body2: ThemeData.light().textTheme.body2.copyWith(fontFamily: 'Montserrat', fontSize: 16.0), // title
+            title: ThemeData.light().textTheme.title.copyWith(fontFamily: 'Prompt', fontSize: 16.0), // dialog
+            subhead: ThemeData.light().textTheme.subhead.copyWith(fontFamily: 'Prompt', fontSize: 16.0), // welcome
+            body2: ThemeData.light().textTheme.body2.copyWith(fontFamily: 'Prompt', fontSize: 16.0), // title
             body1: ThemeData.light().textTheme.body1.copyWith(fontFamily: 'Raleway', fontSize: 15.0), // subtitle
-            button: ThemeData.light().textTheme.button.copyWith(fontFamily: 'Montserrat', fontSize: 16.0),
+            button: ThemeData.light().textTheme.button.copyWith(fontFamily: 'Prompt', fontSize: 16.0),
           ),
         ),
         title: 'Inventorio',
