@@ -290,11 +290,11 @@ class InventoryModel extends Model {
     return url;
   }
 
-  Future<Product> identifyProduct(String code, {String inventoryId}) async {
+  Future<Product> identifyProduct(String code, {String inventoryId, bool forceLoad: false}) async {
     inventoryId = inventoryId == null ? userAccount?.currentInventoryId : inventoryId;
     if (inventoryId == null) return null;
 
-    if (inventories[inventoryId].getAssociatedProduct(code) != null) {
+    if (inventories[inventoryId].getAssociatedProduct(code) != null && !forceLoad) {
       print('Cached data   $code');
       return inventories[inventoryId].getAssociatedProduct(code);
     }
@@ -503,6 +503,7 @@ class InventoryModel extends Model {
             log.info('Loading master dictionary from ${f.path}');
             Map<String, dynamic> temp = json.decode(j);
             InventorySet.masterProductDictionary = temp.map((k, v) => MapEntry(k, Product.fromJson(v)));
+            InventorySet.masterProductDictionary.forEach((code, product) => identifyProduct(code, forceLoad: true));
             log.info('Master dictionary populated with ${InventorySet.masterProductDictionary?.length} items');
             notifyListeners();
           });
