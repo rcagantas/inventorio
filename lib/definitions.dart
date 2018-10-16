@@ -74,13 +74,6 @@ class Product
     compare = this.brand?.compareTo(other.brand ?? '') ?? 0;
     if (compare != 0) return compare;
     compare = this.variant?.compareTo(other.variant ?? '') ?? 0;
-
-    if (this.code == '00000001' || other.code == '0000001') {
-      print('comparison of ${this.code} to ${other.code}: $compare');
-      print(this.toJson());
-      print(other.toJson());
-    }
-
     return compare;
   }
 }
