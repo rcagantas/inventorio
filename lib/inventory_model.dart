@@ -47,11 +47,6 @@ class InventoryModel extends Model {
   CollectionReference get inventoryCollection =>
       Firestore.instance.collection('inventory');
 
-  CollectionReference get productDictionary =>
-      userAccount == null ? null : Firestore.instance.collection('inventory')
-          .document(userAccount.currentInventoryId)
-          .collection('productDictionary');
-
   CollectionReference get inventoryItemCollection =>
       userAccount == null ? null : Firestore.instance.collection('inventory')
           .document(userAccount.currentInventoryId)
@@ -161,12 +156,12 @@ class InventoryModel extends Model {
             InventorySet inventory = InventorySet(details);
 
             doc.reference.collection('inventoryItems').snapshots().listen((snap) {
-              inventory.itemTree.clear();
+              inventory.itemClear();
 
               snap.documents.forEach((doc) {
 
                 InventoryItem item = InventoryItem.fromJson(doc.data);
-                inventory.itemTree.add(item);
+                inventory.addItem(item);
                 notifyListeners();
 
                 identifyProduct(item.code, inventoryId: inventoryId).then((product) {
@@ -267,7 +262,11 @@ class InventoryModel extends Model {
 
   void _uploadProduct(Product product) {
     log.fine('Trying to set product ${product.code} with ${product.toJson()}');
-    productDictionary.document(product.code).setData(product.toJson());
+    var localizedDictionary = Firestore.instance.collection('inventory')
+        .document(userAccount.currentInventoryId)
+        .collection('productDictionary');
+
+    localizedDictionary.document(product.code).setData(product.toJson());
     masterProductDictionary.document(product.code).setData(product.toJson());
   }
 
@@ -290,11 +289,60 @@ class InventoryModel extends Model {
     return url;
   }
 
-  Future<Product> identifyProduct(String code, {String inventoryId, bool forceLoad: false}) async {
+  void _subscribeToProduct(CollectionReference ref, Map<String, Product> map, String code, {String logMessage}) {
+    ref.document(code).snapshots().listen((doc) {
+      if (doc.exists) {
+        if (logMessage != null) log.fine(logMessage);
+        map[code] = Product.fromJson(doc.data);
+        notifyListeners();
+      }
+    });
+  }
+
+  Future<Product> identifyProduct(String code, {String inventoryId}) async {
     inventoryId = inventoryId == null ? userAccount?.currentInventoryId : inventoryId;
     if (inventoryId == null) return null;
 
-    if (inventories[inventoryId].getAssociatedProduct(code) != null && !forceLoad) {
+    Product product;
+    product = product == null? inventories[inventoryId].productDictionary[code]: product;
+    product = product == null? InventorySet.masterProductDictionary[code]: product;
+    if (product != null) return product;
+
+    var doc;
+    if (inventoryId != null) {
+      var localizedDictionary = Firestore.instance.collection('inventory')
+          .document(inventoryId)
+          .collection('productDictionary');
+
+      doc = await localizedDictionary.document(code).get();
+      if (doc.exists) {
+        inventories[inventoryId].productDictionary.putIfAbsent(code, () {
+          _subscribeToProduct(localizedDictionary, inventories[inventoryId].productDictionary, code,
+              logMessage: "Localized data for $code in $inventoryId");
+          return Product.fromJson(doc.data);
+        });
+      }
+    }
+
+    if (!InventorySet.masterProductDictionary.containsKey(code)) {
+      var masterDoc = await masterProductDictionary.document(code).get();
+      if (masterDoc.exists) {
+        InventorySet.masterProductDictionary.putIfAbsent(code, () {
+          _subscribeToProduct(masterProductDictionary, InventorySet.masterProductDictionary, code,
+              logMessage: "Master data for $code");
+          return Product.fromJson(masterDoc.data);
+        });
+      }
+    }
+
+    return inventories[inventoryId].getAssociatedProduct(code);
+  }
+
+  Future<Product> identifyProduct1(String code, {String inventoryId}) async {
+    inventoryId = inventoryId == null ? userAccount?.currentInventoryId : inventoryId;
+    if (inventoryId == null) return null;
+
+    if (inventories[inventoryId].getAssociatedProduct(code) != null) {
       print('Cached data   $code');
       return inventories[inventoryId].getAssociatedProduct(code);
     }
@@ -317,7 +365,7 @@ class InventoryModel extends Model {
 
     var masterDoc = await masterProductDictionary.document(code).get();
     if (masterDoc.exists) {
-      if (!doc.exists) log.fine('Master data   $code');
+      if (!doc.exists) log.fine('Master data $code');
       InventorySet.masterProductDictionary.putIfAbsent(code, () {
         masterProductDictionary.document(code).snapshots().listen((doc) {
           InventorySet.masterProductDictionary[code] = Product.fromJson(doc.data);
@@ -502,9 +550,8 @@ class InventoryModel extends Model {
           f.readAsString().then((j) {
             log.info('Loading master dictionary from ${f.path}');
             Map<String, dynamic> temp = json.decode(j);
-            InventorySet.masterProductDictionary = temp.map((k, v) => MapEntry(k, Product.fromJson(v)));
-            InventorySet.masterProductDictionary.forEach((code, product) => identifyProduct(code, forceLoad: true));
-            log.info('Master dictionary populated with ${InventorySet.masterProductDictionary?.length} items');
+            InventorySet.masterProductCache = temp.map((k, v) => MapEntry(k, Product.fromJson(v)));
+            log.info('Master dictionary cache populated with ${InventorySet.masterProductCache?.length} items');
             notifyListeners();
           });
         }

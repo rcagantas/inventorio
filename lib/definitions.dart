@@ -67,12 +67,20 @@ class Product
 
   @override
   int compareTo(Product other) {
+    int compare = 0;
     if (other == null) return 1;
-    int compare = this.brand?.compareTo(other.brand ?? '') ?? 0;
-    if (compare != 0) return compare;
     compare = this.name?.compareTo(other.name ?? '') ?? 0;
     if (compare != 0) return compare;
+    compare = this.brand?.compareTo(other.brand ?? '') ?? 0;
+    if (compare != 0) return compare;
     compare = this.variant?.compareTo(other.variant ?? '') ?? 0;
+
+    if (this.code == '00000001' || other.code == '0000001') {
+      print('comparison of ${this.code} to ${other.code}: $compare');
+      print(this.toJson());
+      print(other.toJson());
+    }
+
     return compare;
   }
 }
@@ -115,30 +123,43 @@ class UserAccount extends Object with _$UserAccountSerializerMixin {
 class InventorySet {
   InventoryDetails details;
   Map<String, Product> productDictionary = {};
-  TreeSet<InventoryItem> itemTree = new TreeSet();
+  List<InventoryItem> _itemList = [];
   static Map<String, Product> masterProductDictionary = {};
+  static Map<String, Product> masterProductCache = {};
 
   Map<String, Uint8List> replacedImage = {};
 
-  InventorySet(this.details) {
-    itemTree = new TreeSet(comparator: (item1, item2) {
-      int compare = item1.compareTo(item2);
-      if (compare != 0) return compare;
+  int _itemAndProductComparator(InventoryItem item1, InventoryItem item2) {
+    int compare = item1.compareTo(item2);
+    if (compare != 0) return compare;
 
-      Product product1 = getAssociatedProduct(item1.code);
-      Product product2 = getAssociatedProduct(item2.code);
-      if (product1 != null && product2 != null)
-        return product1.compareTo(product2);
+    Product product1 = getAssociatedProduct(item1.code);
+    Product product2 = getAssociatedProduct(item2.code);
+    if (product1 != null)
+      return product1.compareTo(product2);
 
-      return item1.code.compareTo(item2.code);
-    });
+    return item1.code.compareTo(item2.code);
   }
+
+  InventorySet(this.details):
+        productDictionary = {},
+        _itemList = [];
 
   String _searchFilter;
   set filter(String f) => _searchFilter = f?.trim()?.toLowerCase();
 
+  void itemClear() {
+    _itemList.clear();
+  }
+
+  void addItem(InventoryItem item) {
+    _itemList.add(item);
+  }
+
   List<InventoryItem> get items {
-    return itemTree.where((item) {
+    _itemList.sort(_itemAndProductComparator);
+
+    return _itemList.where((item) {
       Product product = getAssociatedProduct(item.code);
       bool test = (_searchFilter == null
         || (product?.brand?.toLowerCase()?.contains(_searchFilter) ?? false)
@@ -149,11 +170,15 @@ class InventorySet {
     }).toList();
   }
 
-  Product  getAssociatedProduct(String code) {
-    Product product = productDictionary.containsKey(code)
-        ? productDictionary[code]
-        : masterProductDictionary[code];
-
+  Product getAssociatedProduct(String code) {
+    Product product;
+    if (productDictionary.containsKey(code)) {
+      product = productDictionary[code];
+    } else if (masterProductDictionary.containsKey(code)) {
+      product = masterProductDictionary[code];
+    } else if (masterProductCache.containsKey(code)) {
+      product = masterProductCache[code];
+    }
     return product;
   }
 }

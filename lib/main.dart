@@ -325,7 +325,7 @@ class InventoryTile extends StatelessWidget {
                 child: SizedBox(
                   height: adjustedHeight,
                   width: 80.0,
-                  child: product?.imageUrl == null
+                  child: product?.imageUrl == null || product?.imageUrl == ''
                   ? Center(child: Icon(Icons.camera_alt, color: Colors.grey.shade400))
                   : CachedNetworkImage(
                       imageUrl: product?.imageUrl ?? '', fit: BoxFit.cover,
@@ -548,7 +548,7 @@ class _ProductPageState extends State<ProductPage> {
                         padding: const EdgeInsets.only(top: 130.0),
                         child: Text('Add Photo', style: Theme.of(context).textTheme.body1,),
                       ),
-                      _imageUrl == null? Container(): CachedNetworkImage(
+                      _imageUrl == null || _imageUrl == '' ? Container(): CachedNetworkImage(
                         imageUrl: _imageUrl , fit: BoxFit.cover,
                         height: imageSize, width: imageSize,
                         placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: imageSize * .60,)),
@@ -701,7 +701,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
     InventoryModel model = ScopedModel.of(context);
     if (model.selected.replacedImage.containsKey(widget.code)) {
       return Image.memory(model.selected.replacedImage[widget.code], fit: BoxFit.cover,);
-    } else if (staging?.imageUrl != null) {
+    } else if (staging?.imageUrl != null && staging?.imageUrl != '') {
       return CachedNetworkImage(
         imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
         placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 80.0,)),
