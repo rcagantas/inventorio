@@ -125,13 +125,16 @@ class InventorySet {
   int _itemAndProductComparator(InventoryItem item1, InventoryItem item2) {
     int compare = item1.compareTo(item2);
     if (compare != 0) return compare;
+    if (getAssociatedProduct(item1.code) != null) {
+      return _productComparator(item1, item2);
+    }
+    return item1.code.compareTo(item2.code);
+  }
 
+  int _productComparator(InventoryItem item1, InventoryItem item2) {
     Product product1 = getAssociatedProduct(item1.code);
     Product product2 = getAssociatedProduct(item2.code);
-    if (product1 != null)
-      return product1.compareTo(product2);
-
-    return item1.code.compareTo(item2.code);
+    return product1.compareTo(product2);
   }
 
   InventorySet(this.details):
@@ -149,8 +152,9 @@ class InventorySet {
     _itemList.add(item);
   }
 
+  bool sortAlpha = false;
   List<InventoryItem> get items {
-    _itemList.sort(_itemAndProductComparator);
+    _itemList.sort(sortAlpha? _productComparator: _itemAndProductComparator);
 
     return _itemList.where((item) {
       Product product = getAssociatedProduct(item.code);

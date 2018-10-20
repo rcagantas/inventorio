@@ -218,6 +218,11 @@ class InventoryModel extends Model {
     notifyListeners();
   }
 
+  void toggleSort() {
+    selected.sortAlpha = !selected.sortAlpha;
+    notifyListeners();
+  }
+
   Product insertUpdateProduct(String code,
       String brand, String name,
       String variant, String imageUrl, File file) {

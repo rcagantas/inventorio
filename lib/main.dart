@@ -51,6 +51,7 @@ class InventoryAppState extends State<InventoryApp> {
             subhead: ThemeData.light().textTheme.subhead.copyWith(fontFamily: 'Prompt', fontSize: 16.0), // welcome
             body2: ThemeData.light().textTheme.body2.copyWith(fontFamily: 'Prompt', fontSize: 16.0), // title
             body1: ThemeData.light().textTheme.body1.copyWith(fontFamily: 'Raleway', fontSize: 15.0), // subtitle
+            caption: ThemeData.light().textTheme.button.copyWith(fontFamily: 'Prompt', fontSize: 16.0, color: Colors.grey.shade600),
             button: ThemeData.light().textTheme.button.copyWith(fontFamily: 'Prompt', fontSize: 16.0),
           ),
         ),
@@ -61,24 +62,88 @@ class InventoryAppState extends State<InventoryApp> {
   }
 }
 
+class _SearchDelegate extends SearchDelegate<InventoryItem> {
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.clear),
+        onPressed: () {
+          query = '';
+          InventoryModel searchModel = ScopedModel.of(context);
+          searchModel.setFilter(null);
+          showSuggestions(context);
+        },
+      ),
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    InventoryModel model = ScopedModel.of(context);
+    return IconButton(
+      tooltip: 'Back',
+      icon: Icon(Icons.arrow_back),
+      onPressed: () {
+        model.setFilter(null);
+        close(context, null);
+      },
+    );
+  }
+
+  Widget _buildList(BuildContext context) {
+    InventoryModel model = ScopedModel.of(context);
+    model.setFilter(query);
+    return ListView.builder(
+      itemCount: model.selected?.items?.length ?? 0,
+      itemBuilder: (context, index) {
+        return InventoryTile(model.selected.items[index]);
+      },
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return _buildList(context);
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    return _buildList(context);
+  }
+
+}
+
 class ListingsPage extends StatelessWidget {
+  final _searchDelegate = _SearchDelegate();
   @override
   Widget build(BuildContext context) {
-    InventoryModel searchModel = ScopedModel.of(context);
+    InventoryModel _searchModel = ScopedModel.of(context);
     return Scaffold(
-      appBar: SearchBar(
-        defaultBar: AppBar(
-          title: ScopedModelDescendant<InventoryModel>(
-              builder: (context, child, model) => Text(model.selected?.details?.name ?? 'Inventory')
-          ),
+      appBar: AppBar(
+        title: ScopedModelDescendant<InventoryModel>(
+          builder: (context, child, model) => Text(model.selected?.details?.name ?? 'Inventory'),
         ),
-        searchHint: 'Filter',
-        onActivatedChanged: (active) {
-          if (!active) searchModel.setFilter(null);
-        },
-        onQueryChanged: (query) {
-          searchModel.setFilter(query);
-        },
+        actions: <Widget>[
+          ScopedModelDescendant<InventoryModel>(
+            builder: (context, child, model) {
+              return IconButton(
+                icon: _searchModel?.selected?.sortAlpha ?? false
+                    ? Icon(Icons.sort_by_alpha)
+                    : Icon(Icons.sort),
+                onPressed: () {
+                  _searchModel.toggleSort();
+                },
+              );
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed:() async {
+              showSearch(context: context, delegate: _searchDelegate);
+            }
+          )
+        ],
       ),
       body: ScopedModelDescendant<InventoryModel>(
           builder: (context, child, model) {
