@@ -78,25 +78,27 @@ class _SearchDelegate extends SearchDelegate<InventoryItem> {
 
   @override
   Widget buildLeading(BuildContext context) {
-    InventoryModel model = ScopedModel.of(context);
+    InventoryModel searchModel = ScopedModel.of(context);
     return IconButton(
       tooltip: 'Back',
       icon: Icon(Icons.arrow_back),
       onPressed: () {
-        model.setFilter(null);
+        searchModel.setFilter(null);
         close(context, null);
       },
     );
   }
 
   Widget _buildList(BuildContext context) {
-    InventoryModel model = ScopedModel.of(context);
-    model.setFilter(query);
-    return ListView.builder(
-      itemCount: model.selected?.items?.length ?? 0,
-      itemBuilder: (context, index) {
-        return InventoryTile(model.selected.items[index]);
-      },
+    return ScopedModelDescendant<InventoryModel>(
+      builder: (context, widget, model) {
+        return ListView.builder(
+          itemCount: model.selected?.items?.length ?? 0,
+          itemBuilder: (context, index) {
+            return InventoryTile(model.selected.items[index]);
+          },
+        );
+      }
     );
   }
 
@@ -107,6 +109,8 @@ class _SearchDelegate extends SearchDelegate<InventoryItem> {
 
   @override
   Widget buildSuggestions(BuildContext context) {
+    InventoryModel searchModel = ScopedModel.of(context);
+    searchModel.setFilter(query);
     return _buildList(context);
   }
 
