@@ -379,13 +379,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.3.4"
-  loader_search_bar:
-    dependency: "direct main"
-    description:
-      name: loader_search_bar
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.0.0+1"
   logging:
     dependency: "direct main"
     description:

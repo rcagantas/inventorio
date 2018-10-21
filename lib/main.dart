@@ -13,8 +13,6 @@ import 'package:qr_mobile_vision/qr_camera.dart';
 import 'package:scoped_model/scoped_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:date_utils/date_utils.dart';
-import 'package:loader_search_bar/loader_search_bar.dart';
-
 
 void main() {
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]).then(
