@@ -58,6 +58,7 @@ class InventoryModel extends Model {
       inventories[userAccount?.currentInventoryId];
 
   FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin;
+  NotificationDetails _notificationDetails;
 
   Future<String> get _localPath async {
     final directory = await getApplicationDocumentsDirectory();
@@ -85,6 +86,15 @@ class InventoryModel extends Model {
         ),
         selectNotification: (inventoryId) { changeCurrentInventory(inventoryId); },
       );
+
+    _notificationDetails = NotificationDetails(
+        AndroidNotificationDetails(
+            'com.rcagantas.inventorio.scheduled.notifications',
+            'Inventorio Expiration Notification',
+            'Notification 7 and 30 days before expiry'
+        ),
+        IOSNotificationDetails()
+    );
   }
 
   void _ensureLogin() async {
@@ -162,9 +172,9 @@ class InventoryModel extends Model {
 
                 InventoryItem item = InventoryItem.fromJson(doc.data);
                 inventory.addItem(item);
-                notifyListeners();
 
                 identifyProduct(item.code, inventoryId: inventoryId).then((product) {
+                  _scheduleIfNeeded(inventoryId, item, product);
                   _delayedActions();
                 });
 
@@ -476,69 +486,55 @@ class InventoryModel extends Model {
     log.fine('Creating InventoryModel');
   }
 
-  Future<DateTime> _scheduleNotice(InventoryItem item, Product product, String inventoryId, int daysBefore) async {
-    DateTime expiry;
-    String indicator;
-    switch (daysBefore) {
-      case  7: indicator = 'Week';  expiry = item.weekNotification; break;
-      case 30: indicator = 'Month'; expiry = item.monthNotification; break;
-    }
-
-    NotificationDetails notificationDetails = NotificationDetails(
-        AndroidNotificationDetails(
-            'com.rcagantas.inventorio.scheduled.${indicator.toLowerCase()}Before',
-            'Inventorio $indicator Advance Notification',
-            'Notification a ${indicator.toLowerCase()} before expiration'
-        ),
-        IOSNotificationDetails()
-    );
-
+  DateTime _expiryPatch(InventoryItem item, DateTime expiry) {
     DateTime added = item.dateAdded != null
         ? DateTime.parse(item.dateAdded.substring(0, 19).replaceAll('-', '').replaceAll(':', ''))
         : DateTime.now();
     expiry = expiry.add(Duration(hours: added.hour, minutes: added.minute + 1));
-
-    if (expiry.compareTo(DateTime.now()) > 0) {
-      var scheduleId = hashObjects([item, indicator]);
-      _flutterLocalNotificationsPlugin.cancel(scheduleId);
-      _flutterLocalNotificationsPlugin.schedule(
-          scheduleId,
-          '${product.name ?? ''} ${product.variant ?? ''}',
-          'is about to expire within $daysBefore days on ${item.year} ${item.month} ${item.day}',
-          expiry, notificationDetails,
-          payload: inventoryId
-      );
-    }
-
     return expiry;
   }
 
-  Future _setProductScheduleFromMemory(String inventoryId, InventoryItem item) async {
-    Product product = inventories[inventoryId].getAssociatedProduct(item.code);
-    var expiryWeek =  await _scheduleNotice(item, product, inventoryId, 7);
-    var expiryMonth = await _scheduleNotice(item, product, inventoryId, 30);
-    String logMessage = 'Alerting ${product.name ?? ''} ${product.variant ?? ''} on [$expiryWeek, $expiryMonth]';
-    log.fine(logMessage);
+  int _hashNotification(String uuid, DateTime expiry) {
+    return hash('$uuid/${expiry.toIso8601String()}');
   }
 
-  void _resetNotifications() {
-    if (inventories.isEmpty) return;
-    _flutterLocalNotificationsPlugin.cancelAll().then((_) {
-      int totalItems = inventories.values.map((s) => s.items.length).reduce((i, i2) => i + i2);
-      int scheduled = 0;
-      inventories.forEach((inventoryId, inventory) {
-        inventory.items.forEach((item) {
-          identifyProduct(item.code, inventoryId: inventoryId).then((product) {
-            _setProductScheduleFromMemory(inventoryId, item).then((_) {
-              scheduled++;
-              if (scheduled == totalItems) {
-                log.fine('Scheduled notifications for $totalItems items.');
-              }
-            });
-          });
-        });
-      });
-    });
+  void _scheduleIfNeeded(String inventoryId, InventoryItem item, Product product) {
+    if (item.expiryDate.compareTo(DateTime.now()) > 0) {
+      int weekNotificationId = _hashNotification(item.uuid, item.weekNotification);
+      String weekMessage = 'is about to expire within 7 days on ${item.year} ${item.month} ${item.day}';
+      _scheduleNotification(weekNotificationId, inventoryId, product, weekMessage, _expiryPatch(item, item.weekNotification));
+
+      int monthNotificationId = _hashNotification(item.uuid, item.monthNotification);
+      String monthMessage = 'is about to expire within 30 days on ${item.year} ${item.month} ${item.day}';
+      _scheduleNotification(monthNotificationId, inventoryId, product, monthMessage, _expiryPatch(item, item.monthNotification));
+    }
+  }
+
+  Map<int, String> _scheduledNotifications = {};
+  void _scheduleNotification(
+      int notificationId,
+      String inventoryId,
+      Product product,
+      String message,
+      DateTime notificationDate) {
+    String productName = product.name;
+    String productVariant = product.variant;
+
+    if (_scheduledNotifications.containsKey(notificationId)) {
+      return;
+    }
+
+    _flutterLocalNotificationsPlugin.schedule(
+        notificationId,
+        '$productName $productVariant',
+        '$message',
+        notificationDate,
+        _notificationDetails,
+        payload: inventoryId
+    );
+
+    _scheduledNotifications[notificationId] = '$productName $productVariant on $notificationDate';
+    log.info('Alerting $productName $productVariant on $notificationDate');
   }
 
   void _saveMasterDictionary() {
@@ -564,13 +560,32 @@ class InventoryModel extends Model {
     });
   }
 
+  void _cleanupNotificationsOfDeletedItems() {
+    List<InventoryItem> allItems = inventories.values.expand((inventorySet) => inventorySet.items).toList();
+    List<int> hashes = [];
+    hashes.addAll(allItems.map((item) => _hashNotification(item.uuid, item.weekNotification)));
+    hashes.addAll(allItems.map((item) => _hashNotification(item.uuid, item.monthNotification)));
+
+    log.info('Scheduled items before cleanup: ${_scheduledNotifications.length/2}');
+
+    _scheduledNotifications.removeWhere((hash, value) {
+      if (!hashes.contains(hash)) {
+        log.info('Cancelling alert ${_scheduledNotifications[hash]}');
+        _flutterLocalNotificationsPlugin.cancel(hash);
+      }
+      return !hashes.contains(hash);
+    });
+
+    log.info('Scheduled items after cleanup: ${_scheduledNotifications.length/2}');
+  }
+
   Timer _schedulingTimer;
   void _delayedActions({Duration duration = const Duration(seconds: 2)}) {
     if (inventoryChange) { inventoryChange = false; return; }
 
     if (_schedulingTimer != null) _schedulingTimer.cancel();
     _schedulingTimer = Timer(duration, () {
-      _resetNotifications();
+      _cleanupNotificationsOfDeletedItems();
       _saveMasterDictionary();
     });
   }
