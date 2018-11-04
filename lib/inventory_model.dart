@@ -10,7 +10,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:inventorio/definitions.dart';
 import 'package:path/path.dart';
-import 'package:quiver/core.dart';
 import 'package:scoped_model/scoped_model.dart';
 import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -517,10 +516,11 @@ class InventoryModel extends Model {
       Product product,
       String message,
       DateTime notificationDate) {
-    String productName = product.name;
-    String productVariant = product.variant;
+    String productName = product.name ?? '';
+    String productVariant = product.variant ?? '';
 
-    if (_scheduledNotifications.containsKey(notificationId)) {
+    if (_scheduledNotifications.containsKey(notificationId)
+        || notificationDate.compareTo(DateTime.now()) <= 0) {
       return;
     }
 
@@ -566,7 +566,7 @@ class InventoryModel extends Model {
     hashes.addAll(allItems.map((item) => _hashNotification(item.uuid, item.weekNotification)));
     hashes.addAll(allItems.map((item) => _hashNotification(item.uuid, item.monthNotification)));
 
-    log.info('Scheduled items before cleanup: ${_scheduledNotifications.length/2}');
+    log.info('Scheduled events before cleanup: ${_scheduledNotifications.length}');
 
     _scheduledNotifications.removeWhere((hash, value) {
       if (!hashes.contains(hash)) {
@@ -576,7 +576,7 @@ class InventoryModel extends Model {
       return !hashes.contains(hash);
     });
 
-    log.info('Scheduled items after cleanup: ${_scheduledNotifications.length/2}');
+    log.info('Scheduled events after cleanup: ${_scheduledNotifications.length}');
   }
 
   Timer _schedulingTimer;
