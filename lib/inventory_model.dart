@@ -352,46 +352,6 @@ class InventoryModel extends Model {
     return inventories[inventoryId].getAssociatedProduct(code);
   }
 
-  Future<Product> identifyProduct1(String code, {String inventoryId}) async {
-    inventoryId = inventoryId == null ? userAccount?.currentInventoryId : inventoryId;
-    if (inventoryId == null) return null;
-
-    if (inventories[inventoryId].getAssociatedProduct(code) != null) {
-      print('Cached data   $code');
-      return inventories[inventoryId].getAssociatedProduct(code);
-    }
-
-    var localizedDictionary = Firestore.instance.collection('inventory')
-        .document(inventoryId)
-        .collection('productDictionary');
-
-    var doc = await localizedDictionary.document(code).get();
-    if (doc.exists) {
-      log.fine('Specific data $code');
-      inventories[inventoryId].productDictionary.putIfAbsent(code, () {
-        localizedDictionary.document(code).snapshots().listen((doc) {
-          inventories[inventoryId].productDictionary[code] = Product.fromJson(doc.data);
-          notifyListeners();
-        });
-        return Product.fromJson(doc.data);
-      });
-    }
-
-    var masterDoc = await masterProductDictionary.document(code).get();
-    if (masterDoc.exists) {
-      if (!doc.exists) log.fine('Master data $code');
-      InventorySet.masterProductDictionary.putIfAbsent(code, () {
-        masterProductDictionary.document(code).snapshots().listen((doc) {
-          InventorySet.masterProductDictionary[code] = Product.fromJson(doc.data);
-          notifyListeners();
-        });
-        return Product.fromJson(masterDoc.data);
-      });
-    }
-
-    return inventories[inventoryId].getAssociatedProduct(code);
-  }
-
   InventoryItem buildInventoryItem(String code, DateTime expiryDate, {String uuid}) {
     uuid = uuid == null? generateUuid(): uuid;
     return InventoryItem(uuid: uuid, code: code,
@@ -480,7 +440,6 @@ class InventoryModel extends Model {
       _logMessages.insert(0, logMessage);
       if (_logMessages.length > 1000)
         _logMessages.removeRange(1000, _logMessages.length);
-      notifyListeners();
     });
     log.fine('Creating InventoryModel');
   }

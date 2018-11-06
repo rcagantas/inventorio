@@ -781,7 +781,7 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
   Widget build(BuildContext context) {
     TextStyle pickerStyle = Theme.of(context).textTheme.body2.copyWith(fontSize: 25.0);
     return Scaffold(
-        appBar: AppBar(title: Text(widget.code ?? '')),
+        appBar: AppBar(title: Text('Set Expiry Date')),
         body: ListView(
           children: <Widget>[
             Container(
