@@ -166,6 +166,7 @@ class InventoryModel extends Model {
 
             doc.reference.collection('inventoryItems').snapshots().listen((snap) {
               inventory.itemClear();
+              notifyListeners();
 
               snap.documents.forEach((doc) {
 
