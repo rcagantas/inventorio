@@ -308,8 +308,11 @@ class InventoryModel extends Model {
     ref.document(code).snapshots().listen((doc) {
       if (doc.exists) {
         if (logMessage != null) log.fine(logMessage);
-        map[code] = Product.fromJson(doc.data);
-        notifyListeners();
+        Product data = Product.fromJson(doc.data);
+        if (!map.containsKey(code) || map[code] != data) {
+          map[code] = data;
+          notifyListeners();
+        }
       }
     });
   }
