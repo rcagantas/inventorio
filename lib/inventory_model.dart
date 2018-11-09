@@ -29,6 +29,7 @@ class InventoryModel extends Model {
   void signOut() {
     _googleSignIn.signOut().whenComplete(() {
       inventories.clear();
+      userAccount = null;
       SharedPreferences.getInstance()
           .then((save) => save.remove('inventorio.userId'));
       notifyListeners();
