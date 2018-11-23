@@ -6,27 +6,27 @@ dependencies:
     sdk: flutter
   scoped_model: ^0.3.0
   uuid: ^1.0.3
-  qr_mobile_vision: ^0.0.7
-  image_picker: ^0.4.0
-  path_provider: ^0.4.0
+  qr_mobile_vision: ^0.1.0
+  image_picker: ^0.4.10
+  path_provider: ^0.4.1
   quiver_hashcode: ^2.0.0
-  google_sign_in: ^3.0.1
-  firebase_analytics: ^0.3.1
-  firebase_auth: ^0.5.10
-  cloud_firestore: ^0.7.1
-  firebase_storage: ^0.3.5
+  google_sign_in: ^3.2.4
+  firebase_analytics: ^1.0.6
+  firebase_auth: ^0.6.5
+  cloud_firestore: ^0.8.2+3
+  firebase_storage: ^1.0.4
   json_annotation: ^2.0.0
   #connectivity: ^0.3.0
   #transparent_image: ^0.1.0
-  intl: ^0.15.6
-  qr_flutter: ^1.1.1
+  intl: ^0.15.7
+  qr_flutter: ^1.1.5
   #loader_search_bar: 1.0.0+1
-  shared_preferences: ^0.4.2
-  date_utils: ^0.1.0
-  flutter_local_notifications: ^0.3.5
-  flutter_slidable: ^0.3.1
-  logging: ^0.11.3+1
-  cached_network_image: ^0.5.0
+  shared_preferences: ^0.4.3
+  date_utils: ^0.1.0+2
+  flutter_local_notifications: ^0.4.2
+  flutter_slidable: ^0.4.9
+  logging: ^0.11.3+2
+  cached_network_image: ^0.5.1
   flutter_native_image:
     git: https://github.com/btastic/flutter_native_image.git
 
@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^0.1.0
 
 dev_dependencies:
+  test: ^1.5.1
   flutter_test:
     sdk: flutter
   build_runner: any

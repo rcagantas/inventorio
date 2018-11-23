@@ -7,7 +7,7 @@ packages:
       name: analyzer
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.33.0"
+    version: "0.33.3+2"
   archive:
     dependency: transitive
     description:
@@ -21,7 +21,7 @@ packages:
       name: args
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.5.0"
+    version: "1.5.1"
   async:
     dependency: transitive
     description:
@@ -63,7 +63,7 @@ packages:
       name: build_runner
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.1"
+    version: "1.1.2"
   build_runner_core:
     dependency: transitive
     description:
@@ -84,14 +84,14 @@ packages:
       name: built_value
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.1.5"
+    version: "6.1.6"
   cached_network_image:
     dependency: "direct main"
     description:
       name: cached_network_image
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.5.0"
+    version: "0.5.1"
   charcode:
     dependency: transitive
     description:
@@ -105,7 +105,7 @@ packages:
       name: cloud_firestore
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.7.4"
+    version: "0.8.2+3"
   code_builder:
     dependency: transitive
     description:
@@ -153,7 +153,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: c5727795659e886a7db8b39a14e2c8987280fe1f
+      resolved-ref: e26916e095244a7e5ea61315b030d298d127ed26
       url: "https://github.com/MarkOSullivan94/dart_config.git"
     source: git
     version: "0.5.0"
@@ -177,14 +177,14 @@ packages:
       name: firebase_analytics
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.3.3"
+    version: "1.0.6"
   firebase_auth:
     dependency: "direct main"
     description:
       name: firebase_auth
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.5.20"
+    version: "0.6.6"
   firebase_core:
     dependency: transitive
     description:
@@ -198,14 +198,14 @@ packages:
       name: firebase_storage
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.3.7"
+    version: "1.0.4"
   fixnum:
     dependency: transitive
     description:
       name: fixnum
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.10.8"
+    version: "0.10.9"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -217,7 +217,7 @@ packages:
       name: flutter_cache_manager
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.0"
+    version: "0.2.0+1"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
@@ -231,13 +231,13 @@ packages:
       name: flutter_local_notifications
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.3.9"
+    version: "0.4.2"
   flutter_native_image:
     dependency: "direct main"
     description:
       path: "."
       ref: HEAD
-      resolved-ref: d6ef3cfb831cfdd3d2cea9e7e8771da983efca25
+      resolved-ref: "20947f12e6ecf58236f4b0ccaf9965f527ced46d"
       url: "https://github.com/btastic/flutter_native_image.git"
     source: git
     version: "0.0.3"
@@ -247,7 +247,7 @@ packages:
       name: flutter_slidable
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.3.2"
+    version: "0.4.9"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -259,7 +259,7 @@ packages:
       name: front_end
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.6"
+    version: "0.1.6+5"
   glob:
     dependency: transitive
     description:
@@ -273,14 +273,14 @@ packages:
       name: google_sign_in
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.2.2"
+    version: "3.2.4"
   graphs:
     dependency: transitive
     description:
       name: graphs
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.2+1"
+    version: "0.1.3+1"
   html:
     dependency: transitive
     description:
@@ -371,7 +371,7 @@ packages:
       name: kernel
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.3.6"
+    version: "0.3.6+5"
   logging:
     dependency: "direct main"
     description:
@@ -518,14 +518,14 @@ packages:
       name: qr_mobile_vision
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.0.7"
+    version: "0.1.0"
   quiver:
     dependency: transitive
     description:
       name: quiver
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.0+1"
+    version: "2.0.1"
   quiver_hashcode:
     dependency: "direct main"
     description:
@@ -651,12 +651,26 @@ packages:
     source: hosted
     version: "1.0.1"
   test:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: test
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.3.4"
+    version: "1.5.1"
+  test_api:
+    dependency: transitive
+    description:
+      name: test_api
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.2.1"
+  test_core:
+    dependency: transitive
+    description:
+      name: test_core
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.2.0"
   timing:
     dependency: transitive
     description:
@@ -728,5 +742,5 @@ packages:
     source: hosted
     version: "2.1.15"
 sdks:
-  dart: ">=2.0.0 <=2.1.0-dev.8.0.flutter-bf26f760b1"
+  dart: ">=2.1.0-dev.5.0 <3.0.0"
   flutter: ">=0.2.4 <2.0.0"

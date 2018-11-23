@@ -84,7 +84,7 @@ class InventoryModel extends Model {
             AndroidInitializationSettings('icon'),
             IOSInitializationSettings()
         ),
-        selectNotification: (inventoryId) { changeCurrentInventory(inventoryId); },
+        onSelectNotification: (inventoryId) { changeCurrentInventory(inventoryId); },
       );
 
     _notificationDetails = NotificationDetails(
@@ -292,6 +292,7 @@ class InventoryModel extends Model {
     String uuid = generateUuid();
     String fileName = '${product.code}_$uuid.jpg';
     product.imageUrl = await _uploadDataToStorage(imageDataToUpload, 'images', fileName);
+    log.info('Image URL: ${product.imageUrl}');
 
     return product;
   }
@@ -299,8 +300,11 @@ class InventoryModel extends Model {
   Future<String> _uploadDataToStorage(Uint8List data, String folder, String fileName) async {
     StorageReference storage = FirebaseStorage.instance.ref().child(folder).child(fileName);
     StorageUploadTask uploadTask = storage.putData(data);
-    UploadTaskSnapshot uploadSnap = await uploadTask.future;
-    String url = uploadSnap.downloadUrl.toString();
+    await uploadTask.onComplete;
+    String url = await storage.getDownloadURL();
+    //UploadTaskSnapshot uploadSnap = await uploadTask.future;
+    //String url = uploadSnap.downloadUrl.toString();
+    //await uploadTask.onComplete;
     log.fine('Uploaded $fileName to url');
     return url;
   }
@@ -458,7 +462,7 @@ class InventoryModel extends Model {
   }
 
   int _hashNotification(String uuid, DateTime expiry) {
-    return hash('$uuid/${expiry.toIso8601String()}');
+    return hash('$uuid/${expiry.toIso8601String()}') % ((2^31) - 1);
   }
 
   void _scheduleIfNeeded(String inventoryId, InventoryItem item, Product product) {
