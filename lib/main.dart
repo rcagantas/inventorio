@@ -4,6 +4,6 @@ import 'package:inventorio/flat/inventory_app.dart';
 import 'package:inventorio/inventory_app2.dart';
 
 void main() {
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]).then(
-          (_) => runApp(InventoryApp()));
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
+      .then((_) => runApp(InventoryApp2()));
 }

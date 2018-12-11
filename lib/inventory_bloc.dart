@@ -29,13 +29,14 @@ class InventoryBloc {
   InventoryBloc() {
     _repo.getAccount().then((userAccount) async {
       _log.info('Loaded ${userAccount.toJson()}.');
-      await Future.wait(userAccount.knownInventories.map((inventoryId) {
-        return _repo.getItems(inventoryId).map((item) => InventoryItemEx(item: item, inventoryId: inventoryId)).toList();
-      })).then((sink) {
-        var collector = sink.expand<InventoryItemEx>((l) => l).toList();
-        _log.info('collected ${collector.length} items from ${userAccount.knownInventories.length} inventories.');
-        _items.add(collector);
+
+      Future.wait(userAccount.knownInventories.map((inventoryId) async {
+        var items = await _repo.getItems(inventoryId);
+        return items.map((item) => InventoryItemEx(item: item, inventoryId: inventoryId)).toList();
+      })).then((collection) {
+        _items.add(collection.expand((l) => l).toList());
       });
+
     });
   }
 

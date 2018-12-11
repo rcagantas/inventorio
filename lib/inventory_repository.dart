@@ -16,6 +16,9 @@ class InventoryRepository {
   GoogleSignInAccount _googleSignInAccount;
   UserAccount _userAccount = _defaultUserAccount();
 
+  final _fireUsers = Firestore.instance.collection('users');
+  final _fireInventory = Firestore.instance.collection('inventory');
+
   Future<UserAccount> getAccount() async {
     var currentSignedInAccount = _googleSignInAccount;
 
@@ -31,7 +34,7 @@ class InventoryRepository {
       });
 
       return Future<UserAccount>(() async {
-        var userDoc = await Firestore.instance.collection('users').document(_googleSignInAccount.id ?? '0').get();
+        var userDoc = await _fireUsers.document(_googleSignInAccount.id ?? '0').get();
         _userAccount = userDoc.exists
           ? UserAccount.fromJson(userDoc.data)
           : _createNewUserAccount(_googleSignInAccount.id);
@@ -50,7 +53,7 @@ class InventoryRepository {
     _log.fine('Attempting to create user account for $userId');
     UserAccount userAccount = UserAccount(userId, generateUuid());
 
-    Firestore.instance.collection('inventory').document(userAccount.currentInventoryId).setData(
+    _fireInventory.document(userAccount.currentInventoryId).setData(
         InventoryDetails(uuid: userAccount.currentInventoryId, name: 'Inventory', createdBy: userAccount.userId,).toJson()
     );
 
@@ -58,7 +61,12 @@ class InventoryRepository {
     return userAccount;
   }
 
-  Stream<InventoryItem> getItems(String inventoryId) {
-    return Firestore.instance.collection('inventory').document(inventoryId).snapshots().map((doc) => InventoryItem.fromJson(doc.data));
+  Future<List<InventoryItem>> getItems(String inventoryId) async {
+    var snap = await _fireInventory.document(inventoryId).collection('inventoryItems').getDocuments();
+
+    return snap.documents
+        .where((doc) => doc.exists)
+        .map((doc) => InventoryItem.fromJson(doc.data))
+        .toList();
   }
 }
