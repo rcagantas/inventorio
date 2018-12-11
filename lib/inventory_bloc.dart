@@ -1,0 +1,46 @@
+import 'dart:async';
+import 'package:logging/logging.dart';
+import 'package:flutter_simple_dependency_injection/injector.dart';
+import 'package:inventorio/inventory_repository.dart';
+import 'data/definitions.dart';
+
+class InventoryEntry {
+  final String barcode;
+  final DateTime expiry;
+  InventoryEntry({this.barcode, this.expiry});
+}
+
+class InventoryItemEx extends InventoryItem {
+  String inventoryId;
+  InventoryItemEx({InventoryItem item, this.inventoryId})
+      : super(uuid: item.uuid, code: item.code, expiry: item.expiry, dateAdded: item.dateAdded);
+}
+
+class InventoryBloc {
+  final _log = Logger('InventoryBloc');
+  final _repo = Injector.getInjector().get<InventoryRepository>();
+  
+  final StreamController<InventoryEntry> _entry = StreamController();
+  Function(InventoryEntry) get newEntry => _entry.sink.add;
+
+  final StreamController<List<InventoryItemEx>> _items = StreamController();
+  Stream<List<InventoryItemEx>> get allItems => _items.stream;
+
+  InventoryBloc() {
+    _repo.getAccount().then((userAccount) async {
+      _log.info('Loaded ${userAccount.toJson()}.');
+      await Future.wait(userAccount.knownInventories.map((inventoryId) {
+        return _repo.getItems(inventoryId).map((item) => InventoryItemEx(item: item, inventoryId: inventoryId)).toList();
+      })).then((sink) {
+        var collector = sink.expand<InventoryItemEx>((l) => l).toList();
+        _log.info('collected ${collector.length} items from ${userAccount.knownInventories.length} inventories.');
+        _items.add(collector);
+      });
+    });
+  }
+
+  void dispose() async {
+    _entry.close();
+    _items.close();
+  }
+}

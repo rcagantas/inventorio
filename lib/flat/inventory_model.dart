@@ -8,7 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:inventorio/definitions.dart';
+import 'package:inventorio/data/definitions.dart';
 import 'package:path/path.dart';
 import 'package:scoped_model/scoped_model.dart';
 import 'package:logging/logging.dart';

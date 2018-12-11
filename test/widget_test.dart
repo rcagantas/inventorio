@@ -7,23 +7,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:inventorio/main.dart';
+import 'package:flutter_simple_dependency_injection/injector.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:inventorio/inventory_app2.dart';
+import 'package:inventorio/inventory_bloc.dart';
+import 'package:mockito/mockito.dart';
+
+class MockGoogleSignIn extends Mock implements GoogleSignIn {}
+class MockGoogleSignInAccount extends Mock implements GoogleSignInAccount {}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(new InventoryApp());
+  final _injector = Injector.getInjector();
+  final _mockGoogleSignIn = MockGoogleSignIn();
+  final _mockGoogleSignInAccount = MockGoogleSignInAccount();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  void _setup() {
+    when(_mockGoogleSignInAccount.id).thenReturn("1234");
+    when(_mockGoogleSignIn.signInSilently()).thenAnswer((_) => Future.value(_mockGoogleSignInAccount));
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    _injector.map<GoogleSignIn>((_) => _mockGoogleSignIn, isSingleton: true);
+    _injector.map<InventoryBloc>((_) => InventoryBloc(), isSingleton: true);
+  }
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  test('User required on add item', () {
+    _setup();
+    var bloc = _injector.get<InventoryBloc>();
+    bloc.newEntry(InventoryEntry());
   });
+
+//  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+//    // Build our app and trigger a frame.
+//    await tester.pumpWidget(new InventoryApp());
+//
+//    // Verify that our counter starts at 0.
+//    expect(find.text('0'), findsOneWidget);
+//    expect(find.text('1'), findsNothing);
+//
+//    // Tap the '+' icon and trigger a frame.
+//    await tester.tap(find.byIcon(Icons.add));
+//    await tester.pump();
+//
+//    // Verify that our counter has incremented.
+//    expect(find.text('0'), findsNothing);
+//    expect(find.text('1'), findsOneWidget);
+//  });
 }

@@ -6,7 +6,7 @@ import 'package:meta/meta.dart';
 import 'package:quiver/core.dart';
 import 'package:quiver/collection.dart';
 
-part 'definitions.g.dart';
+part 'package:inventorio/data/definitions.g.dart';
 
 @JsonSerializable()
 class InventoryItem
