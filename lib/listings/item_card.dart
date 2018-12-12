@@ -7,14 +7,18 @@ class ItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-        child: Row(
-            children: <Widget>[
-              Expanded(flex: 3, child: Placeholder(),),
-              Expanded(flex: 10, child: Text('${item.inventoryId}')),
-              Expanded(flex: 1, child: Placeholder())
-            ],
-        )
+    return Container(
+        height: 100.0,
+        child: Card(
+            child: Row(
+                children: <Widget>[
+                  Expanded(flex: 15, child: Placeholder(),),
+                  Expanded(flex: 70, child: Text('${item.uuid}'),),
+                  Expanded(flex: 14, child: Text('${item.expiry}'),),
+                  Expanded(flex: 1, child: Placeholder(),),
+                ],
+            ),
+        ),
     );
   }
 }
