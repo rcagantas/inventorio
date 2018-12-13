@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
+import 'package:rxdart/rxdart.dart';
 import 'data/definitions.dart';
 
 class InventoryRepository {
@@ -18,6 +19,7 @@ class InventoryRepository {
 
   final _fireUsers = Firestore.instance.collection('users');
   final _fireInventory = Firestore.instance.collection('inventory');
+  final _fireDictionary = Firestore.instance.collection('productDictionary');
 
   Future<UserAccount> getAccount() async {
     var currentSignedInAccount = _googleSignInAccount;
@@ -54,7 +56,7 @@ class InventoryRepository {
     UserAccount userAccount = UserAccount(userId, generateUuid());
 
     _fireInventory.document(userAccount.currentInventoryId).setData(
-        InventoryDetails(uuid: userAccount.currentInventoryId, name: 'Inventory', createdBy: userAccount.userId,).toJson()
+      InventoryDetails(uuid: userAccount.currentInventoryId, name: 'Inventory', createdBy: userAccount.userId,).toJson()
     );
 
     Firestore.instance.collection('users').document(userId).setData(userAccount.toJson());
@@ -65,8 +67,30 @@ class InventoryRepository {
     var snap = await _fireInventory.document(inventoryId).collection('inventoryItems').getDocuments();
 
     return snap.documents
-        .where((doc) => doc.exists)
-        .map((doc) => InventoryItem.fromJson(doc.data))
-        .toList();
+      .where((doc) => doc.exists)
+      .map((doc) => InventoryItem.fromJson(doc.data))
+      .toList();
+  }
+
+  Future<Product> getProduct(String inventoryId, String code) async {
+    var snap = await _fireInventory.document(inventoryId).collection('productDictionary').document(code).get();
+    if (snap.exists) return Product.fromJson(snap.data);
+    var masterSnap = await _fireDictionary.document(code).get();
+    if (snap.exists) return Product.fromJson(masterSnap.data);
+    return Product();
+  }
+
+  Observable<Product> getProductObservable(String inventoryId, String code) {
+    return Observable.combineLatest2(
+      _fireInventory.document(inventoryId).collection('productDictionary').document(code).snapshots(),
+      _fireDictionary.document(code).snapshots(),
+      combiner
+    );
+  }
+
+  Product combiner(DocumentSnapshot a, DocumentSnapshot b) {
+    if (a.exists) return Product.fromJson(a.data);
+    if (b.exists) return Product.fromJson(b.data);
+    return Product();
   }
 }

@@ -4,7 +4,7 @@ import 'package:logging/logging.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:inventorio/inventory_bloc.dart';
 import 'package:inventorio/inventory_repository.dart';
-import 'package:inventorio/listings/listings_page.dart';
+import 'package:inventorio/widgets/listings_page.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 
 class InventoryApp2 extends StatefulWidget {
@@ -30,13 +30,13 @@ class _InventoryApp2State extends State<InventoryApp2> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        theme: ThemeData(
-            fontFamily: 'OpenSans',
-            primaryColor: Colors.blue.shade700,
-            accentColor: Colors.blue.shade700,
-        ),
-        title: 'Inventorio',
-        home: ListingsPage()
+      theme: ThemeData(
+        fontFamily: 'OpenSans',
+        primaryColor: Colors.blue.shade700,
+        accentColor: Colors.blue.shade700,
+      ),
+      title: 'Inventorio',
+      home: ListingsPage()
     );
   }
 

@@ -20,10 +20,11 @@ class InventoryBloc {
   final _log = Logger('InventoryBloc');
   final _repo = Injector.getInjector().get<InventoryRepository>();
   
-  final StreamController<InventoryEntry> _entry = StreamController();
-  Function(InventoryEntry) get newEntry => _entry.sink.add;
+  final _entry = StreamController<InventoryEntry>();
+  final _items = StreamController<List<InventoryItemEx>>();
+  final _products = StreamController<Map<String, Product>>();
 
-  final StreamController<List<InventoryItemEx>> _items = StreamController();
+  Function(InventoryEntry) get newEntry => _entry.sink.add;
   Stream<List<InventoryItemEx>> get allItems => _items.stream;
 
   InventoryBloc() {
@@ -43,5 +44,6 @@ class InventoryBloc {
   void dispose() async {
     _entry.close();
     _items.close();
+    _products.close();
   }
 }
