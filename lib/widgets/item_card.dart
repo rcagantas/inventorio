@@ -53,15 +53,16 @@ class ProductLabel extends StatelessWidget {
 
   Widget _buildLabel(Product product) {
     var style =  TextStyle(inherit: true, fontWeight: FontWeight.bold);
+    var align = TextAlign.center;
     List<Text> labels = [
-      Text('${product?.brand ?? ''}',   textAlign: TextAlign.left,),
-      Text('${product?.name ?? ''}',    textAlign: TextAlign.left, style: style,),
-      Text('${product?.variant ?? ''}', textAlign: TextAlign.left,),
+      Text('${product?.brand ?? ''}',   textAlign: align,),
+      Text('${product?.name ?? ''}',    textAlign: align, style: style,),
+      Text('${product?.variant ?? ''}', textAlign: align,),
     ];
     labels.retainWhere((text) => text.data.isNotEmpty);
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.center,
       children: labels,
     );
@@ -72,34 +73,23 @@ class ItemExpiry extends StatelessWidget {
   final InventoryItemEx item;
   ItemExpiry(this.item);
 
+  Color _expiryColorScale(int days) {
+    if (days < 30) return Colors.redAccent;
+    else if (days < 90) return Colors.orangeAccent;
+    return Colors.greenAccent;
+  }
+
   @override
   Widget build(BuildContext context) {
-    var style =  TextStyle(inherit: true, fontFamily: 'Raleway',fontWeight: FontWeight.bold);
-//    return ClipRect(
-//      child: Align(
-//        alignment: Alignment.bottomCenter,
-//        //heightFactor: 0.8,
-//        child:
-//      ),
-//    );
-    return Stack(
-      alignment: Alignment.center,
+    var style = TextStyle(inherit: true, fontFamily: 'Raleway',fontWeight: FontWeight.bold);
+    var align = TextAlign.center;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        ClipRect(
-          child: Align(
-            alignment: Alignment.bottomLeft,
-            heightFactor: 0.8,
-            child: Container(color: Colors.red,),
-          ),
-        ),
-        Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Text('${item.year}',              style: style,),
-            Text('${item.month} ${item.day}', style: style,),
-          ],
-        ),
+        Text('${item.year}', style: style, textAlign: align,),
+        Text('${item.month} ${item.day}', style: style, textAlign: align,),
+        Icon(Icons.date_range, color: _expiryColorScale(item.daysFromToday)),
       ],
     );
   }
@@ -115,14 +105,13 @@ class ItemCard extends StatelessWidget {
     double textScaleFactor = MediaQuery.of(context).textScaleFactor;
 
     return Container(
-      height: 130.0 * textScaleFactor,
+      height: 110.0 * textScaleFactor,
       child: Card(
         child: Row(
           children: <Widget>[
-            Expanded(flex: 25, child: ProductImage(item),),
-            Spacer(flex: 5),
-            Expanded(flex: 70, child: ProductLabel(item),),
-            //Expanded(flex: 3, child: ItemExpiry(item),)
+            Expanded(flex: 2, child: ProductImage(item),),
+            Expanded(flex: 4, child: ProductLabel(item),),
+            Expanded(flex: 2, child: ItemExpiry(item),),
           ],
         ),
       ),

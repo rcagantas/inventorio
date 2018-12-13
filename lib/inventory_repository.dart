@@ -67,9 +67,9 @@ class InventoryRepository {
     var snap = await _fireInventory.document(inventoryId).collection('inventoryItems').getDocuments();
 
     return snap.documents
-      .where((doc) => doc.exists)
-      .map((doc) => InventoryItem.fromJson(doc.data))
-      .toList();
+        .where((doc) => doc.exists)
+        .map((doc) => InventoryItem.fromJson(doc.data))
+        .toList();
   }
 
   Future<Product> getProduct(String inventoryId, String code) async {
@@ -84,13 +84,11 @@ class InventoryRepository {
     return Observable.combineLatest2(
       _fireInventory.document(inventoryId).collection('productDictionary').document(code).snapshots(),
       _fireDictionary.document(code).snapshots(),
-      combiner
+      (DocumentSnapshot a, DocumentSnapshot b) {
+        if (a.exists) return Product.fromJson(a.data);
+        if (b.exists) return Product.fromJson(b.data);
+        return Product();
+      }
     );
-  }
-
-  Product combiner(DocumentSnapshot a, DocumentSnapshot b) {
-    if (a.exists) return Product.fromJson(a.data);
-    if (b.exists) return Product.fromJson(b.data);
-    return Product();
   }
 }
