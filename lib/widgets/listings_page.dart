@@ -13,23 +13,16 @@ class ListingsPage extends StatelessWidget {
       body: StreamBuilder(
         stream: _inventoryBloc.allItems,
         builder: (context, AsyncSnapshot<List<InventoryItemEx>> snapshot) {
-          if (snapshot.hasData) {
-            return ListView.builder(
-              itemCount: snapshot.data.length,
-              itemBuilder: (context, index) {
-                return ItemCard(snapshot.data[index]);
-              },
-            );
-          }
-          return Center(
-            child: Text('No data'),
-          );
+          return !snapshot.hasData
+              ? Container()
+              : ListView.builder(
+                  itemCount: snapshot.data.length,
+                  itemBuilder: (context, index) => ItemCard(snapshot.data[index]),
+                );
         }
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          _inventoryBloc.newEntry(InventoryEntry());
-        },
+        onPressed: () async { _inventoryBloc.newEntry(InventoryEntry()); },
         icon: Icon(Icons.add_a_photo),
         label: Text('Scan Barcode')
       ),

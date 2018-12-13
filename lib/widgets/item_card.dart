@@ -43,10 +43,7 @@ class ProductLabel extends StatelessWidget {
       initialData: Product(brand: item.code, variant: item.uuid),
       stream: _repo.getProductObservable(item.inventoryId, item.code),
       builder: (context, AsyncSnapshot<Product> snapshot) {
-        if (snapshot.hasData) {
-          return _buildLabel(snapshot.data);
-        }
-        return Container();
+        return snapshot.hasData ? _buildLabel(snapshot.data) : Container();
       },
     );
   }
@@ -61,10 +58,13 @@ class ProductLabel extends StatelessWidget {
     ];
     labels.retainWhere((text) => text.data.isNotEmpty);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: labels,
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: labels,
+      ),
     );
   }
 }
@@ -72,12 +72,6 @@ class ProductLabel extends StatelessWidget {
 class ItemExpiry extends StatelessWidget {
   final InventoryItemEx item;
   ItemExpiry(this.item);
-
-  Color _expiryColorScale(int days) {
-    if (days < 30) return Colors.redAccent;
-    else if (days < 90) return Colors.orangeAccent;
-    return Colors.greenAccent;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +83,6 @@ class ItemExpiry extends StatelessWidget {
       children: <Widget>[
         Text('${item.year}', style: style, textAlign: align,),
         Text('${item.month} ${item.day}', style: style, textAlign: align,),
-        Icon(Icons.date_range, color: _expiryColorScale(item.daysFromToday)),
       ],
     );
   }
@@ -100,18 +93,28 @@ class ItemCard extends StatelessWidget {
   final InventoryItemEx item;
   ItemCard(this.item);
 
+  Color _expiryColorScale(int days) {
+    if (days < 30) return Colors.redAccent;
+    else if (days < 90) return Colors.orangeAccent;
+    return Colors.greenAccent;
+  }
+
   @override
   Widget build(BuildContext context) {
     double textScaleFactor = MediaQuery.of(context).textScaleFactor;
 
     return Container(
-      height: 110.0 * textScaleFactor,
+      height: 125.0 * textScaleFactor,
       child: Card(
         child: Row(
           children: <Widget>[
-            Expanded(flex: 2, child: ProductImage(item),),
-            Expanded(flex: 4, child: ProductLabel(item),),
-            Expanded(flex: 2, child: ItemExpiry(item),),
+            Expanded(flex: 3, child: ProductImage(item),),
+            Expanded(flex: 7, child: ProductLabel(item),),
+            Expanded(flex: 3, child: ItemExpiry(item),),
+            ConstrainedBox(
+              constraints: BoxConstraints.tight(Size(3.0, double.infinity)),
+              child: Container(color: _expiryColorScale(item.daysFromToday),),
+            )
           ],
         ),
       ),

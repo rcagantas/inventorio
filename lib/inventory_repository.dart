@@ -65,19 +65,10 @@ class InventoryRepository {
 
   Future<List<InventoryItem>> getItems(String inventoryId) async {
     var snap = await _fireInventory.document(inventoryId).collection('inventoryItems').getDocuments();
-
     return snap.documents
         .where((doc) => doc.exists)
         .map((doc) => InventoryItem.fromJson(doc.data))
         .toList();
-  }
-
-  Future<Product> getProduct(String inventoryId, String code) async {
-    var snap = await _fireInventory.document(inventoryId).collection('productDictionary').document(code).get();
-    if (snap.exists) return Product.fromJson(snap.data);
-    var masterSnap = await _fireDictionary.document(code).get();
-    if (snap.exists) return Product.fromJson(masterSnap.data);
-    return Product();
   }
 
   Observable<Product> getProductObservable(String inventoryId, String code) {
@@ -89,6 +80,6 @@ class InventoryRepository {
         if (b.exists) return Product.fromJson(b.data);
         return Product();
       }
-    );
+    ).debounce(Duration(milliseconds: 100));
   }
 }
