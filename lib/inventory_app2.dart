@@ -43,6 +43,7 @@ class _InventoryApp2State extends State<InventoryApp2> {
   @override
   void dispose() {
     _injector.get<InventoryBloc>().dispose();
+    _injector.get<InventoryRepository>().dispose();
     super.dispose();
   }
 }

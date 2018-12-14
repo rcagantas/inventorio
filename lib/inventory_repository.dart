@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:logging/logging.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -12,43 +14,52 @@ class InventoryRepository {
   final _log = Logger('InventoryRepository');
   static final Uuid _uuid = Uuid();
   static String generateUuid() => _uuid.v4();
-
+  static const DEBOUNCE = Duration(milliseconds: 100);
   static const UNSET = '---';
-  GoogleSignInAccount _googleSignInAccount;
-  UserAccount _userAccount = _defaultUserAccount();
 
   final _fireUsers = Firestore.instance.collection('users');
   final _fireInventory = Firestore.instance.collection('inventory');
   final _fireDictionary = Firestore.instance.collection('productDictionary');
+  Stream<UserAccount> _userAccountStream;
 
-  Future<UserAccount> getAccount() async {
-    var currentSignedInAccount = _googleSignInAccount;
-
-    _googleSignInAccount = _googleSignInAccount == null? await _googleSignIn.signInSilently(suppressErrors: true): _googleSignInAccount;
-    _googleSignInAccount = _googleSignInAccount == null? await _googleSignIn.signIn() : _googleSignInAccount;
-
-    if (currentSignedInAccount != _googleSignInAccount && _googleSignInAccount != null) {
-      _log.info('Currently signed-in as ${_googleSignInAccount.displayName}');
-
-      _googleSignInAccount.authentication.then((auth) {
-        _log.fine('Firebase sign-in with Google: ${_googleSignInAccount.id}');
-        FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
-      });
-
-      return Future<UserAccount>(() async {
-        var userDoc = await _fireUsers.document(_googleSignInAccount.id ?? '0').get();
-        _userAccount = userDoc.exists
-          ? UserAccount.fromJson(userDoc.data)
-          : _createNewUserAccount(_googleSignInAccount.id);
-        return _userAccount;
-      });
-    }
-
-    return Future<UserAccount>.value(_userAccount);
+  InventoryRepository() {
+    _userAccountStream = _googleSignIn.onCurrentUserChanged
+        .where((g) => g != null)
+        .asyncMap((g) async {
+          g.authentication.then((auth) {
+            _log.fine('Firebase sign-in with Google: ${g.id}');
+            FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
+          });
+          var userDoc = await _fireUsers.document(g.id).get();
+          return userDoc.exists
+              ? UserAccount.fromJson(userDoc.data)
+              : _createNewUserAccount(g.id);
+        });
   }
 
-  static UserAccount _defaultUserAccount() {
-    return UserAccount(UNSET, UNSET);
+  void signIn() async {
+    if (_googleSignIn.currentUser == null) await _googleSignIn.signInSilently(suppressErrors: true);
+    if (_googleSignIn.currentUser == null) await _googleSignIn.signIn();
+    _log.info('Signed in with ${_googleSignIn.currentUser.displayName}');
+  }
+
+  void signOut() {
+    _googleSignIn.signOut();
+  }
+
+  Observable<UserAccount> getUserAccountObservable() {
+    return Observable.combineLatest2(
+      _userAccountStream,
+      _fireUsers.document(_googleSignIn.currentUser?.id ?? UNSET).snapshots(),
+      (UserAccount a, DocumentSnapshot b) {
+        if (b.exists) {
+          var u = UserAccount.fromJson(b.data);
+          return u.userId != a.userId? a: u;
+        }
+        return a;
+      }
+    )
+    .debounce(DEBOUNCE);
   }
 
   UserAccount _createNewUserAccount(String userId) {
@@ -71,6 +82,11 @@ class InventoryRepository {
         .toList();
   }
 
+  Future<InventoryDetails> getInventoryDetails(String inventoryId) async {
+    var snap = await _fireInventory.document(inventoryId).get();
+    return snap.exists? InventoryDetails.fromJson(snap.data): null;
+  }
+
   Observable<Product> getProductObservable(String inventoryId, String code) {
     return Observable.combineLatest2(
       _fireInventory.document(inventoryId).collection('productDictionary').document(code).snapshots(),
@@ -80,6 +96,9 @@ class InventoryRepository {
         if (b.exists) return Product.fromJson(b.data);
         return Product();
       }
-    ).debounce(Duration(milliseconds: 100));
+    ).debounce(DEBOUNCE);
+  }
+
+  void dispose() {
   }
 }

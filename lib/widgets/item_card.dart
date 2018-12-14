@@ -79,7 +79,7 @@ class ItemExpiry extends StatelessWidget {
     var align = TextAlign.center;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: <Widget>[
         Text('${item.year}', style: style, textAlign: align,),
         Text('${item.month} ${item.day}', style: style, textAlign: align,),
@@ -104,7 +104,7 @@ class ItemCard extends StatelessWidget {
     double textScaleFactor = MediaQuery.of(context).textScaleFactor;
 
     return Container(
-      height: 125.0 * textScaleFactor,
+      height: 105.0 * textScaleFactor,
       child: Card(
         child: Row(
           children: <Widget>[
