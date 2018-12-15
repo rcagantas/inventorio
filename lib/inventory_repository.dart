@@ -14,27 +14,18 @@ class InventoryRepository {
   final _log = Logger('InventoryRepository');
   static final Uuid _uuid = Uuid();
   static String generateUuid() => _uuid.v4();
-  static const DEBOUNCE = Duration(milliseconds: 100);
   static const UNSET = '---';
 
   final _fireUsers = Firestore.instance.collection('users');
   final _fireInventory = Firestore.instance.collection('inventory');
   final _fireDictionary = Firestore.instance.collection('productDictionary');
-  Stream<UserAccount> _userAccountStream;
+  final _userAccount = StreamController<UserAccount>.broadcast();
+
+  get setUserAccount => _userAccount.sink.add;
+  get userAccountStream => _userAccount.stream;
 
   InventoryRepository() {
-    _userAccountStream = _googleSignIn.onCurrentUserChanged
-        .where((g) => g != null)
-        .asyncMap((g) async {
-          g.authentication.then((auth) {
-            _log.fine('Firebase sign-in with Google: ${g.id}');
-            FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
-          });
-          var userDoc = await _fireUsers.document(g.id).get();
-          return userDoc.exists
-              ? UserAccount.fromJson(userDoc.data)
-              : _createNewUserAccount(g.id);
-        });
+    _googleSignIn.onCurrentUserChanged.listen((gAccount) => _accountFromSignIn(gAccount));
   }
 
   void signIn() async {
@@ -47,19 +38,32 @@ class InventoryRepository {
     _googleSignIn.signOut();
   }
 
+  void _accountFromSignIn(GoogleSignInAccount gAccount) async {
+    gAccount.authentication.then((auth) {
+      _log.fine('Firebase sign-in with Google: ${gAccount.id}');
+      FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
+    });
+
+    var userDoc = await _fireUsers.document(gAccount.id).get();
+    var userAccount = userDoc.exists
+        ? UserAccount.fromJson(userDoc.data)
+        : _createNewUserAccount(gAccount.id);
+
+    setUserAccount(userAccount);
+  }
+
   Observable<UserAccount> getUserAccountObservable() {
     return Observable.combineLatest2(
-      _userAccountStream,
+      userAccountStream,
       _fireUsers.document(_googleSignIn.currentUser?.id ?? UNSET).snapshots(),
-      (UserAccount a, DocumentSnapshot b) {
-        if (b.exists) {
-          var u = UserAccount.fromJson(b.data);
+      (UserAccount a, DocumentSnapshot doc) {
+        if (doc.exists) {
+          var u = UserAccount.fromJson(doc.data);
           return u.userId != a.userId? a: u;
         }
         return a;
       }
-    )
-    .debounce(DEBOUNCE);
+    );
   }
 
   UserAccount _createNewUserAccount(String userId) {
@@ -96,9 +100,10 @@ class InventoryRepository {
         if (b.exists) return Product.fromJson(b.data);
         return Product();
       }
-    ).debounce(DEBOUNCE);
+    );
   }
 
   void dispose() {
+    _userAccount.close();
   }
 }
