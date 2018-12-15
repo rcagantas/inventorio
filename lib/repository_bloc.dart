@@ -9,7 +9,7 @@ import 'package:uuid/uuid.dart';
 import 'package:rxdart/rxdart.dart';
 import 'data/definitions.dart';
 
-class InventoryRepository {
+class RepositoryBloc {
   final _googleSignIn = Injector.getInjector().get<GoogleSignIn>();
   final _log = Logger('InventoryRepository');
   static final Uuid _uuid = Uuid();
@@ -24,7 +24,7 @@ class InventoryRepository {
   get setUserAccount => _userAccount.sink.add;
   get userAccountStream => _userAccount.stream;
 
-  InventoryRepository() {
+  RepositoryBloc() {
     _googleSignIn.onCurrentUserChanged.listen((gAccount) => _accountFromSignIn(gAccount));
   }
 

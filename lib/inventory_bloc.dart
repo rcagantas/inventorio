@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:logging/logging.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
-import 'package:inventorio/inventory_repository.dart';
+import 'package:inventorio/repository_bloc.dart';
 import 'data/definitions.dart';
 
 class InventoryEntry {
@@ -18,7 +18,7 @@ class InventoryItemEx extends InventoryItem {
 
 class InventoryBloc {
   final _log = Logger('InventoryBloc');
-  final _inventoryRepository = Injector.getInjector().get<InventoryRepository>();
+  final _repo = Injector.getInjector().get<RepositoryBloc>();
   
   final _entry = StreamController<InventoryEntry>();
   final _items = StreamController<List<InventoryItemEx>>.broadcast();
@@ -26,12 +26,12 @@ class InventoryBloc {
   final _inventory = StreamController<InventoryDetails>.broadcast();
 
   Function(InventoryEntry) get newEntry => _entry.sink.add;
-  Stream<List<InventoryItemEx>> get allItems => _items.stream;
-  Stream<InventoryDetails> get currentInventory => _inventory.stream;
+  Stream<List<InventoryItemEx>> get itemStream => _items.stream;
+  Stream<InventoryDetails> get inventoryStream => _inventory.stream;
 
   InventoryBloc() {
 
-    _inventoryRepository.getUserAccountObservable()
+    _repo.getUserAccountObservable()
       .where((userAccount) => userAccount != null)
       .listen((userAccount) {
         _log.info('Account changes ${userAccount.toJson()}');
@@ -39,17 +39,17 @@ class InventoryBloc {
         _updateInventoryList(userAccount);
       });
 
-    _inventoryRepository.signIn();
+    _repo.signIn();
   }
 
   void _updateInventory(UserAccount userAccount) {
-    _inventoryRepository.getInventoryDetails(userAccount.currentInventoryId)
+    _repo.getInventoryDetails(userAccount.currentInventoryId)
         .then((inventoryDetails) => _inventory.add(inventoryDetails));
   }
 
   void _updateInventoryList(UserAccount userAccount) {
     Future.wait(userAccount.knownInventories.map((inventoryId) async {
-      var items = await _inventoryRepository.getItems(inventoryId);
+      var items = await _repo.getItems(inventoryId);
       return items.map((item) => InventoryItemEx(item: item, inventoryId: inventoryId)).toList();
     })).then((collection) {
       var flattened = collection.expand((l) => l)

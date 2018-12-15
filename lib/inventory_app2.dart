@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:inventorio/inventory_bloc.dart';
-import 'package:inventorio/inventory_repository.dart';
+import 'package:inventorio/repository_bloc.dart';
 import 'package:inventorio/widgets/listings_page.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 
@@ -23,7 +23,7 @@ class _InventoryApp2State extends State<InventoryApp2> {
     });
 
     _injector.map<GoogleSignIn>((_) => GoogleSignIn(), isSingleton: true);
-    _injector.map<InventoryRepository>((_) => InventoryRepository(), isSingleton: true);
+    _injector.map<RepositoryBloc>((_) => RepositoryBloc(), isSingleton: true);
     _injector.map<InventoryBloc>((_) => InventoryBloc(), isSingleton: true);
   }
 
@@ -43,7 +43,7 @@ class _InventoryApp2State extends State<InventoryApp2> {
   @override
   void dispose() {
     _injector.get<InventoryBloc>().dispose();
-    _injector.get<InventoryRepository>().dispose();
+    _injector.get<RepositoryBloc>().dispose();
     super.dispose();
   }
 }

@@ -4,10 +4,10 @@ import 'package:inventorio/inventory_bloc.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:quiver/strings.dart' as qString;
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:inventorio/inventory_repository.dart';
+import 'package:inventorio/repository_bloc.dart';
 
 class ProductImage extends StatelessWidget {
-  final _repo = Injector.getInjector().get<InventoryRepository>();
+  final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItemEx item;
   ProductImage(this.item);
 
@@ -32,7 +32,7 @@ class ProductImage extends StatelessWidget {
 
 
 class ProductLabel extends StatelessWidget {
-  final _repo = Injector.getInjector().get<InventoryRepository>();
+  final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItemEx item;
   ProductLabel(this.item);
 

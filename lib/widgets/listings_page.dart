@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/inventory_bloc.dart';
-import 'package:inventorio/inventory_repository.dart';
 import 'package:inventorio/widgets/item_card.dart';
 import 'package:inventorio/data/definitions.dart';
+import 'package:inventorio/widgets/user_drawer.dart';
 
 class ListingsPage extends StatelessWidget {
-  final _inventoryBloc = Injector.getInjector().get<InventoryBloc>();
+  final _bloc = Injector.getInjector().get<InventoryBloc>();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: StreamBuilder(
-          stream: _inventoryBloc.currentInventory,
+          stream: _bloc.inventoryStream,
           builder: (context, AsyncSnapshot<InventoryDetails> snapshot) {
             return snapshot.hasData
                 ? Text('${snapshot.data.name}')
@@ -22,7 +22,7 @@ class ListingsPage extends StatelessWidget {
         )
       ),
       body: StreamBuilder(
-        stream: _inventoryBloc.allItems,
+        stream: _bloc.itemStream,
         builder: (context, AsyncSnapshot<List<InventoryItemEx>> snapshot) {
           return !snapshot.hasData
               ? _buildWelcome()
@@ -33,11 +33,12 @@ class ListingsPage extends StatelessWidget {
         }
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async { _inventoryBloc.newEntry(InventoryEntry()); },
+        onPressed: () async { _bloc.newEntry(InventoryEntry()); },
         icon: Icon(Icons.add_a_photo),
         label: Text('Scan Barcode')
       ),
       //floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      drawer: UserDrawer(),
     );
   }
 
