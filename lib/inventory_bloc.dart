@@ -52,9 +52,7 @@ class InventoryBloc {
       var items = await _repo.getItems(inventoryId);
       return items.map((item) => InventoryItemEx(item: item, inventoryId: inventoryId)).toList();
     })).then((collection) {
-      var flattened = collection.expand((l) => l)
-          .where((i) => i.inventoryId == userAccount.currentInventoryId)
-          .toList();
+      var flattened = collection.expand((l) => l).toList();
       flattened.sort((a, b) => a.daysFromToday.compareTo(b.daysFromToday));
       _items.add(flattened);
     });

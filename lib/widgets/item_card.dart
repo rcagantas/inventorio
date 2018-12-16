@@ -58,13 +58,10 @@ class ProductLabel extends StatelessWidget {
     ];
     labels.retainWhere((text) => text.data.isNotEmpty);
 
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: labels,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: labels,
     );
   }
 }
@@ -104,7 +101,7 @@ class ItemCard extends StatelessWidget {
     double textScaleFactor = MediaQuery.of(context).textScaleFactor;
 
     return Container(
-      height: 105.0 * textScaleFactor,
+      height: 108.0 * textScaleFactor,
       child: Card(
         child: Row(
           children: <Widget>[
