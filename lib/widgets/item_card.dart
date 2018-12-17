@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:inventorio/data/definitions.dart';
-import 'package:inventorio/inventory_bloc.dart';
+import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:quiver/strings.dart' as qString;
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:inventorio/repository_bloc.dart';
+import 'package:inventorio/bloc/repository_bloc.dart';
 
 class ProductImage extends StatelessWidget {
   final _repo = Injector.getInjector().get<RepositoryBloc>();
@@ -13,10 +13,10 @@ class ProductImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
+    return StreamBuilder<Product>(
       key: ObjectKey(item.uuid+'_image'),
       stream: _repo.getProductObservable(item.inventoryId, item.code),
-      builder: (context, AsyncSnapshot<Product> snapshot) {
+      builder: (context, snapshot) {
         if (snapshot.hasData && qString.isNotEmpty(snapshot.data.imageUrl)) {
           return CachedNetworkImage(
             imageUrl: snapshot.data.imageUrl ?? '', fit: BoxFit.cover,

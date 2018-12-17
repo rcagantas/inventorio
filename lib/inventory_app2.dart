@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:inventorio/inventory_bloc.dart';
-import 'package:inventorio/repository_bloc.dart';
+import 'package:inventorio/bloc/inventory_bloc.dart';
+import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/widgets/listings_page.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 

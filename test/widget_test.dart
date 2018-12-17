@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:inventorio/inventory_app2.dart';
-import 'package:inventorio/inventory_bloc.dart';
+import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:mockito/mockito.dart';
 
 class MockGoogleSignIn extends Mock implements GoogleSignIn {}
@@ -32,7 +32,6 @@ void main() {
   test('User required on add item', () {
     _setup();
     var bloc = _injector.get<InventoryBloc>();
-    bloc.newEntry(InventoryEntry());
   });
 
 //  testWidgets('Counter increments smoke test', (WidgetTester tester) async {

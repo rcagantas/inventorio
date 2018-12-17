@@ -7,7 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import 'package:rxdart/rxdart.dart';
-import 'data/definitions.dart';
+import 'package:inventorio/data/definitions.dart';
 
 class RepositoryBloc {
   final _googleSignIn = Injector.getInjector().get<GoogleSignIn>();
@@ -19,7 +19,7 @@ class RepositoryBloc {
   final _fireUsers = Firestore.instance.collection('users');
   final _fireInventory = Firestore.instance.collection('inventory');
   final _fireDictionary = Firestore.instance.collection('productDictionary');
-  final _userAccount = StreamController<UserAccount>.broadcast();
+  final _userAccount = BehaviorSubject<UserAccount>();
 
   get setUserAccount => _userAccount.sink.add;
   get userAccountStream => _userAccount.stream;

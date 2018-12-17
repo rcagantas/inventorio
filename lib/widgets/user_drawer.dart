@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
-import 'package:inventorio/inventory_bloc.dart';
+import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 
 class UserDrawer extends StatelessWidget {
@@ -13,18 +13,18 @@ class UserDrawer extends StatelessWidget {
         padding: EdgeInsets.zero,
         children: <Widget>[
           UserAccountsDrawerHeader(
-//            accountName: Text(model?.selected?.details?.name ?? 'Current Inventory Name'),
-//            accountEmail: Text('${model?.selected?.items?.length ?? '?'} items',),
-            accountName: StreamBuilder(
+            accountName: StreamBuilder<InventoryDetails>(
               stream: _bloc.inventoryStream,
-              builder: (context, AsyncSnapshot<InventoryDetails> snapshot) {
-                print('${snapshot.data}');
-                return snapshot.hasData
-                    ? Text('${snapshot.data.name}')
-                    : Text('Default');
+              builder: (context, snapshot) {
+                return snapshot.hasData ? Text('${snapshot.data.name}') : Text('Default');
               },
             ),
-            accountEmail: Text('items'),
+            accountEmail: StreamBuilder<List<InventoryItemEx>>(
+              stream: _bloc.itemStream,
+              builder: (context, snapshot) {
+                return snapshot.hasData ? Text('${snapshot.data.length} items'): Text('? items');
+              },
+            ),
             currentAccountPicture: CircleAvatar(
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               backgroundImage: AssetImage('resources/icons/icon.png'),
