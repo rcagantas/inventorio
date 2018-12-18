@@ -31,7 +31,7 @@ class InventoryBloc {
 
   InventoryBloc() {
 
-    _repo.getUserAccountObservable()
+    _repo.userAccountStream
       .where((userAccount) => userAccount != null)
       .listen((userAccount) {
         _log.info('Account changes ${userAccount.toJson()}');
@@ -71,7 +71,6 @@ class InventoryBloc {
   }
 
   void changeCurrentInventory(String uuid) {
-    _log.info('Attempting to change current inventory to $uuid.');
     _repo.changeCurrentInventory(uuid);
   }
 }

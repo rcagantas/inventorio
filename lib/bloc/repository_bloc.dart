@@ -33,6 +33,8 @@ class RepositoryBloc {
         if (u != userAccount) {
           _fireUsers.document(userAccount.userId).setData(userAccount.toJson());
         }
+      } else {
+        _fireUsers.document(userAccount.userId).setData(userAccount.toJson());
       }
     });
   }
@@ -59,20 +61,6 @@ class RepositoryBloc {
         : _createNewUserAccount(gAccount.id);
 
     setUserAccount(userAccount);
-  }
-
-  Observable<UserAccount> getUserAccountObservable() {
-    return Observable.combineLatest2(
-      userAccountStream,
-      _fireUsers.document(_googleSignIn.currentUser?.id ?? UNSET).snapshots(),
-      (UserAccount a, DocumentSnapshot doc) {
-        if (doc.exists) {
-          var u = UserAccount.fromJson(doc.data);
-          return u.userId != a.userId? a: u;
-        }
-        return a;
-      }
-    );
   }
 
   UserAccount _createNewUserAccount(String userId) {
