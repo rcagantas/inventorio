@@ -9,10 +9,11 @@ class UserDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: <Widget>[
-          UserAccountsDrawerHeader(
+      child: StreamBuilder<List<InventoryDetailsEx>>(
+        stream: _bloc.detailsStream,
+        builder: (context, snapshot) {
+
+          var header = UserAccountsDrawerHeader(
             accountName: StreamBuilder<InventoryDetails>(
               stream: _bloc.inventoryStream,
               builder: (context, snapshot) {
@@ -29,8 +30,28 @@ class UserDrawer extends StatelessWidget {
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
               backgroundImage: AssetImage('resources/icons/icon.png'),
             ),
-          ),
-        ],
+          );
+
+          List<Widget> widgets = [];
+          widgets.add(header);
+
+          if (snapshot.hasData) {
+            snapshot.data.forEach((i) {
+              widgets.add(
+                ListTile(
+                  selected: i.isSelected,
+                  title: Text('${i.name}'),
+                  subtitle: Text('${i.currentCount} items'),
+                )
+              );
+            });
+          }
+
+          return ListView(
+            padding: EdgeInsets.zero,
+            children: widgets,
+          );
+        },
       ),
     );
   }
