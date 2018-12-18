@@ -69,4 +69,9 @@ class InventoryBloc {
     _inventory.close();
     _detailMap.close();
   }
+
+  void changeCurrentInventory(String uuid) {
+    _log.info('Attempting to change current inventory to $uuid.');
+    _repo.changeCurrentInventory(uuid);
+  }
 }

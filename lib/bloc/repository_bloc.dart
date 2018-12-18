@@ -26,6 +26,15 @@ class RepositoryBloc {
 
   RepositoryBloc() {
     _googleSignIn.onCurrentUserChanged.listen((gAccount) => _accountFromSignIn(gAccount));
+    _userAccount.listen((userAccount) async {
+      var doc = await _fireUsers.document(userAccount.userId).get();
+      if (doc.exists) {
+        var u = UserAccount.fromJson(doc.data);
+        if (u != userAccount) {
+          _fireUsers.document(userAccount.userId).setData(userAccount.toJson());
+        }
+      }
+    });
   }
 
   void signIn() async {
@@ -105,5 +114,12 @@ class RepositoryBloc {
 
   void dispose() {
     _userAccount.close();
+  }
+
+  Future changeCurrentInventory(String uuid) async {
+    var doc = await _fireUsers.document(_googleSignIn.currentUser?.id ?? UNSET).get();
+    var u = UserAccount.fromJson(doc.data);
+    u.currentInventoryId = uuid;
+    setUserAccount(u);
   }
 }

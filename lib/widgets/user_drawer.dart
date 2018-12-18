@@ -42,6 +42,10 @@ class UserDrawer extends StatelessWidget {
                   selected: i.isSelected,
                   title: Text('${i.name}'),
                   subtitle: Text('${i.currentCount} items'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _bloc.changeCurrentInventory(i.uuid);
+                  },
                 )
               );
             });
