@@ -10,14 +10,15 @@ class UserDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       child: StreamBuilder<List<InventoryDetailsEx>>(
-        stream: _bloc.detailsStream,
+        stream: _bloc.detailStream,
         builder: (context, snapshot) {
 
           var header = UserAccountsDrawerHeader(
-            accountName: StreamBuilder<InventoryDetails>(
-              stream: _bloc.inventoryStream,
+            accountName: StreamBuilder<List<InventoryDetailsEx>>(
+              stream: _bloc.detailStream,
               builder: (context, snapshot) {
-                return snapshot.hasData ? Text('${snapshot.data.name}') : Text('Default');
+                InventoryDetailsEx detailsEx = snapshot.data?.firstWhere((i) => i.isSelected);
+                return detailsEx != null ? Text('${detailsEx.name}') : Text('Default');
               },
             ),
             accountEmail: StreamBuilder<List<InventoryItemEx>>(

@@ -22,29 +22,34 @@ class InventoryBloc {
   final _repo = Injector.getInjector().get<RepositoryBloc>();
 
   final _items = BehaviorSubject<List<InventoryItemEx>>();
-  final _inventory = BehaviorSubject<InventoryDetails>();
-  final _detailMap = BehaviorSubject<List<InventoryDetailsEx>>();
+  final _detail = BehaviorSubject<List<InventoryDetailsEx>>();
 
   Observable<List<InventoryItemEx>> get itemStream => _items.stream;
-  Observable<InventoryDetails> get inventoryStream => _inventory.stream;
-  Observable<List<InventoryDetailsEx>> get detailsStream => _detailMap.stream;
+  Observable<List<InventoryDetailsEx>> get detailStream => _detail.stream;
 
   InventoryBloc() {
 
-    _repo.userAccountStream
+    _repo.userUpdateStream
       .where((userAccount) => userAccount != null)
       .listen((userAccount) {
-        _log.info('Account changes ${userAccount.toJson()}');
-        _updateInventory(userAccount);
+        _updateCurrent(userAccount);
         _updateInventoryList(userAccount);
       });
 
     _repo.signIn();
   }
 
-  void _updateInventory(UserAccount userAccount) {
-    _repo.getInventoryDetails(userAccount.currentInventoryId)
-        .then((inventoryDetails) => _inventory.add(inventoryDetails));
+  void _updateCurrent(UserAccount userAccount) async {
+    String inventoryId = userAccount.currentInventoryId;
+    _repo.getItems(inventoryId).then((items) async {
+      var itemEx = items.map((item) => InventoryItemEx(item: item, inventoryId: inventoryId)).toList();
+      itemEx.sort((a, b) => a.daysFromToday.compareTo(b.daysFromToday));
+      _items.sink.add(itemEx);
+
+      var detail = await _repo.getInventoryDetails(inventoryId);
+      var detailEx = InventoryDetailsEx(detail, items.length, inventoryId == userAccount.currentInventoryId);
+      _detail.sink.add([detailEx]);
+    });
   }
 
   void _updateInventoryList(UserAccount userAccount) async {
@@ -52,22 +57,16 @@ class InventoryBloc {
 
     for (var inventoryId in userAccount.knownInventories) {
       var items = await _repo.getItems(inventoryId);
-      var itemEx = items.map((item) => InventoryItemEx(item: item, inventoryId: inventoryId)).toList();
-      if (inventoryId == userAccount.currentInventoryId) {
-        itemEx.sort((a, b) => a.daysFromToday.compareTo(b.daysFromToday));
-        _items.sink.add(itemEx);
-      }
-
       var detail = await _repo.getInventoryDetails(inventoryId);
       details.add(InventoryDetailsEx(detail, items.length, inventoryId == userAccount.currentInventoryId));
     }
-    _detailMap.sink.add(details);
+
+    _detail.sink.add(details);
   }
 
   void dispose() async {
     _items.close();
-    _inventory.close();
-    _detailMap.close();
+    _detail.close();
   }
 
   void changeCurrentInventory(String uuid) {

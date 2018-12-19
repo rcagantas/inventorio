@@ -19,24 +19,12 @@ class RepositoryBloc {
   final _fireUsers = Firestore.instance.collection('users');
   final _fireInventory = Firestore.instance.collection('inventory');
   final _fireDictionary = Firestore.instance.collection('productDictionary');
-  final _userAccount = BehaviorSubject<UserAccount>();
+  final _userUpdate = BehaviorSubject<UserAccount>();
 
-  get setUserAccount => _userAccount.sink.add;
-  get userAccountStream => _userAccount.stream;
+  Observable<UserAccount> get userUpdateStream => _userUpdate.stream;
 
   RepositoryBloc() {
     _googleSignIn.onCurrentUserChanged.listen((gAccount) => _accountFromSignIn(gAccount));
-    _userAccount.listen((userAccount) async {
-      var doc = await _fireUsers.document(userAccount.userId).get();
-      if (doc.exists) {
-        var u = UserAccount.fromJson(doc.data);
-        if (u != userAccount) {
-          _fireUsers.document(userAccount.userId).setData(userAccount.toJson());
-        }
-      } else {
-        _fireUsers.document(userAccount.userId).setData(userAccount.toJson());
-      }
-    });
   }
 
   void signIn() async {
@@ -55,12 +43,15 @@ class RepositoryBloc {
       FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
     });
 
-    var userDoc = await _fireUsers.document(gAccount.id).get();
-    var userAccount = userDoc.exists
-        ? UserAccount.fromJson(userDoc.data)
-        : _createNewUserAccount(gAccount.id);
-
-    setUserAccount(userAccount);
+    _fireUsers.document(gAccount.id).snapshots().listen((doc) {
+      if (!doc.exists) {
+        _createNewUserAccount(gAccount.id);
+      } else {
+        var userAccount = UserAccount.fromJson(doc.data);
+        _log.info('Change detected for user account ${userAccount.toJson()}');
+        _userUpdate.sink.add(userAccount);
+      }
+    });
   }
 
   UserAccount _createNewUserAccount(String userId) {
@@ -71,7 +62,7 @@ class RepositoryBloc {
       InventoryDetails(uuid: userAccount.currentInventoryId, name: 'Inventory', createdBy: userAccount.userId,).toJson()
     );
 
-    Firestore.instance.collection('users').document(userId).setData(userAccount.toJson());
+    _updateFireUser(userAccount);
     return userAccount;
   }
 
@@ -101,13 +92,17 @@ class RepositoryBloc {
   }
 
   void dispose() {
-    _userAccount.close();
+    _userUpdate.close();
   }
 
   Future changeCurrentInventory(String uuid) async {
     var doc = await _fireUsers.document(_googleSignIn.currentUser?.id ?? UNSET).get();
-    var u = UserAccount.fromJson(doc.data);
-    u.currentInventoryId = uuid;
-    setUserAccount(u);
+    var user = UserAccount.fromJson(doc.data);
+    user.currentInventoryId = uuid;
+    _updateFireUser(user);
+  }
+
+  void _updateFireUser(UserAccount userAccount) {
+    _fireUsers.document(userAccount.userId).setData(userAccount.toJson());
   }
 }
