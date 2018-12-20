@@ -45,7 +45,7 @@ class UserDrawer extends StatelessWidget {
                   subtitle: Text('${i.currentCount} items'),
                   onTap: () {
                     Navigator.of(context).pop();
-                    _bloc.changeCurrentInventory(i.uuid);
+                    _bloc.actionSink(ActionEvent(Action.ChangeInventory, i.toJson()));
                   },
                 )
               );

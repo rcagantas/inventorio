@@ -95,10 +95,10 @@ class RepositoryBloc {
     _userUpdate.close();
   }
 
-  Future changeCurrentInventory(String uuid) async {
+  Future changeCurrentInventoryFromDetail(InventoryDetails detail) async {
     var doc = await _fireUsers.document(_googleSignIn.currentUser?.id ?? UNSET).get();
     var user = UserAccount.fromJson(doc.data);
-    user.currentInventoryId = uuid;
+    user.currentInventoryId = detail.uuid;
     _updateFireUser(user);
   }
 

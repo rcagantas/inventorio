@@ -17,15 +17,28 @@ class InventoryDetailsEx extends InventoryDetails {
       : super(uuid: details.uuid, name: details.name, createdBy: details.createdBy);
 }
 
+enum Action {
+  ChangeInventory,
+  UpdateInventory
+}
+
+class ActionEvent {
+  final Action act;
+  final Map<String, dynamic> payload;
+  ActionEvent(this.act, this.payload);
+}
+
 class InventoryBloc {
   final _log = Logger('InventoryBloc');
   final _repo = Injector.getInjector().get<RepositoryBloc>();
 
   final _items = BehaviorSubject<List<InventoryItemEx>>();
   final _detail = BehaviorSubject<List<InventoryDetailsEx>>();
+  final _actions = BehaviorSubject<ActionEvent>();
 
   Observable<List<InventoryItemEx>> get itemStream => _items.stream;
   Observable<List<InventoryDetailsEx>> get detailStream => _detail.stream;
+  Function(ActionEvent) get actionSink => _actions.sink.add;
 
   InventoryBloc() {
 
@@ -33,8 +46,15 @@ class InventoryBloc {
       .where((userAccount) => userAccount != null)
       .listen((userAccount) {
         _updateCurrent(userAccount);
-        _updateInventoryList(userAccount);
+        _processInventoryItems(userAccount);
       });
+
+    _actions.listen((action) {
+      switch (action.act) {
+        case Action.ChangeInventory: _repo.changeCurrentInventoryFromDetail(InventoryDetails.fromJson(action.payload)); break;
+        default: _log.warning('Action ${action.payload} NOT IMPLEMENTED'); break;
+      }
+    });
 
     _repo.signIn();
   }
@@ -52,7 +72,7 @@ class InventoryBloc {
     });
   }
 
-  void _updateInventoryList(UserAccount userAccount) async {
+  void _processInventoryItems(UserAccount userAccount) async {
     var details = List<InventoryDetailsEx>();
 
     for (var inventoryId in userAccount.knownInventories) {
@@ -67,9 +87,6 @@ class InventoryBloc {
   void dispose() async {
     _items.close();
     _detail.close();
-  }
-
-  void changeCurrentInventory(String uuid) {
-    _repo.changeCurrentInventory(uuid);
+    _actions.close();
   }
 }
