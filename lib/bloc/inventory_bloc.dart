@@ -18,6 +18,7 @@ class InventoryDetailsEx extends InventoryDetails {
 }
 
 enum Action {
+  Logout,
   ChangeInventory,
   UpdateInventory
 }
@@ -39,6 +40,7 @@ class InventoryBloc {
   Observable<List<InventoryItemEx>> get itemStream => _items.stream;
   Observable<List<InventoryDetailsEx>> get detailStream => _detail.stream;
   Function(ActionEvent) get actionSink => _actions.sink.add;
+  Observable<UserAccountEx> get userAccountStream => _repo.userUpdateStream;
 
   InventoryBloc() {
 
@@ -51,6 +53,7 @@ class InventoryBloc {
 
     _actions.listen((action) {
       switch (action.act) {
+        case Action.Logout: _repo.logout(); break;
         case Action.ChangeInventory: _repo.changeCurrentInventoryFromDetail(InventoryDetails.fromJson(action.payload)); break;
         default: _log.warning('Action ${action.payload} NOT IMPLEMENTED'); break;
       }
@@ -67,20 +70,27 @@ class InventoryBloc {
       _items.sink.add(itemEx);
 
       var detail = await _repo.getInventoryDetails(inventoryId);
-      var detailEx = InventoryDetailsEx(detail, items.length, inventoryId == userAccount.currentInventoryId);
-      _detail.sink.add([detailEx]);
+      var detailExs = userAccount.knownInventories.map((id) {
+        return id == userAccount.currentInventoryId
+            ? InventoryDetailsEx(detail, items.length, inventoryId == userAccount.currentInventoryId)
+            : InventoryDetailsEx(InventoryDetails(uuid: id, name: id), 0, false);
+      }).toList();
+      _detail.sink.add(detailExs);
     });
   }
 
   void _processInventoryItems(UserAccount userAccount) async {
     var details = List<InventoryDetailsEx>();
-
+    var total = 0;
     for (var inventoryId in userAccount.knownInventories) {
+      _log.info('Processing $inventoryId');
       var items = await _repo.getItems(inventoryId);
       var detail = await _repo.getInventoryDetails(inventoryId);
       details.add(InventoryDetailsEx(detail, items.length, inventoryId == userAccount.currentInventoryId));
+      total += items.length;
     }
 
+    _log.info('Finished processing $total inventory items. $details}');
     _detail.sink.add(details);
   }
 

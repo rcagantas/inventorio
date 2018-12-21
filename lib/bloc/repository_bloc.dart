@@ -9,6 +9,14 @@ import 'package:uuid/uuid.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:inventorio/data/definitions.dart';
 
+class UserAccountEx extends UserAccount {
+  String displayName;
+  UserAccountEx(UserAccount userAccount, this.displayName)
+      : super(userAccount.userId, userAccount.currentInventoryId) {
+    super.knownInventories = userAccount.knownInventories;
+  }
+}
+
 class RepositoryBloc {
   final _googleSignIn = Injector.getInjector().get<GoogleSignIn>();
   final _log = Logger('InventoryRepository');
@@ -19,9 +27,9 @@ class RepositoryBloc {
   final _fireUsers = Firestore.instance.collection('users');
   final _fireInventory = Firestore.instance.collection('inventory');
   final _fireDictionary = Firestore.instance.collection('productDictionary');
-  final _userUpdate = BehaviorSubject<UserAccount>();
+  final _userUpdate = BehaviorSubject<UserAccountEx>();
 
-  Observable<UserAccount> get userUpdateStream => _userUpdate.stream;
+  Observable<UserAccountEx> get userUpdateStream => _userUpdate.stream;
 
   RepositoryBloc() {
     _googleSignIn.onCurrentUserChanged.listen((gAccount) => _accountFromSignIn(gAccount));
@@ -38,18 +46,25 @@ class RepositoryBloc {
   }
 
   void _accountFromSignIn(GoogleSignInAccount gAccount) async {
-    gAccount.authentication.then((auth) {
-      _log.fine('Firebase sign-in with Google: ${gAccount.id}');
-      FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
-    });
+    if (gAccount != null) {
+      gAccount.authentication.then((auth) {
+        _log.fine('Firebase sign-in with Google: ${gAccount.id}');
+        FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
+      });
+      _loadUserAccount(gAccount.id, gAccount.displayName);
+    } else {
+      _userUpdate.sink.add(null);
+    }
+  }
 
-    _fireUsers.document(gAccount.id).snapshots().listen((doc) {
+  void _loadUserAccount(String id, String displayName) {
+    _fireUsers.document(id).snapshots().listen((doc) {
       if (!doc.exists) {
-        _createNewUserAccount(gAccount.id);
+        _createNewUserAccount(id);
       } else {
         var userAccount = UserAccount.fromJson(doc.data);
         _log.info('Change detected for user account ${userAccount.toJson()}');
-        _userUpdate.sink.add(userAccount);
+        _userUpdate.sink.add(UserAccountEx(userAccount, displayName));
       }
     });
   }
@@ -104,5 +119,9 @@ class RepositoryBloc {
 
   void _updateFireUser(UserAccount userAccount) {
     _fireUsers.document(userAccount.userId).setData(userAccount.toJson());
+  }
+
+  void logout() {
+    _googleSignIn.signOut();
   }
 }

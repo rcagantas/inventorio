@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
+import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 
 class UserDrawer extends StatelessWidget {
@@ -33,8 +34,22 @@ class UserDrawer extends StatelessWidget {
             ),
           );
 
+          var login = StreamBuilder<UserAccountEx>(
+            stream: _bloc.userAccountStream,
+            builder: (context, snapshot) {
+              var signedIn = snapshot.hasData && snapshot.data.displayName != null;
+              return ListTile(
+                title: Text(signedIn ? 'Log out' : 'Login with Google'),
+                subtitle: Text(signedIn ? 'Logged in as ${snapshot.data.displayName}' : 'Log in'),
+              );
+            }
+          );
+
+
           List<Widget> widgets = [];
           widgets.add(header);
+          widgets.add(login);
+          widgets.add(Divider());
 
           if (snapshot.hasData) {
             snapshot.data.forEach((i) {
