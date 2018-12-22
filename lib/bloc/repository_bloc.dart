@@ -23,6 +23,7 @@ class RepositoryBloc {
   static final Uuid _uuid = Uuid();
   static String generateUuid() => _uuid.v4();
   static const UNSET = '---';
+  static final UNSET_USER = UserAccountEx(UserAccount(UNSET, UNSET), null);
 
   final _fireUsers = Firestore.instance.collection('users');
   final _fireInventory = Firestore.instance.collection('inventory');
@@ -38,10 +39,11 @@ class RepositoryBloc {
   void signIn() async {
     if (_googleSignIn.currentUser == null) await _googleSignIn.signInSilently(suppressErrors: true);
     if (_googleSignIn.currentUser == null) await _googleSignIn.signIn();
-    _log.info('Signed in with ${_googleSignIn.currentUser.displayName}');
+    _log.info('Signed in with ${_googleSignIn.currentUser.displayName}.');
   }
 
   void signOut() {
+    _log.info('Signing out from ${_googleSignIn.currentUser.displayName}.');
     _googleSignIn.signOut();
   }
 
@@ -53,7 +55,8 @@ class RepositoryBloc {
       });
       _loadUserAccount(gAccount.id, gAccount.displayName);
     } else {
-      _userUpdate.sink.add(null);
+      _log.info('No account signed in.');
+      _userUpdate.sink.add(UNSET_USER);
     }
   }
 
@@ -119,9 +122,5 @@ class RepositoryBloc {
 
   void _updateFireUser(UserAccount userAccount) {
     _fireUsers.document(userAccount.userId).setData(userAccount.toJson());
-  }
-
-  void logout() {
-    _googleSignIn.signOut();
   }
 }

@@ -18,7 +18,8 @@ class InventoryDetailsEx extends InventoryDetails {
 }
 
 enum Action {
-  Logout,
+  SignIn,
+  SignOut,
   ChangeInventory,
   UpdateInventory
 }
@@ -53,7 +54,8 @@ class InventoryBloc {
 
     _actions.listen((action) {
       switch (action.act) {
-        case Action.Logout: _repo.logout(); break;
+        case Action.SignIn: _repo.signIn(); break;
+        case Action.SignOut: _cleanUp(); break;
         case Action.ChangeInventory: _repo.changeCurrentInventoryFromDetail(InventoryDetails.fromJson(action.payload)); break;
         default: _log.warning('Action ${action.payload} NOT IMPLEMENTED'); break;
       }
@@ -62,36 +64,34 @@ class InventoryBloc {
     _repo.signIn();
   }
 
+  void _cleanUp() {
+    _repo.signOut();
+    _items.sink.add([]);
+    _detail.sink.add([]);
+  }
+
   void _updateCurrent(UserAccount userAccount) async {
     String inventoryId = userAccount.currentInventoryId;
     _repo.getItems(inventoryId).then((items) async {
       var itemEx = items.map((item) => InventoryItemEx(item: item, inventoryId: inventoryId)).toList();
       itemEx.sort((a, b) => a.daysFromToday.compareTo(b.daysFromToday));
       _items.sink.add(itemEx);
-
-      var detail = await _repo.getInventoryDetails(inventoryId);
-      var detailExs = userAccount.knownInventories.map((id) {
-        return id == userAccount.currentInventoryId
-            ? InventoryDetailsEx(detail, items.length, inventoryId == userAccount.currentInventoryId)
-            : InventoryDetailsEx(InventoryDetails(uuid: id, name: id), 0, false);
-      }).toList();
-      _detail.sink.add(detailExs);
     });
   }
 
   void _processInventoryItems(UserAccount userAccount) async {
-    var details = List<InventoryDetailsEx>();
+    List<InventoryDetails> details = await Future.wait(userAccount.knownInventories.map((id) => _repo.getInventoryDetails(id)));
+    List<List<InventoryItem>> collection = await Future.wait(userAccount.knownInventories.map((id) => _repo.getItems(id)));
+    List<InventoryDetailsEx> detailExs = [];
+
     var total = 0;
-    for (var inventoryId in userAccount.knownInventories) {
-      _log.info('Processing $inventoryId');
-      var items = await _repo.getItems(inventoryId);
-      var detail = await _repo.getInventoryDetails(inventoryId);
-      details.add(InventoryDetailsEx(detail, items.length, inventoryId == userAccount.currentInventoryId));
-      total += items.length;
+    for (int i = 0; i < userAccount.knownInventories.length; i++) {
+      total += collection[i].length;
+      detailExs.add(InventoryDetailsEx(details[i], collection[i].length, userAccount.currentInventoryId == details[i].uuid));
     }
+    _detail.sink.add(detailExs);
 
     _log.info('Finished processing $total inventory items. $details}');
-    _detail.sink.add(details);
   }
 
   void dispose() async {

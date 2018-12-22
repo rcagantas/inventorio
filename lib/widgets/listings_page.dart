@@ -15,7 +15,8 @@ class ListingsPage extends StatelessWidget {
         title: StreamBuilder<List<InventoryDetailsEx>>(
           stream: _bloc.detailStream,
           builder: (context, snapshot) {
-            InventoryDetailsEx detailsEx = snapshot.data?.firstWhere((i) => i.isSelected);
+            InventoryDetailsEx detailsEx = snapshot.data
+                ?.firstWhere((i) => i.isSelected, orElse: () => null);
             return detailsEx != null
                 ? Text('${detailsEx.name}')
                 : Text('Current Inventory');

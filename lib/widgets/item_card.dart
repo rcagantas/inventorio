@@ -58,10 +58,13 @@ class ProductLabel extends StatelessWidget {
     ];
     labels.retainWhere((text) => text.data.isNotEmpty);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: labels,
+    return Padding(
+      padding: const EdgeInsets.only(left: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: labels,
+      ),
     );
   }
 }
@@ -76,7 +79,7 @@ class ItemExpiry extends StatelessWidget {
     var align = TextAlign.center;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisAlignment: MainAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         Text('${item.year}', style: style, textAlign: align,),
         Text('${item.month} ${item.day}', style: style, textAlign: align,),
@@ -84,7 +87,6 @@ class ItemExpiry extends StatelessWidget {
     );
   }
 }
-
 
 class ItemCard extends StatelessWidget {
   final InventoryItemEx item;
@@ -101,7 +103,7 @@ class ItemCard extends StatelessWidget {
     double textScaleFactor = MediaQuery.of(context).textScaleFactor;
 
     return Container(
-      height: 108.0 * textScaleFactor,
+      height: 110.0 * textScaleFactor,
       child: Card(
         child: Row(
           children: <Widget>[

@@ -18,14 +18,14 @@ class UserDrawer extends StatelessWidget {
             accountName: StreamBuilder<List<InventoryDetailsEx>>(
               stream: _bloc.detailStream,
               builder: (context, snapshot) {
-                InventoryDetailsEx detailsEx = snapshot.data?.firstWhere((i) => i.isSelected);
-                return detailsEx != null ? Text('${detailsEx.name}') : Text('Default');
+                InventoryDetailsEx detailsEx = snapshot.data?.firstWhere((i) => i.isSelected, orElse: () => null);
+                return detailsEx != null ? Text('${detailsEx.name}') : Text('Current Inventory');
               },
             ),
             accountEmail: StreamBuilder<List<InventoryItemEx>>(
               stream: _bloc.itemStream,
               builder: (context, snapshot) {
-                return snapshot.hasData ? Text('${snapshot.data.length} items'): Text('? items');
+                return snapshot.hasData ? Text('${snapshot.data.length} items'): Text('0 items');
               },
             ),
             currentAccountPicture: CircleAvatar(
@@ -41,6 +41,10 @@ class UserDrawer extends StatelessWidget {
               return ListTile(
                 title: Text(signedIn ? 'Log out' : 'Login with Google'),
                 subtitle: Text(signedIn ? 'Logged in as ${snapshot.data.displayName}' : 'Log in'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _bloc.actionSink(ActionEvent(signedIn? Action.SignOut: Action.SignIn, null));
+                },
               );
             }
           );
