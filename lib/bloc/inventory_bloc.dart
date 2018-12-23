@@ -13,7 +13,8 @@ class InventoryItemEx extends InventoryItem {
 class InventoryDetailsEx extends InventoryDetails {
   int currentCount;
   bool isSelected;
-  InventoryDetailsEx(InventoryDetails details, this.currentCount, this.isSelected)
+  InventoryDetails details;
+  InventoryDetailsEx(this.details, this.currentCount, this.isSelected)
       : super(uuid: details.uuid, name: details.name, createdBy: details.createdBy);
 }
 
@@ -21,7 +22,8 @@ enum Action {
   SignIn,
   SignOut,
   ChangeInventory,
-  UpdateInventory
+  UpdateInventory,
+  UnsubscribeInventory
 }
 
 class ActionEvent {
@@ -57,6 +59,7 @@ class InventoryBloc {
         case Action.SignIn: _repo.signIn(); break;
         case Action.SignOut: _cleanUp(); break;
         case Action.ChangeInventory: _repo.changeCurrentInventoryFromDetail(InventoryDetails.fromJson(action.payload)); break;
+        case Action.UnsubscribeInventory: _repo.unsubscribeFromInventory(InventoryDetails.fromJson(action.payload)); break;
         default: _log.warning('Action ${action.payload} NOT IMPLEMENTED'); break;
       }
     });
@@ -87,7 +90,9 @@ class InventoryBloc {
     var total = 0;
     for (int i = 0; i < userAccount.knownInventories.length; i++) {
       total += collection[i].length;
-      detailExs.add(InventoryDetailsEx(details[i], collection[i].length, userAccount.currentInventoryId == details[i].uuid));
+      if (details[i] != null) {
+        detailExs.add(InventoryDetailsEx(details[i], collection[i].length, userAccount.currentInventoryId == details[i].uuid));
+      }
     }
     _detail.sink.add(detailExs);
 

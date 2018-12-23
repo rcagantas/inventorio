@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/widgets/item_card.dart';
-import 'package:inventorio/data/definitions.dart';
 import 'package:inventorio/widgets/user_drawer.dart';
 
 class ListingsPage extends StatelessWidget {

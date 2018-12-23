@@ -3,79 +3,107 @@ import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
+import 'package:inventorio/widgets/dialog_factory.dart';
+import 'package:inventorio/widgets/inventory_details_page.dart';
 
 class UserDrawer extends StatelessWidget {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
 
-  @override
   Widget build(BuildContext context) {
     return Drawer(
-      child: StreamBuilder<List<InventoryDetailsEx>>(
-        stream: _bloc.detailStream,
-        builder: (context, snapshot) {
-
-          var header = UserAccountsDrawerHeader(
-            accountName: StreamBuilder<List<InventoryDetailsEx>>(
-              stream: _bloc.detailStream,
-              builder: (context, snapshot) {
-                InventoryDetailsEx detailsEx = snapshot.data?.firstWhere((i) => i.isSelected, orElse: () => null);
-                return detailsEx != null ? Text('${detailsEx.name}') : Text('Current Inventory');
-              },
-            ),
-            accountEmail: StreamBuilder<List<InventoryItemEx>>(
-              stream: _bloc.itemStream,
-              builder: (context, snapshot) {
-                return snapshot.hasData ? Text('${snapshot.data.length} items'): Text('0 items');
-              },
-            ),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              backgroundImage: AssetImage('resources/icons/icon.png'),
-            ),
-          );
-
-          var login = StreamBuilder<UserAccountEx>(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: <Widget>[
+          StreamBuilder<List<InventoryDetailsEx>>(
+            stream: _bloc.detailStream,
+            builder: (context, snapshot) {
+              return UserAccountsDrawerHeader(
+                currentAccountPicture: CircleAvatar(
+                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                  backgroundImage: AssetImage('resources/icons/icon.png'),
+                ),
+                accountName: snapshot.hasData && snapshot.data.length > 0
+                  ? Text('${snapshot.data.firstWhere((i) => i.isSelected).name}')
+                  : Text('Current Inventory'),
+                accountEmail: snapshot.hasData && snapshot.data.length > 0
+                  ? Text('${snapshot.data.firstWhere((i) => i.isSelected).currentCount} items')
+                  : Text('0 items'),
+              );
+            },
+          ),
+          StreamBuilder<UserAccountEx>(
             stream: _bloc.userAccountStream,
             builder: (context, snapshot) {
-              var signedIn = snapshot.hasData && snapshot.data.displayName != null;
+              var signedIn = snapshot.hasData && snapshot.data.signedIn;
               return ListTile(
                 title: Text(signedIn ? 'Log out' : 'Login with Google'),
-                subtitle: Text(signedIn ? 'Logged in as ${snapshot.data.displayName}' : 'Log in'),
-                onTap: () {
+                subtitle: Text(signedIn ? 'Logged in as ${snapshot.data.displayName}' : ''),
+                onTap: () async {
                   Navigator.of(context).pop();
-                  _bloc.actionSink(ActionEvent(signedIn? Action.SignOut: Action.SignIn, null));
+                  if (signedIn) {
+                    var confirmed = await DialogFactory.sureDialog(context, 'Are you sure you want to log out', 'Log out', 'Cancel');
+                    if (confirmed) _bloc.actionSink(ActionEvent(Action.SignOut, null));
+                  } else {
+                    _bloc.actionSink(ActionEvent(Action.SignIn, null));
+                  }
                 },
               );
             }
-          );
-
-
-          List<Widget> widgets = [];
-          widgets.add(header);
-          widgets.add(login);
-          widgets.add(Divider());
-
-          if (snapshot.hasData) {
-            snapshot.data.forEach((i) {
-              widgets.add(
-                ListTile(
-                  selected: i.isSelected,
-                  title: Text('${i.name}'),
-                  subtitle: Text('${i.currentCount} items'),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _bloc.actionSink(ActionEvent(Action.ChangeInventory, i.toJson()));
-                  },
-                )
+          ),
+          StreamBuilder<List<InventoryDetailsEx>>(
+            stream: _bloc.detailStream,
+            builder: (context, snapshot) {
+              var selected = snapshot.hasData && snapshot.data.length > 0
+                  ? snapshot.data?.firstWhere((i) => i.isSelected)
+                  : null;
+              return ExpansionTile(
+                title: Text('Inventory Management'),
+                children: <Widget>[
+                  ListTile(
+                    enabled: selected != null,
+                    dense: true,
+                    title: Text('Create New Inventory'),
+                  ),
+                  ListTile(
+                    enabled: selected != null,
+                    dense: true,
+                    title: Text('Scan Existing Inventory Code'),
+                  ),
+                  ListTile(
+                    enabled: selected != null,
+                    dense: true,
+                    title: Text('Edit/share Current Inventory'),
+                    onTap: () async {
+                      InventoryDetails edited = await Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => InventoryDetailsPage(selected.details),)
+                      );
+                    },
+                  ),
+                ],
               );
-            });
-          }
-
-          return ListView(
-            padding: EdgeInsets.zero,
-            children: widgets,
-          );
-        },
+            }
+          ),
+          StreamBuilder<List<InventoryDetailsEx>>(
+            stream: _bloc.detailStream,
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return Container();
+              return ListView.builder(
+                shrinkWrap: true,
+                itemCount: snapshot.data.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text('${snapshot.data[index].name}: ${snapshot.data[index].currentCount} items'),
+                    selected: snapshot.data[index].isSelected,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      _bloc.actionSink(ActionEvent(Action.ChangeInventory, snapshot.data[index].toJson()));
+                    },
+                  );
+                }
+              );
+            },
+          ),
+        ],
       ),
     );
   }
