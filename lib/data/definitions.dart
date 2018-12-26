@@ -4,7 +4,6 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:intl/intl.dart';
 import 'package:meta/meta.dart';
 import 'package:quiver/core.dart';
-import 'package:quiver/collection.dart';
 
 part 'package:inventorio/data/definitions.g.dart';
 
@@ -34,6 +33,10 @@ class InventoryItem
   int compareTo(InventoryItem other) {
     return this.daysFromToday.compareTo(other.daysFromToday);
   }
+
+  @override String toString() { return this.toJson().toString(); }
+  @override int get hashCode => this.uuid.hashCode;
+  @override bool operator ==(other) => other is InventoryItem && uuid == other.uuid;
 }
 
 @JsonSerializable()
@@ -56,12 +59,12 @@ class Product
 
   @override
   bool operator ==(other) {
-    return other is Product &&
-        code == other.code &&
-        name == other.name &&
-        brand == other.brand &&
-        variant == other.variant &&
-        imageUrl == other.imageUrl
+    return other is Product
+        && code == other.code
+        && name == other.name
+        && brand == other.brand
+        && variant == other.variant
+        && imageUrl == other.imageUrl
     ;
   }
 

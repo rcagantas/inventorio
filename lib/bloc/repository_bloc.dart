@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:logging/logging.dart';
-import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -20,7 +19,7 @@ class UserAccountEx extends UserAccount {
 }
 
 class RepositoryBloc {
-  final _googleSignIn = Injector.getInjector().get<GoogleSignIn>();
+  final _googleSignIn = GoogleSignIn();
   final _log = Logger('InventoryRepository');
   static final Uuid _uuid = Uuid();
   static String generateUuid() => _uuid.v4();
@@ -34,8 +33,6 @@ class RepositoryBloc {
   final _userUpdate = BehaviorSubject<UserAccountEx>();
 
   Observable<UserAccountEx> get userUpdateStream => _userUpdate.stream;
-
-  UserAccount _currentUser;
 
   RepositoryBloc() {
     _googleSignIn.onCurrentUserChanged.listen((gAccount) => _accountFromSignIn(gAccount));
@@ -61,7 +58,6 @@ class RepositoryBloc {
       _loadUserAccount(gAccount.id, gAccount.displayName, gAccount.photoUrl);
     } else {
       _log.info('No account signed in.');
-      _currentUser = null;
       _userUpdate.sink.add(unsetUser);
     }
   }
@@ -73,7 +69,6 @@ class RepositoryBloc {
       } else {
         var userAccount = UserAccount.fromJson(doc.data);
         _log.info('Change detected for user account ${userAccount.toJson()}');
-        _currentUser = userAccount;
         _userUpdate.sink.add(UserAccountEx(userAccount, displayName, imageUrl, true));
       }
     });
@@ -120,22 +115,23 @@ class RepositoryBloc {
     _userUpdate.close();
   }
 
-  Future changeCurrentInventoryFromDetail(InventoryDetails detail) async {
-    if (_currentUser == null) return;
-    _currentUser.currentInventoryId = detail.uuid;
-    _updateFireUser(_currentUser);
+  UserAccount changeCurrentInventory(UserAccount user, InventoryDetails detail) {
+    if (user == null) return user;
+    user.currentInventoryId = detail.uuid;
+    return _updateFireUser(user);
   }
 
-  void _updateFireUser(UserAccount userAccount) {
+  UserAccount _updateFireUser(UserAccount userAccount) {
     _fireUsers.document(userAccount.userId).setData(userAccount.toJson());
+    return userAccount;
   }
 
-  void unsubscribeFromInventory(InventoryDetails inventoryDetails) {
-    if (_currentUser == null) return;
-    if (_currentUser.knownInventories.length == 1) return;
-    _currentUser.knownInventories.remove(inventoryDetails.uuid);
-    _currentUser.currentInventoryId = _currentUser.knownInventories[0];
-    _fireUsers.document(_currentUser.userId).setData(_currentUser.toJson());
-    _log.fine('Unsubscribing ${_currentUser.userId} from inventory ${inventoryDetails.uuid}');
+  UserAccount unsubscribeFromInventory(UserAccount user, InventoryDetails detail) {
+    if (user == null) return user;
+    if (user.knownInventories.length == 1) return user;
+    user.knownInventories.remove(detail.uuid);
+    user.currentInventoryId = user.knownInventories[0];
+    _log.fine('Unsubscribing ${user.userId} from inventory ${detail.uuid}');
+    return _updateFireUser(user);
   }
 }

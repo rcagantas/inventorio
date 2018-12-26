@@ -1,6 +1,7 @@
 import 'package:logging/logging.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:quiver/core.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 
@@ -8,6 +9,20 @@ class InventoryItemEx extends InventoryItem {
   String inventoryId;
   InventoryItemEx({InventoryItem item, this.inventoryId})
       : super(uuid: item.uuid, code: item.code, expiry: item.expiry, dateAdded: item.dateAdded);
+
+  @override String toString() { return '$inventoryId:' + super.toString(); }
+
+  @override
+  int get hashCode {
+    return hashObjects([inventoryId, super.uuid]);
+  }
+
+  @override
+  bool operator ==(other) {
+    return other is InventoryItemEx
+      && this.inventoryId == other.inventoryId
+      && super.uuid == other.uuid;
+  }
 }
 
 class InventoryDetailsEx extends InventoryDetails {
@@ -40,6 +55,8 @@ class InventoryBloc {
   final _detail = BehaviorSubject<List<InventoryDetailsEx>>();
   final _actions = BehaviorSubject<ActionEvent>();
 
+  UserAccount _currentUser;
+
   Observable<List<InventoryItemEx>> get itemStream => _items.stream;
   Observable<List<InventoryDetailsEx>> get detailStream => _detail.stream;
   Function(ActionEvent) get actionSink => _actions.sink.add;
@@ -48,18 +65,21 @@ class InventoryBloc {
   InventoryBloc() {
 
     _repo.userUpdateStream
-      .where((userAccount) => userAccount != null)
       .listen((userAccount) {
-        _updateCurrent(userAccount);
-        _processInventoryItems(userAccount);
+        if (userAccount != null) {
+          _updateCurrent(userAccount);
+          _processInventoryItems(userAccount);
+        } else {
+          _cleanUp();
+        }
       });
 
     _actions.listen((action) {
       switch (action.act) {
         case Action.SignIn: _repo.signIn(); break;
-        case Action.SignOut: _cleanUp(); break;
-        case Action.ChangeInventory: _repo.changeCurrentInventoryFromDetail(InventoryDetails.fromJson(action.payload)); break;
-        case Action.UnsubscribeInventory: _repo.unsubscribeFromInventory(InventoryDetails.fromJson(action.payload)); break;
+        case Action.SignOut: _repo.signOut(); _cleanUp(); break;
+        case Action.ChangeInventory: _repo.changeCurrentInventory(_currentUser, InventoryDetails.fromJson(action.payload)); break;
+        case Action.UnsubscribeInventory: _repo.unsubscribeFromInventory(_currentUser, InventoryDetails.fromJson(action.payload)); break;
         default: _log.warning('Action ${action.payload} NOT IMPLEMENTED'); break;
       }
     });
@@ -68,12 +88,12 @@ class InventoryBloc {
   }
 
   void _cleanUp() {
-    _repo.signOut();
     _items.sink.add([]);
     _detail.sink.add([]);
   }
 
   void _updateCurrent(UserAccount userAccount) async {
+    _currentUser = userAccount;
     String inventoryId = userAccount.currentInventoryId;
     _repo.getItems(inventoryId).then((items) async {
       var itemEx = items.map((item) => InventoryItemEx(item: item, inventoryId: inventoryId)).toList();

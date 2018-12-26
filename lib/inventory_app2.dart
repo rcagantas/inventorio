@@ -1,11 +1,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/widgets/listings_page.dart';
-import 'package:flutter_simple_dependency_injection/injector.dart';
 
 class InventoryApp2 extends StatefulWidget {
   @override
@@ -22,7 +23,6 @@ class _InventoryApp2State extends State<InventoryApp2> {
       print('$logMessage');
     });
 
-    _injector.map<GoogleSignIn>((_) => GoogleSignIn(), isSingleton: true);
     _injector.map<RepositoryBloc>((_) => RepositoryBloc(), isSingleton: true);
     _injector.map<InventoryBloc>((_) => InventoryBloc(), isSingleton: true);
   }
@@ -31,7 +31,7 @@ class _InventoryApp2State extends State<InventoryApp2> {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
-        fontFamily: 'NotoSans',
+        fontFamily: 'OpenSans',
         primaryColor: Colors.blue.shade700,
         accentColor: Colors.blue.shade700,
       ),
