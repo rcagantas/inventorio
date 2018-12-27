@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
+import 'package:inventorio/data/definitions.dart';
 import 'package:inventorio/widgets/item_card.dart';
 import 'package:inventorio/widgets/user_drawer.dart';
 
@@ -11,10 +12,10 @@ class ListingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: StreamBuilder<List<InventoryDetailsEx>>(
+        title: StreamBuilder<List<InventoryDetails>>(
           stream: _bloc.detailStream,
           builder: (context, snapshot) {
-            InventoryDetailsEx detailsEx = snapshot.data
+            InventoryDetails detailsEx = snapshot.data
                 ?.firstWhere((i) => i.isSelected, orElse: () => null);
             return detailsEx != null
                 ? Text('${detailsEx.name}')
@@ -22,7 +23,7 @@ class ListingsPage extends StatelessWidget {
           }
         )
       ),
-      body: StreamBuilder<List<InventoryItemEx>>(
+      body: StreamBuilder<List<InventoryItem>>(
         stream: _bloc.itemStream,
         builder: (context, snapshot) {
           return !snapshot.hasData

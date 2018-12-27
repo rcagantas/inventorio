@@ -7,28 +7,25 @@ part of 'definitions.dart';
 // **************************************************************************
 
 InventoryItem _$InventoryItemFromJson(Map<String, dynamic> json) {
-  return new InventoryItem(
+  return InventoryItem(
       uuid: json['uuid'] as String,
       code: json['code'] as String,
       expiry: json['expiry'] as String,
-      dateAdded: json['dateAdded'] as String);
+      dateAdded: json['dateAdded'] as String,
+      inventoryId: json['inventoryId'] as String);
 }
 
-abstract class _$InventoryItemSerializerMixin {
-  String get uuid;
-  String get code;
-  String get expiry;
-  String get dateAdded;
-  Map<String, dynamic> toJson() => <String, dynamic>{
-        'uuid': uuid,
-        'code': code,
-        'expiry': expiry,
-        'dateAdded': dateAdded
-      };
-}
+Map<String, dynamic> _$InventoryItemToJson(InventoryItem instance) =>
+    <String, dynamic>{
+      'uuid': instance.uuid,
+      'code': instance.code,
+      'expiry': instance.expiry,
+      'dateAdded': instance.dateAdded,
+      'inventoryId': instance.inventoryId
+    };
 
 Product _$ProductFromJson(Map<String, dynamic> json) {
-  return new Product(
+  return Product(
       code: json['code'] as String,
       brand: json['brand'] as String,
       name: json['name'] as String,
@@ -36,50 +33,38 @@ Product _$ProductFromJson(Map<String, dynamic> json) {
       imageUrl: json['imageUrl'] as String);
 }
 
-abstract class _$ProductSerializerMixin {
-  String get code;
-  String get name;
-  String get brand;
-  String get variant;
-  String get imageUrl;
-  Map<String, dynamic> toJson() => <String, dynamic>{
-        'code': code,
-        'name': name,
-        'brand': brand,
-        'variant': variant,
-        'imageUrl': imageUrl
-      };
-}
+Map<String, dynamic> _$ProductToJson(Product instance) => <String, dynamic>{
+      'code': instance.code,
+      'name': instance.name,
+      'brand': instance.brand,
+      'variant': instance.variant,
+      'imageUrl': instance.imageUrl
+    };
 
 InventoryDetails _$InventoryDetailsFromJson(Map<String, dynamic> json) {
-  return new InventoryDetails(
+  return InventoryDetails(
       uuid: json['uuid'] as String,
       name: json['name'] as String,
       createdBy: json['createdBy'] as String);
 }
 
-abstract class _$InventoryDetailsSerializerMixin {
-  String get uuid;
-  String get name;
-  String get createdBy;
-  Map<String, dynamic> toJson() =>
-      <String, dynamic>{'uuid': uuid, 'name': name, 'createdBy': createdBy};
-}
+Map<String, dynamic> _$InventoryDetailsToJson(InventoryDetails instance) =>
+    <String, dynamic>{
+      'uuid': instance.uuid,
+      'name': instance.name,
+      'createdBy': instance.createdBy
+    };
 
 UserAccount _$UserAccountFromJson(Map<String, dynamic> json) {
-  return new UserAccount(
+  return UserAccount(
       json['userId'] as String, json['currentInventoryId'] as String)
     ..knownInventories =
         (json['knownInventories'] as List)?.map((e) => e as String)?.toList();
 }
 
-abstract class _$UserAccountSerializerMixin {
-  List<String> get knownInventories;
-  String get userId;
-  String get currentInventoryId;
-  Map<String, dynamic> toJson() => <String, dynamic>{
-        'knownInventories': knownInventories,
-        'userId': userId,
-        'currentInventoryId': currentInventoryId
-      };
-}
+Map<String, dynamic> _$UserAccountToJson(UserAccount instance) =>
+    <String, dynamic>{
+      'knownInventories': instance.knownInventories,
+      'userId': instance.userId,
+      'currentInventoryId': instance.currentInventoryId
+    };

@@ -8,18 +8,17 @@ import 'package:quiver/core.dart';
 part 'package:inventorio/data/definitions.g.dart';
 
 @JsonSerializable()
-class InventoryItem
-    extends Object
-    with _$InventoryItemSerializerMixin
-    implements Comparable<InventoryItem>
+class InventoryItem implements Comparable<InventoryItem>
 {
   String uuid;
   String code;
   String expiry;
   String dateAdded;
+  String inventoryId;
 
-  InventoryItem({this.uuid, this.code, this.expiry, this.dateAdded});
+  InventoryItem({this.uuid, this.code, this.expiry, this.dateAdded, this.inventoryId});
   factory InventoryItem.fromJson(Map<String, dynamic> json) => _$InventoryItemFromJson(json);
+  Map<String, dynamic> toJson() => _$InventoryItemToJson(this);
 
   DateTime get expiryDate => DateTime.parse(expiry.replaceAll('-', ''));
   String get year => DateFormat.y().format(expiryDate);
@@ -35,15 +34,15 @@ class InventoryItem
   }
 
   @override String toString() { return this.toJson().toString(); }
-  @override int get hashCode => this.uuid.hashCode;
-  @override bool operator ==(other) => other is InventoryItem && uuid == other.uuid;
+  @override int get hashCode => hashObjects(this.toJson().values);
+  @override bool operator ==(other) => other is InventoryItem
+      && this.uuid == other.uuid
+      && this.code == other.code
+      && this.expiry == other.expiry;
 }
 
 @JsonSerializable()
-class Product
-    extends Object
-    with _$ProductSerializerMixin
-    implements Comparable<Product>
+class Product implements Comparable<Product>
 {
   String code;
   String name;
@@ -53,6 +52,7 @@ class Product
 
   Product({this.code, this.brand, this.name, this.variant, this.imageUrl});
   factory Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
+  Map<String, dynamic> toJson() => _$ProductToJson(this);
 
   @override
   int get hashCode => hashObjects(toJson().values);
@@ -82,28 +82,31 @@ class Product
 }
 
 @JsonSerializable()
-class InventoryDetails extends Object with _$InventoryDetailsSerializerMixin {
+class InventoryDetails {
   String uuid;
   String name;
   String createdBy;
+  @JsonKey(ignore: true) int currentCount;
+  @JsonKey(ignore: true) bool isSelected;
   InventoryDetails({@required this.uuid, this.name, this.createdBy});
   factory InventoryDetails.fromJson(Map<String, dynamic> json) => _$InventoryDetailsFromJson(json);
+  Map<String, dynamic> toJson() => _$InventoryDetailsToJson(this);
 
   @override String toString() => '$name   $uuid';
 }
 
 @JsonSerializable()
-class UserAccount extends Object with _$UserAccountSerializerMixin {
+class UserAccount {
   List<String> knownInventories = List();
   String userId;
   String currentInventoryId;
+  @JsonKey(ignore: true) String displayName;
+  @JsonKey(ignore: true) String imageUrl;
+  @JsonKey(ignore: true) bool signedIn;
 
-  UserAccount(this.userId, this.currentInventoryId) {
-    knownInventories.add(this.currentInventoryId);
-  }
-
-  factory UserAccount.fromJson(Map<String, dynamic> json) =>
-      _$UserAccountFromJson(json);
+  UserAccount(this.userId, this.currentInventoryId) { knownInventories.add(this.currentInventoryId);}
+  factory UserAccount.fromJson(Map<String, dynamic> json) => _$UserAccountFromJson(json);
+  Map<String, dynamic> toJson() => _$UserAccountToJson(this);
 
   @override int get hashCode => hashObjects(toJson().values);
 

@@ -8,16 +8,6 @@ import 'package:uuid/uuid.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:inventorio/data/definitions.dart';
 
-class UserAccountEx extends UserAccount {
-  String displayName;
-  String imageUrl;
-  bool signedIn;
-  UserAccountEx(UserAccount userAccount, this.displayName, this.imageUrl, this.signedIn)
-      : super(userAccount.userId, userAccount.currentInventoryId) {
-    super.knownInventories = userAccount.knownInventories;
-  }
-}
-
 class RepositoryBloc {
   final _googleSignIn = GoogleSignIn();
   final _log = Logger('InventoryRepository');
@@ -25,14 +15,14 @@ class RepositoryBloc {
   static String generateUuid() => _uuid.v4();
   static const UNSET = '---';
 
-  static final unsetUser = UserAccountEx(UserAccount(UNSET, UNSET), null, null, false);
+  static final unsetUser = UserAccount(UNSET, UNSET);
 
   final _fireUsers = Firestore.instance.collection('users');
   final _fireInventory = Firestore.instance.collection('inventory');
   final _fireDictionary = Firestore.instance.collection('productDictionary');
-  final _userUpdate = BehaviorSubject<UserAccountEx>();
+  final _userUpdate = BehaviorSubject<UserAccount>();
 
-  Observable<UserAccountEx> get userUpdateStream => _userUpdate.stream;
+  Observable<UserAccount> get userUpdateStream => _userUpdate.stream;
 
   RepositoryBloc() {
     _googleSignIn.onCurrentUserChanged.listen((gAccount) => _accountFromSignIn(gAccount));
@@ -67,9 +57,12 @@ class RepositoryBloc {
       if (!doc.exists) {
         _createNewUserAccount(id);
       } else {
-        var userAccount = UserAccount.fromJson(doc.data);
+        var userAccount = UserAccount.fromJson(doc.data)
+          ..displayName = displayName
+          ..imageUrl = imageUrl
+          ..signedIn = true;
         _log.info('Change detected for user account ${userAccount.toJson()}');
-        _userUpdate.sink.add(UserAccountEx(userAccount, displayName, imageUrl, true));
+        _userUpdate.sink.add(userAccount);
       }
     });
   }
@@ -90,7 +83,11 @@ class RepositoryBloc {
     var snap = await _fireInventory.document(inventoryId).collection('inventoryItems').getDocuments();
     return snap.documents
         .where((doc) => doc.exists)
-        .map((doc) => InventoryItem.fromJson(doc.data))
+        .map((doc) {
+          var item = InventoryItem.fromJson(doc.data);
+          if (item.inventoryId == null) item.inventoryId = inventoryId;
+          return item;
+        })
         .toList();
   }
 

@@ -14,7 +14,7 @@ class UserDrawer extends StatelessWidget {
       child: ListView(
         padding: EdgeInsets.zero,
         children: <Widget>[
-          StreamBuilder<List<InventoryDetailsEx>>(
+          StreamBuilder<List<InventoryDetails>>(
             stream: _bloc.detailStream,
             builder: (context, snapshot) {
               return UserAccountsDrawerHeader(
@@ -31,7 +31,7 @@ class UserDrawer extends StatelessWidget {
               );
             },
           ),
-          StreamBuilder<UserAccountEx>(
+          StreamBuilder<UserAccount>(
             stream: _bloc.userAccountStream,
             builder: (context, snapshot) {
               var signedIn = snapshot.hasData && snapshot.data.signedIn;
@@ -50,7 +50,7 @@ class UserDrawer extends StatelessWidget {
               );
             }
           ),
-          StreamBuilder<List<InventoryDetailsEx>>(
+          StreamBuilder<List<InventoryDetails>>(
             stream: _bloc.detailStream,
             builder: (context, snapshot) {
               var selected = snapshot.hasData && snapshot.data.length > 0
@@ -75,7 +75,7 @@ class UserDrawer extends StatelessWidget {
                     title: Text('Edit/share Current Inventory'),
                     onTap: () async {
                       InventoryDetails edited = await Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => InventoryDetailsPage(selected.details),)
+                          MaterialPageRoute(builder: (context) => InventoryDetailsPage(selected),)
                       );
                     },
                   ),
@@ -83,7 +83,7 @@ class UserDrawer extends StatelessWidget {
               );
             }
           ),
-          StreamBuilder<List<InventoryDetailsEx>>(
+          StreamBuilder<List<InventoryDetails>>(
             stream: _bloc.detailStream,
             builder: (context, snapshot) {
               if (!snapshot.hasData) return Container();

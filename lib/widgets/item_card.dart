@@ -8,7 +8,7 @@ import 'package:inventorio/bloc/repository_bloc.dart';
 
 class ProductImage extends StatelessWidget {
   final _repo = Injector.getInjector().get<RepositoryBloc>();
-  final InventoryItemEx item;
+  final InventoryItem item;
   ProductImage(this.item);
 
   @override
@@ -33,7 +33,7 @@ class ProductImage extends StatelessWidget {
 
 class ProductLabel extends StatelessWidget {
   final _repo = Injector.getInjector().get<RepositoryBloc>();
-  final InventoryItemEx item;
+  final InventoryItem item;
   ProductLabel(this.item);
 
   @override
@@ -70,7 +70,7 @@ class ProductLabel extends StatelessWidget {
 }
 
 class ItemExpiry extends StatelessWidget {
-  final InventoryItemEx item;
+  final InventoryItem item;
   ItemExpiry(this.item);
 
   @override
@@ -89,7 +89,7 @@ class ItemExpiry extends StatelessWidget {
 }
 
 class ItemCard extends StatelessWidget {
-  final InventoryItemEx item;
+  final InventoryItem item;
   ItemCard(this.item);
 
   Color _expiryColorScale(int days) {

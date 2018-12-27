@@ -21,10 +21,12 @@ void main() {
   void _setup({withUser: true,}) {
     _mockRepo = Injector.getInjector().get<RepositoryBloc>();
     reset(_mockRepo);
+
     when(_mockRepo.userUpdateStream).thenAnswer((inv) {
-      return withUser
-        ? Observable<UserAccountEx>.just(UserAccountEx(UserAccount('user_999', 'inv_1'), 'Inventory 1', null, true))
-        : Observable.empty();
+      var user = UserAccount('user_999', 'inv_1')
+        ..displayName = 'User 999'
+        ..signedIn = true;
+      return withUser ? Observable<UserAccount>.just(user) : Observable<UserAccount>.empty();
     });
 
     when(_mockRepo.getItems('inv_1')).thenAnswer((inv) {
@@ -48,8 +50,8 @@ void main() {
   test('User 999 has 2 items', () {
     _setup();
     expectLater(_bloc.itemStream, emits([
-      InventoryItemEx(item: _inv1Item1, inventoryId: 'inv_1'),
-      InventoryItemEx(item: _inv1Item2, inventoryId: 'inv_1'),
+      _inv1Item1,
+      _inv1Item2
     ]));
   });
 }
