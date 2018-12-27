@@ -96,6 +96,17 @@ class RepositoryBloc {
     return snap.exists? InventoryDetails.fromJson(snap.data): null;
   }
 
+  Observable<InventoryDetails> getInventoryDetailObservable(String inventoryId) {
+    if (inventoryId == null) return Observable<InventoryDetails>.empty();
+    return Observable(_fireInventory.document(inventoryId).snapshots())
+        .asyncMap((doc) async {
+          var detail = InventoryDetails.fromJson(doc.data);
+          var items = await _fireInventory.document(inventoryId).collection('inventoryItems').getDocuments();
+          detail.currentCount = items.documents.length;
+          return detail;
+        });
+  }
+
   Observable<Product> getProductObservable(String inventoryId, String code) {
     return Observable.combineLatest2(
       _fireInventory.document(inventoryId).collection('productDictionary').document(code).snapshots(),

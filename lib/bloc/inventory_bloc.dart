@@ -23,15 +23,15 @@ class InventoryBloc {
   final _repo = Injector.getInjector().get<RepositoryBloc>();
 
   final _items = BehaviorSubject<List<InventoryItem>>();
-  final _detail = BehaviorSubject<List<InventoryDetails>>();
   final _actions = BehaviorSubject<ActionEvent>();
 
   UserAccount _currentUser;
 
   Observable<List<InventoryItem>> get itemStream => _items.stream;
-  Observable<List<InventoryDetails>> get detailStream => _detail.stream;
   Function(ActionEvent) get actionSink => _actions.sink.add;
   Observable<UserAccount> get userAccountStream => _repo.userUpdateStream;
+  Observable<InventoryDetails> inventoryDetailObservable(inventoryId) => _repo.getInventoryDetailObservable(inventoryId);
+  Future<InventoryDetails> getInventoryDetails(inventoryId) => _repo.getInventoryDetails(inventoryId);
 
   InventoryBloc() {
 
@@ -39,7 +39,7 @@ class InventoryBloc {
       .listen((userAccount) {
         if (userAccount != null) {
           _updateCurrent(userAccount);
-          _processInventoryItems(userAccount);
+          //_processInventoryItems(userAccount);
         } else {
           _cleanUp();
         }
@@ -60,7 +60,6 @@ class InventoryBloc {
 
   void _cleanUp() {
     _items.sink.add([]);
-    _detail.sink.add([]);
   }
 
   void _updateCurrent(UserAccount userAccount) async {
@@ -74,27 +73,18 @@ class InventoryBloc {
 
   void _processInventoryItems(UserAccount userAccount) async {
     Stopwatch stopwatch = Stopwatch()..start();
-    List<InventoryDetails> details = await Future.wait(userAccount.knownInventories.map((id) => _repo.getInventoryDetails(id)));
     List<List<InventoryItem>> collection = await Future.wait(userAccount.knownInventories.map((id) => _repo.getItems(id)));
-
     var total = 0;
     for (int i = 0; i < userAccount.knownInventories.length; i++) {
       total += collection[i].length;
-      if (details[i] != null) {
-        details[i]
-          ..currentCount = collection[i].length
-          ..isSelected = userAccount.currentInventoryId == details[i].uuid;
-      }
     }
 
     stopwatch.stop();
     _log.info('Finished processing $total inventory items in ${stopwatch.elapsedMilliseconds} ms');
-    _detail.sink.add(details);
   }
 
   void dispose() async {
     _items.close();
-    _detail.close();
     _actions.close();
   }
 }

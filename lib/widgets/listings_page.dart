@@ -12,15 +12,19 @@ class ListingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: StreamBuilder<List<InventoryDetails>>(
-          stream: _bloc.detailStream,
-          builder: (context, snapshot) {
-            InventoryDetails detailsEx = snapshot.data
-                ?.firstWhere((i) => i.isSelected, orElse: () => null);
-            return detailsEx != null
-                ? Text('${detailsEx.name}')
-                : Text('Current Inventory');
-          }
+        title: StreamBuilder<UserAccount>(
+          stream: _bloc.userAccountStream,
+          builder: (context, userSnapshot) {
+            if (!userSnapshot.hasData) return Text('Current Inventory');
+            return StreamBuilder<InventoryDetails>(
+              stream: _bloc.inventoryDetailObservable(userSnapshot.data.currentInventoryId),
+              builder: (context, detailSnapshot) {
+                return detailSnapshot.hasData
+                  ? Text('${detailSnapshot.data.name}')
+                  : Text('Current Inventory');
+              },
+            );
+          },
         )
       ),
       body: StreamBuilder<List<InventoryItem>>(
