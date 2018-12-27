@@ -102,7 +102,7 @@ class UserAccount {
   String currentInventoryId;
   @JsonKey(ignore: true) String displayName;
   @JsonKey(ignore: true) String imageUrl;
-  @JsonKey(ignore: true) bool signedIn;
+  @JsonKey(ignore: true) bool isSignedIn;
 
   UserAccount(this.userId, this.currentInventoryId) { knownInventories.add(this.currentInventoryId);}
   factory UserAccount.fromJson(Map<String, dynamic> json) => _$UserAccountFromJson(json);

@@ -60,7 +60,7 @@ class RepositoryBloc {
         var userAccount = UserAccount.fromJson(doc.data)
           ..displayName = displayName
           ..imageUrl = imageUrl
-          ..signedIn = true;
+          ..isSignedIn = true;
         _log.info('Change detected for user account ${userAccount.toJson()}');
         _userUpdate.sink.add(userAccount);
       }

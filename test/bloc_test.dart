@@ -25,7 +25,7 @@ void main() {
     when(_mockRepo.userUpdateStream).thenAnswer((inv) {
       var user = UserAccount('user_999', 'inv_1')
         ..displayName = 'User 999'
-        ..signedIn = true;
+        ..isSignedIn = true;
       return withUser ? Observable<UserAccount>.just(user) : Observable<UserAccount>.empty();
     });
 

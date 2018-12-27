@@ -34,7 +34,7 @@ class UserDrawer extends StatelessWidget {
           StreamBuilder<UserAccount>(
             stream: _bloc.userAccountStream,
             builder: (context, snapshot) {
-              var signedIn = snapshot.hasData && snapshot.data.signedIn;
+              var signedIn = snapshot.hasData && snapshot.data.isSignedIn;
               return ListTile(
                 title: Text(signedIn ? 'Log out' : 'Login with Google'),
                 subtitle: Text(signedIn ? 'Logged in as ${snapshot.data.displayName}' : ''),

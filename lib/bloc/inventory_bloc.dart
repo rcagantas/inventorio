@@ -73,6 +73,7 @@ class InventoryBloc {
   }
 
   void _processInventoryItems(UserAccount userAccount) async {
+    Stopwatch stopwatch = Stopwatch()..start();
     List<InventoryDetails> details = await Future.wait(userAccount.knownInventories.map((id) => _repo.getInventoryDetails(id)));
     List<List<InventoryItem>> collection = await Future.wait(userAccount.knownInventories.map((id) => _repo.getItems(id)));
 
@@ -86,8 +87,9 @@ class InventoryBloc {
       }
     }
 
+    stopwatch.stop();
+    _log.info('Finished processing $total inventory items in ${stopwatch.elapsedMilliseconds} ms');
     _detail.sink.add(details);
-    _log.info('Finished processing $total inventory items. $details}');
   }
 
   void dispose() async {
