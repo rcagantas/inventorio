@@ -17,7 +17,7 @@ class ListingsPage extends StatelessWidget {
           builder: (context, userSnapshot) {
             if (!userSnapshot.hasData) return Text('Current Inventory');
             return StreamBuilder<InventoryDetails>(
-              stream: _bloc.inventoryDetailObservable(userSnapshot.data.currentInventoryId),
+              stream: _bloc.getInventoryDetailObservable(userSnapshot.data.currentInventoryId),
               builder: (context, detailSnapshot) {
                 return detailSnapshot.hasData
                   ? Text('${detailSnapshot.data.name}')
@@ -31,11 +31,11 @@ class ListingsPage extends StatelessWidget {
         stream: _bloc.itemStream,
         builder: (context, snapshot) {
           return !snapshot.hasData
-              ? _buildWelcome()
-              : ListView.builder(
-                  itemCount: snapshot.data.length,
-                  itemBuilder: (context, index) => ItemCard(snapshot.data[index]),
-                );
+            ? _buildWelcome()
+            : ListView.builder(
+                itemCount: snapshot.data.length,
+                itemBuilder: (context, index) => ItemCard(snapshot.data[index]),
+              );
         }
       ),
       floatingActionButton: FloatingActionButton.extended(

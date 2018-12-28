@@ -91,6 +91,18 @@ class RepositoryBloc {
         .toList();
   }
 
+  Observable<List<InventoryItem>> getItemListObservable(String inventoryId) {
+    if (inventoryId == null) return Observable<List<InventoryItem>>.empty();
+    return Observable(_fireInventory.document(inventoryId).collection('inventoryItems').snapshots())
+      .map((snap) {
+        return snap.documents.map((doc) {
+          var item = InventoryItem.fromJson(doc.data);
+          if (item.inventoryId == null) item.inventoryId = inventoryId;
+          return item;
+        }).toList();
+      });
+  }
+
   Future<InventoryDetails> getInventoryDetails(String inventoryId) async {
     var snap = await _fireInventory.document(inventoryId).get();
     return snap.exists? InventoryDetails.fromJson(snap.data): null;
@@ -99,12 +111,7 @@ class RepositoryBloc {
   Observable<InventoryDetails> getInventoryDetailObservable(String inventoryId) {
     if (inventoryId == null) return Observable<InventoryDetails>.empty();
     return Observable(_fireInventory.document(inventoryId).snapshots())
-        .asyncMap((doc) async {
-          var detail = InventoryDetails.fromJson(doc.data);
-          var items = await _fireInventory.document(inventoryId).collection('inventoryItems').getDocuments();
-          detail.currentCount = items.documents.length;
-          return detail;
-        });
+        .map((doc) => InventoryDetails.fromJson(doc.data));
   }
 
   Observable<Product> getProductObservable(String inventoryId, String code) {

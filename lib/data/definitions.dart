@@ -86,7 +86,6 @@ class InventoryDetails {
   String uuid;
   String name;
   String createdBy;
-  @JsonKey(ignore: true) int currentCount;
   InventoryDetails({@required this.uuid, this.name, this.createdBy});
   factory InventoryDetails.fromJson(Map<String, dynamic> json) => _$InventoryDetailsFromJson(json);
   Map<String, dynamic> toJson() => _$InventoryDetailsToJson(this);

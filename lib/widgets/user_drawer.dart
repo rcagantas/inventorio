@@ -23,18 +23,18 @@ class UserDrawer extends StatelessWidget {
                   backgroundImage: AssetImage('resources/icons/icon.png'),
                 ),
                 accountName: StreamBuilder<InventoryDetails>(
-                  stream: _bloc.inventoryDetailObservable(userSnapshot.data?.currentInventoryId),
+                  stream: _bloc.getInventoryDetailObservable(userSnapshot.data?.currentInventoryId),
                   builder: (context, detailSnapshot) {
                     return detailSnapshot.hasData
                       ? Text('${detailSnapshot.data.name}')
                       : Text('Current Inventory');
                   }
                 ),
-                accountEmail: StreamBuilder<InventoryDetails>(
-                  stream: _bloc.inventoryDetailObservable(userSnapshot.data?.currentInventoryId),
-                  builder: (context, detailSnapshot) {
-                    return detailSnapshot.hasData
-                      ? Text('${detailSnapshot.data.currentCount} items')
+                accountEmail: StreamBuilder<List<InventoryItem>>(
+                  stream: _bloc.itemStream,
+                  builder: (context, snapshot) {
+                    return snapshot.hasData
+                      ? Text('${snapshot.data.length} items')
                       : Text('0 items');
                   }
                 ),
@@ -83,12 +83,20 @@ class UserDrawer extends StatelessWidget {
                 itemCount: userSnapshot.data?.knownInventories?.length ?? 0,
                 itemBuilder: (context, index) {
                   return StreamBuilder<InventoryDetails>(
-                    stream: _bloc.inventoryDetailObservable(userSnapshot.data?.knownInventories[index]),
+                    stream: _bloc.getInventoryDetailObservable(userSnapshot.data?.knownInventories[index]),
                     builder: (context, detailSnapshot) {
                       return ListTile(
                         title: detailSnapshot.hasData
-                          ? Text('${detailSnapshot.data.name}: ${detailSnapshot.data.currentCount} items')
+                          ? Text('${detailSnapshot.data.name}')
                           : Text('${userSnapshot.data.knownInventories[index]}'),
+                        subtitle: StreamBuilder<List<InventoryItem>>(
+                          stream: _bloc.getItemListObservable(detailSnapshot.data?.uuid),
+                          builder: (context, snapshot) {
+                            return snapshot.hasData
+                              ? Text('${snapshot.data.length} items')
+                              : Text('0 items');
+                          },
+                        ),
                         selected: userSnapshot.data?.knownInventories[index] == userSnapshot.data?.currentInventoryId,
                         onTap: () {
                           _bloc.actionSink(ActionEvent(Action.ChangeInventory, detailSnapshot.data.toJson()));

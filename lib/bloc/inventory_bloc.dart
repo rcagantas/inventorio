@@ -30,8 +30,9 @@ class InventoryBloc {
   Observable<List<InventoryItem>> get itemStream => _items.stream;
   Function(ActionEvent) get actionSink => _actions.sink.add;
   Observable<UserAccount> get userAccountStream => _repo.userUpdateStream;
-  Observable<InventoryDetails> inventoryDetailObservable(inventoryId) => _repo.getInventoryDetailObservable(inventoryId);
+  Observable<InventoryDetails> getInventoryDetailObservable(inventoryId) => _repo.getInventoryDetailObservable(inventoryId);
   Future<InventoryDetails> getInventoryDetails(inventoryId) => _repo.getInventoryDetails(inventoryId);
+  Observable<List<InventoryItem>> getItemListObservable(inventoryId) => _repo.getItemListObservable(inventoryId);
 
   InventoryBloc() {
 
