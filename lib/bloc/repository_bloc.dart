@@ -25,6 +25,7 @@ class RepositoryBloc {
 
   final _userUpdate = BehaviorSubject<UserAccount>();
   Observable<UserAccount> get userUpdateStream => _userUpdate.stream;
+  Function(UserAccount) get userUpdateSink => _userUpdate.sink.add;
 
   UserAccount _currentUser;
 
@@ -53,7 +54,7 @@ class RepositoryBloc {
       _loadUserAccount(gAccount.id, gAccount.displayName, gAccount.photoUrl, gAccount.email);
     } else {
       _log.info('No account signed in.');
-      _userUpdate.sink.add(unsetUser);
+      userUpdateSink(unsetUser);
     }
   }
 
@@ -67,7 +68,7 @@ class RepositoryBloc {
           ..email = email
           ..imageUrl = imageUrl
           ..isSignedIn = true;
-        _userUpdate.sink.add(userAccount);
+        userUpdateSink(userAccount);
       }
     });
   }

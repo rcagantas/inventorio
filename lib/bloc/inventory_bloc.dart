@@ -38,15 +38,13 @@ class InventoryBloc {
       .listen((userAccount) async {
         if (userAccount != null) {
           _populateSelectedItems(userAccount);
-        } else {
-          _cleanUp();
         }
       });
 
     _actions.listen((action) {
       switch (action.act) {
         case Act.SignIn: _repo.signIn(); break;
-        case Act.SignOut: _repo.signOut(); _cleanUp(); break;
+        case Act.SignOut: _cleanUp(); _repo.signOut(); break;
         case Act.ChangeInventory: _repo.changeCurrentInventory(action.payload); break;
         case Act.UnsubscribeInventory: _repo.unsubscribeFromInventory(action.payload); break;
         default: _log.warning('Action ${action.payload} NOT IMPLEMENTED'); break;
@@ -66,6 +64,7 @@ class InventoryBloc {
   }
 
   void _cleanUp() {
+    selectedSink([]);
   }
 
   void dispose() async {

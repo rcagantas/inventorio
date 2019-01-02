@@ -84,7 +84,7 @@ class UserDrawer extends StatelessWidget {
                       ..isSelected = false,
                     builder: (context, snap) {
                       return ListTile(
-                        title: Text('${snap.data.name}'),
+                        title: Text('${snap.data?.name ?? 'Inventory $index'}'),
                         subtitle: Text('${snap.data.currentCount} items'),
                         selected: snap.data.isSelected,
                         onTap: () {
