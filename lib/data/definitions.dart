@@ -86,6 +86,8 @@ class InventoryDetails {
   String uuid;
   String name;
   String createdBy;
+  @JsonKey(ignore: true) int currentCount;
+  @JsonKey(ignore: true) bool isSelected;
   InventoryDetails({@required this.uuid, this.name, this.createdBy});
   factory InventoryDetails.fromJson(Map<String, dynamic> json) => _$InventoryDetailsFromJson(json);
   Map<String, dynamic> toJson() => _$InventoryDetailsToJson(this);
@@ -99,6 +101,7 @@ class UserAccount {
   String userId;
   String currentInventoryId;
   @JsonKey(ignore: true) String displayName;
+  @JsonKey(ignore: true) String email;
   @JsonKey(ignore: true) String imageUrl;
   @JsonKey(ignore: true) bool isSignedIn;
 

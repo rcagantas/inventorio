@@ -15,17 +15,22 @@ class RepositoryBloc {
   static String generateUuid() => _uuid.v4();
   static const UNSET = '---';
 
-  static final unsetUser = UserAccount(UNSET, UNSET);
+  static final unsetUser = UserAccount(UNSET, UNSET)
+    ..displayName = ''
+    ..email = '';
 
   final _fireUsers = Firestore.instance.collection('users');
   final _fireInventory = Firestore.instance.collection('inventory');
   final _fireDictionary = Firestore.instance.collection('productDictionary');
-  final _userUpdate = BehaviorSubject<UserAccount>();
 
+  final _userUpdate = BehaviorSubject<UserAccount>();
   Observable<UserAccount> get userUpdateStream => _userUpdate.stream;
+
+  UserAccount _currentUser;
 
   RepositoryBloc() {
     _googleSignIn.onCurrentUserChanged.listen((gAccount) => _accountFromSignIn(gAccount));
+    userUpdateStream.listen((userAccount) => _currentUser = userAccount);
   }
 
   void signIn() async {
@@ -45,23 +50,23 @@ class RepositoryBloc {
         _log.fine('Firebase sign-in with Google: ${gAccount.id}');
         FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
       });
-      _loadUserAccount(gAccount.id, gAccount.displayName, gAccount.photoUrl);
+      _loadUserAccount(gAccount.id, gAccount.displayName, gAccount.photoUrl, gAccount.email);
     } else {
       _log.info('No account signed in.');
       _userUpdate.sink.add(unsetUser);
     }
   }
 
-  void _loadUserAccount(String id, String displayName, String imageUrl) {
+  void _loadUserAccount(String id, String displayName, String imageUrl, String email) {
     _fireUsers.document(id).snapshots().listen((doc) {
       if (!doc.exists) {
         _createNewUserAccount(id);
       } else {
         var userAccount = UserAccount.fromJson(doc.data)
           ..displayName = displayName
+          ..email = email
           ..imageUrl = imageUrl
           ..isSignedIn = true;
-        _log.info('Change detected for user account ${userAccount.toJson()}');
         _userUpdate.sink.add(userAccount);
       }
     });
@@ -79,23 +84,11 @@ class RepositoryBloc {
     return userAccount;
   }
 
-  Future<List<InventoryItem>> getItems(String inventoryId) async {
-    var snap = await _fireInventory.document(inventoryId).collection('inventoryItems').getDocuments();
-    return snap.documents
-        .where((doc) => doc.exists)
-        .map((doc) {
-          var item = InventoryItem.fromJson(doc.data);
-          if (item.inventoryId == null) item.inventoryId = inventoryId;
-          return item;
-        })
-        .toList();
-  }
-
   Observable<List<InventoryItem>> getItemListObservable(String inventoryId) {
     if (inventoryId == null) return Observable<List<InventoryItem>>.empty();
     return Observable(_fireInventory.document(inventoryId).collection('inventoryItems').snapshots())
-      .map((snap) {
-        return snap.documents.map((doc) {
+      .map((snaps) {
+        return snaps.documents.map((doc) {
           var item = InventoryItem.fromJson(doc.data);
           if (item.inventoryId == null) item.inventoryId = inventoryId;
           return item;
@@ -103,15 +96,25 @@ class RepositoryBloc {
       });
   }
 
-  Future<InventoryDetails> getInventoryDetails(String inventoryId) async {
-    var snap = await _fireInventory.document(inventoryId).get();
-    return snap.exists? InventoryDetails.fromJson(snap.data): null;
+  InventoryDetails _inventoryDetailZip(DocumentSnapshot doc, QuerySnapshot query) {
+    return InventoryDetails.fromJson(doc.data)
+      ..isSelected = _currentUser.currentInventoryId == doc.reference.documentID
+      ..currentCount = query.documents.length;
   }
 
   Observable<InventoryDetails> getInventoryDetailObservable(String inventoryId) {
     if (inventoryId == null) return Observable<InventoryDetails>.empty();
-    return Observable(_fireInventory.document(inventoryId).snapshots())
-        .map((doc) => InventoryDetails.fromJson(doc.data));
+    return Observable.combineLatest2(
+      _fireInventory.document(inventoryId).snapshots(),
+      _fireInventory.document(inventoryId).collection('inventoryItems').snapshots(),
+        _inventoryDetailZip
+    );
+  }
+
+  Future<InventoryDetails> getInventoryDetailFuture(String inventoryId) async {
+    var doc = await _fireInventory.document(inventoryId).get();
+    var query = await _fireInventory.document(inventoryId).collection('inventoryItems').getDocuments();
+    return _inventoryDetailZip(doc, query);
   }
 
   Observable<Product> getProductObservable(String inventoryId, String code) {
@@ -130,10 +133,11 @@ class RepositoryBloc {
     _userUpdate.close();
   }
 
-  UserAccount changeCurrentInventory(UserAccount user, InventoryDetails detail) {
-    if (user == null) return user;
-    user.currentInventoryId = detail.uuid;
-    return _updateFireUser(user);
+  UserAccount changeCurrentInventory(InventoryDetails detail) {
+    if (_currentUser == null) return _currentUser;
+    _log.info('Changing current inventory to ${detail.uuid}');
+    _currentUser.currentInventoryId = detail.uuid;
+    return _updateFireUser(_currentUser);
   }
 
   UserAccount _updateFireUser(UserAccount userAccount) {
@@ -141,12 +145,12 @@ class RepositoryBloc {
     return userAccount;
   }
 
-  UserAccount unsubscribeFromInventory(UserAccount user, InventoryDetails detail) {
-    if (user == null) return user;
-    if (user.knownInventories.length == 1) return user;
-    user.knownInventories.remove(detail.uuid);
-    user.currentInventoryId = user.knownInventories[0];
-    _log.fine('Unsubscribing ${user.userId} from inventory ${detail.uuid}');
-    return _updateFireUser(user);
+  UserAccount unsubscribeFromInventory(InventoryDetails detail) {
+    if (_currentUser == null) return _currentUser;
+    if (_currentUser.knownInventories.length == 1) return _currentUser;
+    _currentUser.knownInventories.remove(detail.uuid);
+    _currentUser.currentInventoryId = _currentUser.knownInventories[0];
+    _log.fine('Unsubscribing ${_currentUser.userId} from inventory ${detail.uuid}');
+    return _updateFireUser(_currentUser);
   }
 }

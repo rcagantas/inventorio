@@ -1,10 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 
-enum Action {
+enum Act {
   SignIn,
   SignOut,
   ChangeInventory,
@@ -12,35 +13,31 @@ enum Action {
   UnsubscribeInventory
 }
 
-class ActionEvent {
-  final Action act;
-  final Map<String, dynamic> payload;
-  ActionEvent(this.act, this.payload);
+class Action {
+  final Act act;
+  final dynamic payload;
+  Action(this.act, this.payload);
 }
 
 class InventoryBloc {
   final _log = Logger('InventoryBloc');
   final _repo = Injector.getInjector().get<RepositoryBloc>();
 
-  final _items = BehaviorSubject<List<InventoryItem>>();
-  final _actions = BehaviorSubject<ActionEvent>();
+  final _actions = BehaviorSubject<Action>();
+  Function(Action) get actionSink => _actions.sink.add;
 
-  UserAccount _currentUser;
+  final _selected = BehaviorSubject<List<InventoryItem>>();
+  Function(List<InventoryItem>) get selectedSink => _selected.sink.add;
+  Observable<List<InventoryItem>> get selectedStream => _selected.stream;
 
-  Observable<List<InventoryItem>> get itemStream => _items.stream;
-  Function(ActionEvent) get actionSink => _actions.sink.add;
-  Observable<UserAccount> get userAccountStream => _repo.userUpdateStream;
-  Observable<InventoryDetails> getInventoryDetailObservable(inventoryId) => _repo.getInventoryDetailObservable(inventoryId);
-  Future<InventoryDetails> getInventoryDetails(inventoryId) => _repo.getInventoryDetails(inventoryId);
-  Observable<List<InventoryItem>> getItemListObservable(inventoryId) => _repo.getItemListObservable(inventoryId);
+  final _details = BehaviorSubject<List<InventoryDetails>>();
+  Function(List<InventoryDetails>) get detailSink => _details.sink.add;
 
   InventoryBloc() {
-
     _repo.userUpdateStream
-      .listen((userAccount) {
+      .listen((userAccount) async {
         if (userAccount != null) {
-          _updateCurrent(userAccount);
-          //_processInventoryItems(userAccount);
+          _populateSelectedItems(userAccount);
         } else {
           _cleanUp();
         }
@@ -48,10 +45,10 @@ class InventoryBloc {
 
     _actions.listen((action) {
       switch (action.act) {
-        case Action.SignIn: _repo.signIn(); break;
-        case Action.SignOut: _repo.signOut(); _cleanUp(); break;
-        case Action.ChangeInventory: _repo.changeCurrentInventory(_currentUser, InventoryDetails.fromJson(action.payload)); break;
-        case Action.UnsubscribeInventory: _repo.unsubscribeFromInventory(_currentUser, InventoryDetails.fromJson(action.payload)); break;
+        case Act.SignIn: _repo.signIn(); break;
+        case Act.SignOut: _repo.signOut(); _cleanUp(); break;
+        case Act.ChangeInventory: _repo.changeCurrentInventory(action.payload); break;
+        case Act.UnsubscribeInventory: _repo.unsubscribeFromInventory(action.payload); break;
         default: _log.warning('Action ${action.payload} NOT IMPLEMENTED'); break;
       }
     });
@@ -59,33 +56,21 @@ class InventoryBloc {
     _repo.signIn();
   }
 
+  void _populateSelectedItems(UserAccount userAccount) {
+    _repo.getItemListObservable(userAccount.currentInventoryId)
+      .debounce(Duration(milliseconds: 300))
+      .listen((data) {
+        data.sort();
+        selectedSink(data);
+      });
+  }
+
   void _cleanUp() {
-    _items.sink.add([]);
-  }
-
-  void _updateCurrent(UserAccount userAccount) async {
-    _currentUser = userAccount;
-    String inventoryId = userAccount.currentInventoryId;
-    _repo.getItems(inventoryId).then((items) async {
-      items.sort((a, b) => a.daysFromToday.compareTo(b.daysFromToday));
-      _items.sink.add(items);
-    });
-  }
-
-  void _processInventoryItems(UserAccount userAccount) async {
-    Stopwatch stopwatch = Stopwatch()..start();
-    List<List<InventoryItem>> collection = await Future.wait(userAccount.knownInventories.map((id) => _repo.getItems(id)));
-    var total = 0;
-    for (int i = 0; i < userAccount.knownInventories.length; i++) {
-      total += collection[i].length;
-    }
-
-    stopwatch.stop();
-    _log.info('Finished processing $total inventory items in ${stopwatch.elapsedMilliseconds} ms');
   }
 
   void dispose() async {
-    _items.close();
     _actions.close();
+    _selected.close();
+    _details.close();
   }
 }

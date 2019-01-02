@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
+import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:inventorio/widgets/item_card.dart';
 import 'package:inventorio/widgets/user_drawer.dart';
 
 class ListingsPage extends StatelessWidget {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
+  final _repo = Injector.getInjector().get<RepositoryBloc>();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: StreamBuilder<UserAccount>(
-          stream: _bloc.userAccountStream,
+          stream: _repo.userUpdateStream,
           builder: (context, userSnapshot) {
             if (!userSnapshot.hasData) return Text('Current Inventory');
             return StreamBuilder<InventoryDetails>(
-              stream: _bloc.getInventoryDetailObservable(userSnapshot.data.currentInventoryId),
+              stream: _repo.getInventoryDetailObservable(userSnapshot.data.currentInventoryId),
               builder: (context, detailSnapshot) {
                 return detailSnapshot.hasData
                   ? Text('${detailSnapshot.data.name}')
@@ -28,15 +30,13 @@ class ListingsPage extends StatelessWidget {
         )
       ),
       body: StreamBuilder<List<InventoryItem>>(
-        stream: _bloc.itemStream,
-        builder: (context, snapshot) {
-          return !snapshot.hasData
-            ? _buildWelcome()
-            : ListView.builder(
-                itemCount: snapshot.data.length,
-                itemBuilder: (context, index) => ItemCard(snapshot.data[index]),
-              );
-        }
+        stream: _bloc.selectedStream,
+        builder: (context, snap) {
+          return ListView.builder(
+            itemCount: snap.data?.length ?? 0,
+            itemBuilder: (context, index) => ItemCard(snap.data[index]),
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {},

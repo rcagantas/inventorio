@@ -68,7 +68,7 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
                       var confirmed = await DialogFactory.sureDialog(context,
                           'Unsubscribing would remove this inventory and all its items from your list', 'Unsubscribe', 'Cancel');
                       if (confirmed) {
-                        _bloc.actionSink(ActionEvent(Action.UnsubscribeInventory, staging.toJson()));
+                        _bloc.actionSink(Action(Act.UnsubscribeInventory, staging));
                       }
                     }
                   ),
