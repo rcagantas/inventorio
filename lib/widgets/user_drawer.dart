@@ -14,6 +14,7 @@ class UserDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       child: StreamBuilder<UserAccount>(
+        initialData: _repo.getCachedUser(),
         stream: _repo.userUpdateStream,
         builder: (context, snap) {
           var signedIn = snap.hasData && snap.data.isSignedIn;

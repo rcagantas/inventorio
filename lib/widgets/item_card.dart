@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
+import 'package:inventorio/widgets/item_add_page.dart';
 import 'package:quiver/strings.dart' as qString;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
@@ -11,21 +12,29 @@ class ProductImage extends StatelessWidget {
   final InventoryItem item;
   ProductImage(this.item);
 
+  Widget _heroChildBuilder(AsyncSnapshot<Product> snap) {
+    if (snap.hasData && qString.isNotEmpty(snap.data.imageUrl)) {
+      return CachedNetworkImage(
+        imageUrl: snap.data?.imageUrl ?? '', fit: BoxFit.cover,
+        placeholder: Center(child: Icon(Icons.camera_enhance, color: Colors.grey)),
+        errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
+      );
+    }
+    return Center(child: Icon(Icons.camera_alt, color: Colors.grey));
+  }
+
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<Product>(
-      key: ObjectKey(item.uuid+'_image'),
-      stream: _repo.getProductObservable(item.inventoryId, item.code),
-      builder: (context, snapshot) {
-        if (snapshot.hasData && qString.isNotEmpty(snapshot.data.imageUrl)) {
-          return CachedNetworkImage(
-            imageUrl: snapshot.data.imageUrl ?? '', fit: BoxFit.cover,
-            placeholder: Center(child: Icon(Icons.camera_enhance, color: Colors.grey)),
-            errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
-          );
-        }
-        return Center(child: Icon(Icons.camera_alt, color: Colors.grey));
-      },
+    return Hero(
+      tag: item.uuid + item.code,
+      child: StreamBuilder<Product>(
+        key: ObjectKey(item.uuid+'_image'),
+        initialData: Product(imageUrl: _repo.getCachedImageUrl(item.code)),
+        stream: _repo.getProductObservable(item.inventoryId, item.code),
+        builder: (context, snap) {
+          return _heroChildBuilder(snap);
+        },
+      ),
     );
   }
 }
@@ -38,17 +47,19 @@ class ProductLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(
+    return StreamBuilder<Product>(
       key: ObjectKey(item.uuid+'_label'),
       initialData: Product(brand: item.code, variant: item.uuid),
       stream: _repo.getProductObservable(item.inventoryId, item.code),
-      builder: (context, AsyncSnapshot<Product> snapshot) {
-        return snapshot.hasData ? _buildLabel(snapshot.data) : Container();
+      builder: (context, snap) {
+        return snap.hasData ? _buildLabel(snap.data) : CircularProgressIndicator();
       },
     );
   }
 
   Widget _buildLabel(Product product) {
+    if (product.isUnset) return CircularProgressIndicator();
+
     var style =  TextStyle(inherit: true, fontWeight: FontWeight.bold);
     var align = TextAlign.center;
     List<Text> labels = [
@@ -102,19 +113,25 @@ class ItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     double textScaleFactor = MediaQuery.of(context).textScaleFactor;
 
-    return Container(
-      height: 110.0 * textScaleFactor,
-      child: Card(
-        child: Row(
-          children: <Widget>[
-            Expanded(flex: 3, child: ProductImage(item),),
-            Expanded(flex: 7, child: ProductLabel(item),),
-            Expanded(flex: 3, child: ItemExpiry(item),),
-            ConstrainedBox(
-              constraints: BoxConstraints.tight(Size(3.0, double.infinity)),
-              child: Container(color: _expiryColorScale(item.daysFromToday),),
-            )
-          ],
+    return FlatButton(
+      padding: EdgeInsets.zero,
+      onPressed: () {
+        Navigator.of(context).push(MaterialPageRoute(builder: (context) => ItemAddPage(item)));
+      },
+      child: Container(
+        height: 110.0 * textScaleFactor,
+        child: Card(
+          child: Row(
+            children: <Widget>[
+              Expanded(flex: 3, child: ProductImage(item),),
+              Expanded(flex: 7, child: ProductLabel(item),),
+              Expanded(flex: 3, child: ItemExpiry(item),),
+              ConstrainedBox(
+                constraints: BoxConstraints.tight(Size(3.0, double.infinity)),
+                child: Container(color: _expiryColorScale(item.daysFromToday),),
+              )
+            ],
+          ),
         ),
       ),
     );

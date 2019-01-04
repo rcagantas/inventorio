@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
@@ -40,10 +41,10 @@ class ListingsPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {},
-        icon: Icon(Icons.add_a_photo),
+        icon: Icon(FontAwesomeIcons.barcode),
         label: Text('Scan Barcode')
       ),
-      //floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       drawer: UserDrawer(),
     );
   }

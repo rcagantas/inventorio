@@ -260,6 +260,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  font_awesome_flutter:
+    dependency: "direct main"
+    description:
+      name: font_awesome_flutter
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "8.2.0"
   front_end:
     dependency: transitive
     description:
@@ -407,6 +414,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.9.6+2"
+  mock_data:
+    dependency: "direct dev"
+    description:
+      name: mock_data
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.2.5"
   mockito:
     dependency: "direct dev"
     description:

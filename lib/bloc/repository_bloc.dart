@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:inventorio/data/definitions.dart';
 
 class RepositoryBloc {
@@ -35,9 +36,14 @@ class RepositoryBloc {
   }
 
   void signIn() async {
-    if (_googleSignIn.currentUser == null) await _googleSignIn.signInSilently(suppressErrors: true);
-    if (_googleSignIn.currentUser == null) await _googleSignIn.signIn();
-    _log.info('Signed in with ${_googleSignIn.currentUser.displayName}.');
+    try {
+      if (_googleSignIn.currentUser == null) await _googleSignIn.signInSilently(suppressErrors: true);
+      if (_googleSignIn.currentUser == null) await _googleSignIn.signIn();
+      _log.info('Signed in with ${_googleSignIn.currentUser.displayName}.');
+    } catch (error) {
+      _log.severe('Something wrong with sign-in', error);
+      _loadFromPreferences();
+    }
   }
 
   void signOut() {
@@ -56,6 +62,13 @@ class RepositoryBloc {
       _log.info('No account signed in.');
       userUpdateSink(unsetUser);
     }
+  }
+
+  void _loadFromPreferences() {
+    SharedPreferences.getInstance().then((pref) {
+      String id = pref.getString('inventorio.userId');
+      _loadUserAccount(id, 'Cached Data', null, 'Not connected');
+    });
   }
 
   void _loadUserAccount(String id, String displayName, String imageUrl, String email) {
@@ -118,16 +131,22 @@ class RepositoryBloc {
     return _inventoryDetailZip(doc, query);
   }
 
+  // this is used so that hero widgets have initial values.
+  final Map<String, String> _cachedImageUrl = Map();
+  String getCachedImageUrl(String code) => _cachedImageUrl[code];
+
   Observable<Product> getProductObservable(String inventoryId, String code) {
     return Observable.combineLatest2(
       _fireInventory.document(inventoryId).collection('productDictionary').document(code).snapshots(),
       _fireDictionary.document(code).snapshots(),
       (DocumentSnapshot a, DocumentSnapshot b) {
-        if (a.exists) return Product.fromJson(a.data);
-        if (b.exists) return Product.fromJson(b.data);
-        return Product();
+        Product product = Product(isUnset: true);
+        product = a.exists? Product.fromJson(a.data): product;
+        product = b.exists? Product.fromJson(b.data): product;
+        _cachedImageUrl[product.code] = product.imageUrl;
+        return product;
       }
-    );
+    ).asBroadcastStream();
   }
 
   void dispose() {
@@ -154,4 +173,6 @@ class RepositoryBloc {
     _log.fine('Unsubscribing ${_currentUser.userId} from inventory ${detail.uuid}');
     return _updateFireUser(_currentUser);
   }
+
+  UserAccount getCachedUser() { return _currentUser; }
 }

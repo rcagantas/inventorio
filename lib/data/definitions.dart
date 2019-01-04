@@ -49,8 +49,9 @@ class Product implements Comparable<Product>
   String brand;
   String variant;
   String imageUrl;
+  @JsonKey(ignore: true) bool isUnset;
 
-  Product({this.code, this.brand, this.name, this.variant, this.imageUrl});
+  Product({this.code, this.brand, this.name, this.variant, this.imageUrl, this.isUnset = false});
   factory Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
   Map<String, dynamic> toJson() => _$ProductToJson(this);
 
