@@ -54,7 +54,7 @@ class RepositoryBloc {
   void _accountFromSignIn(GoogleSignInAccount gAccount) async {
     if (gAccount != null) {
       gAccount.authentication.then((auth) {
-        _log.fine('Firebase sign-in with Google: ${gAccount.id}');
+        _log.info('Firebase sign-in with Google: ${gAccount.id}');
         FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
       });
       _loadUserAccount(gAccount.id, gAccount.displayName, gAccount.photoUrl, gAccount.email);
@@ -87,7 +87,7 @@ class RepositoryBloc {
   }
 
   UserAccount _createNewUserAccount(String userId) {
-    _log.fine('Attempting to create user account for $userId');
+    _log.info('Attempting to create user account for $userId');
     UserAccount userAccount = UserAccount(userId, generateUuid());
 
     _fireInventory.document(userAccount.currentInventoryId).setData(
@@ -121,7 +121,7 @@ class RepositoryBloc {
     return Observable.combineLatest2(
       _fireInventory.document(inventoryId).snapshots(),
       _fireInventory.document(inventoryId).collection('inventoryItems').snapshots(),
-        _inventoryDetailZip
+      _inventoryDetailZip
     );
   }
 
@@ -132,18 +132,20 @@ class RepositoryBloc {
   }
 
   // this is used so that hero widgets have initial values.
-  final Map<String, String> _cachedImageUrl = Map();
-  String getCachedImageUrl(String code) => _cachedImageUrl[code];
+  final Map<String, Product> _cachedProduct = Map();
+  Product getCachedProduct(String code) {
+    return _cachedProduct.containsKey(code) ? _cachedProduct[code] : Product(code: code, isLoading: true);
+  }
 
   Observable<Product> getProductObservable(String inventoryId, String code) {
     return Observable.combineLatest2(
       _fireInventory.document(inventoryId).collection('productDictionary').document(code).snapshots(),
       _fireDictionary.document(code).snapshots(),
       (DocumentSnapshot a, DocumentSnapshot b) {
-        Product product = Product(isUnset: true);
-        product = a.exists? Product.fromJson(a.data): product;
+        Product product = Product(isInitial: true);
         product = b.exists? Product.fromJson(b.data): product;
-        _cachedImageUrl[product.code] = product.imageUrl;
+        product = a.exists? Product.fromJson(a.data): product;
+        _cachedProduct[code] = product;
         return product;
       }
     ).asBroadcastStream();
@@ -170,9 +172,19 @@ class RepositoryBloc {
     if (_currentUser.knownInventories.length == 1) return _currentUser;
     _currentUser.knownInventories.remove(detail.uuid);
     _currentUser.currentInventoryId = _currentUser.knownInventories[0];
-    _log.fine('Unsubscribing ${_currentUser.userId} from inventory ${detail.uuid}');
+    _log.info('Unsubscribing ${_currentUser.userId} from inventory ${detail.uuid}');
     return _updateFireUser(_currentUser);
   }
 
   UserAccount getCachedUser() { return _currentUser; }
+
+  void removeItem(InventoryItem item) {
+    _log.info('Removing item: ${item.uuid}');
+    _fireInventory.document(item.inventoryId).collection('inventoryItems').document(item.uuid).delete();
+  }
+
+  void addItem(InventoryItem item) {
+    _log.info('Adding item: ${item.uuid}');
+    _fireInventory.document(item.inventoryId).collection('inventoryItems').document(item.uuid).setData(item.toJson());
+  }
 }

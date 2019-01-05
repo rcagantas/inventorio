@@ -4,7 +4,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
+import 'package:inventorio/widgets/item_add_page.dart';
 import 'package:inventorio/widgets/item_card.dart';
+import 'package:inventorio/widgets/scan_page.dart';
 import 'package:inventorio/widgets/user_drawer.dart';
 
 class ListingsPage extends StatelessWidget {
@@ -33,6 +35,7 @@ class ListingsPage extends StatelessWidget {
       body: StreamBuilder<List<InventoryItem>>(
         stream: _bloc.selectedStream,
         builder: (context, snap) {
+          if (!snap.hasData || snap.data.length == 0) return _buildWelcome();
           return ListView.builder(
             itemCount: snap.data?.length ?? 0,
             itemBuilder: (context, index) => ItemCard(snap.data[index]),
@@ -40,7 +43,12 @@ class ListingsPage extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {},
+        onPressed: () async {
+          String code = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => ScanPage()));
+          await Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => ItemAddPage(InventoryItem(uuid: RepositoryBloc.generateUuid(), code: code)))
+          );
+        },
         icon: Icon(FontAwesomeIcons.barcode),
         label: Text('Scan Barcode')
       ),

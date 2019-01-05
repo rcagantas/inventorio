@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:intl/intl.dart';
 import 'package:meta/meta.dart';
+import 'package:uuid/uuid.dart';
 import 'package:quiver/core.dart';
 
 part 'package:inventorio/data/definitions.g.dart';
@@ -20,7 +21,8 @@ class InventoryItem implements Comparable<InventoryItem>
   factory InventoryItem.fromJson(Map<String, dynamic> json) => _$InventoryItemFromJson(json);
   Map<String, dynamic> toJson() => _$InventoryItemToJson(this);
 
-  DateTime get expiryDate => DateTime.parse(expiry.replaceAll('-', ''));
+  DateTime get expiryDate => DateTime.parse(expiry?.replaceAll('-', '')
+    ?? DateTime.now().add(Duration(days: 30)).toIso8601String());
   String get year => DateFormat.y().format(expiryDate);
   String get month => DateFormat.MMM().format(expiryDate);
   String get day => DateFormat.d().format(expiryDate);
@@ -36,9 +38,9 @@ class InventoryItem implements Comparable<InventoryItem>
   @override String toString() { return this.toJson().toString(); }
   @override int get hashCode => hashObjects(this.toJson().values);
   @override bool operator ==(other) => other is InventoryItem
-      && this.uuid == other.uuid
-      && this.code == other.code
-      && this.expiry == other.expiry;
+    && this.uuid == other.uuid
+    && this.code == other.code
+    && this.expiry == other.expiry;
 }
 
 @JsonSerializable()
@@ -49,9 +51,10 @@ class Product implements Comparable<Product>
   String brand;
   String variant;
   String imageUrl;
-  @JsonKey(ignore: true) bool isUnset;
+  @JsonKey(ignore: true) bool isInitial;
+  @JsonKey(ignore: true) bool isLoading;
 
-  Product({this.code, this.brand, this.name, this.variant, this.imageUrl, this.isUnset = false});
+  Product({this.code, this.brand, this.name, this.variant, this.imageUrl, this.isInitial = false, this.isLoading = false});
   factory Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
   Map<String, dynamic> toJson() => _$ProductToJson(this);
 
@@ -61,11 +64,11 @@ class Product implements Comparable<Product>
   @override
   bool operator ==(other) {
     return other is Product
-        && code == other.code
-        && name == other.name
-        && brand == other.brand
-        && variant == other.variant
-        && imageUrl == other.imageUrl
+      && code == other.code
+      && name == other.name
+      && brand == other.brand
+      && variant == other.variant
+      && imageUrl == other.imageUrl
     ;
   }
 
@@ -115,9 +118,9 @@ class UserAccount {
   @override
   bool operator ==(other) {
     return other is UserAccount &&
-        knownInventories == other.knownInventories &&
-        userId == other.userId &&
-        currentInventoryId == other.currentInventoryId;
+      knownInventories == other.knownInventories &&
+      userId == other.userId &&
+      currentInventoryId == other.currentInventoryId;
   }
 }
 
@@ -146,8 +149,8 @@ class InventorySet {
   }
 
   InventorySet(this.details):
-        productDictionary = {},
-        _itemList = [];
+    productDictionary = {},
+    _itemList = [];
 
   String _searchFilter;
   set filter(String f) => _searchFilter = f?.trim()?.toLowerCase();

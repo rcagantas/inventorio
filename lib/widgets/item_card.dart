@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:inventorio/data/definitions.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
+import 'package:inventorio/data/definitions.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/widgets/item_add_page.dart';
 import 'package:quiver/strings.dart' as qString;
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 
 class ProductImage extends StatelessWidget {
@@ -28,8 +29,8 @@ class ProductImage extends StatelessWidget {
     return Hero(
       tag: item.uuid + item.code,
       child: StreamBuilder<Product>(
-        key: ObjectKey(item.uuid+'_image'),
-        initialData: Product(imageUrl: _repo.getCachedImageUrl(item.code)),
+        key: ObjectKey(item.uuid +'_image'),
+        initialData: _repo.getCachedProduct(item.code),
         stream: _repo.getProductObservable(item.inventoryId, item.code),
         builder: (context, snap) {
           return _heroChildBuilder(snap);
@@ -48,17 +49,22 @@ class ProductLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<Product>(
-      key: ObjectKey(item.uuid+'_label'),
-      initialData: Product(brand: item.code, variant: item.uuid),
+      key: ObjectKey(item.uuid +'_label'),
+      initialData: _repo.getCachedProduct(item.code),
       stream: _repo.getProductObservable(item.inventoryId, item.code),
       builder: (context, snap) {
-        return snap.hasData ? _buildLabel(snap.data) : CircularProgressIndicator();
+        return Center(
+          child: snap.hasData && snap.data.isLoading == false
+            ? _buildLabel(snap.data)
+            : CircularProgressIndicator(),
+        );
       },
     );
   }
 
   Widget _buildLabel(Product product) {
-    if (product.isUnset) return CircularProgressIndicator();
+    if (product.isInitial)
+      return Text('Add New Product Information', textAlign: TextAlign.center, style: TextStyle(fontSize: 22.0),);
 
     var style =  TextStyle(inherit: true, fontWeight: FontWeight.bold);
     var align = TextAlign.center;
@@ -100,6 +106,8 @@ class ItemExpiry extends StatelessWidget {
 }
 
 class ItemCard extends StatelessWidget {
+  final _bloc = Injector.getInjector().get<InventoryBloc>();
+  final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItem item;
   ItemCard(this.item);
 
@@ -113,24 +121,56 @@ class ItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     double textScaleFactor = MediaQuery.of(context).textScaleFactor;
 
-    return FlatButton(
-      padding: EdgeInsets.zero,
-      onPressed: () {
-        Navigator.of(context).push(MaterialPageRoute(builder: (context) => ItemAddPage(item)));
-      },
-      child: Container(
-        height: 110.0 * textScaleFactor,
-        child: Card(
-          child: Row(
-            children: <Widget>[
-              Expanded(flex: 3, child: ProductImage(item),),
-              Expanded(flex: 7, child: ProductLabel(item),),
-              Expanded(flex: 3, child: ItemExpiry(item),),
-              ConstrainedBox(
-                constraints: BoxConstraints.tight(Size(3.0, double.infinity)),
-                child: Container(color: _expiryColorScale(item.daysFromToday),),
+    return Slidable(
+      delegate: SlidableDrawerDelegate(),
+      key: ObjectKey(item.uuid),
+      secondaryActions: <Widget>[
+        IconSlideAction(
+          caption: 'Edit Product',
+          color: Colors.lightBlueAccent,
+          icon: Icons.edit,
+          onTap: () {
+            print('edit product');
+          }
+        ),
+        IconSlideAction(
+          caption: 'Delete',
+          color: Colors.red,
+          icon: Icons.delete,
+          onTap: () {
+            Product product = _repo.getCachedProduct(item.code);
+            _bloc.actionSink(Action(Act.RemoveItem, item));
+            Scaffold.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Removed item ${product.name}'),
+                action: SnackBarAction(
+                  label: 'UNDO',
+                  onPressed: () => _bloc.actionSink(Action(Act.AddItem, item)),
+                ),
               )
-            ],
+            );
+          },
+        ),
+      ],
+      child: FlatButton(
+        padding: EdgeInsets.zero,
+        onPressed: () {
+          Navigator.of(context).push(MaterialPageRoute(builder: (context) => ItemAddPage(item)));
+        },
+        child: Container(
+          height: 110.0 * textScaleFactor,
+          child: Card(
+            child: Row(
+              children: <Widget>[
+                Expanded(flex: 3, child: ProductImage(item),),
+                Expanded(flex: 7, child: ProductLabel(item),),
+                Expanded(flex: 3, child: ItemExpiry(item),),
+                ConstrainedBox(
+                  constraints: BoxConstraints.tight(Size(3.0, double.infinity)),
+                  child: Container(color: _expiryColorScale(item.daysFromToday),),
+                )
+              ],
+            ),
           ),
         ),
       ),

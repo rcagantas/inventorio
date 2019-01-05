@@ -12,23 +12,18 @@ class ItemAddPage extends StatefulWidget {
 class _ItemAddPageState extends State<ItemAddPage> {
 
   DateTime _initialDateTime() {
-    return widget.item.expiryDate == null? DateTime.now().add(Duration(days: 30)) : widget.item.expiryDate;
+    return widget.item.expiryDate;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Set Expiry Date'),
-      ),
+      appBar: AppBar(title: Text('Set Expiry Date'),),
       body: ListView(
         children: <Widget>[
-          ListTile(
-            title: Text('Product code: ${widget.item.code}', textAlign: TextAlign.center,),
-          ),
+          ListTile(title: Text('Product code: ${widget.item.code}', textAlign: TextAlign.center,),),
           Container(
             height: 150.0,
-            //padding: EdgeInsets.all(8.0),
             child: Card(
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -50,9 +45,7 @@ class _ItemAddPageState extends State<ItemAddPage> {
                 child: CupertinoDatePicker(
                   mode: CupertinoDatePickerMode.date,
                   initialDateTime: _initialDateTime(),
-                  onDateTimeChanged: (dateTime) {
-                    print('Selected $dateTime');
-                  },
+                  onDateTimeChanged: (dateTime) {},
                 ),
               ),
             ),
