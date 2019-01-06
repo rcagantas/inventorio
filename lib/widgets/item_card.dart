@@ -27,7 +27,7 @@ class ProductImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Hero(
-      tag: item.uuid + item.code,
+      tag: item.heroCode,
       child: StreamBuilder<Product>(
         key: ObjectKey(item.uuid +'_image'),
         initialData: _repo.getCachedProduct(item.code),

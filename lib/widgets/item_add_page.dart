@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:inventorio/widgets/item_card.dart';
+import 'package:inventorio/widgets/product_page.dart';
 
 class ItemAddPage extends StatefulWidget {
   final InventoryItem item;
@@ -21,16 +22,22 @@ class _ItemAddPageState extends State<ItemAddPage> {
       appBar: AppBar(title: Text('Set Expiry Date'),),
       body: ListView(
         children: <Widget>[
-          ListTile(title: Text('Product code: ${widget.item.code}', textAlign: TextAlign.center,),),
-          Container(
-            height: 150.0,
-            child: Card(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: <Widget>[
-                  Expanded(flex: 1, child: ProductImage(widget.item)),
-                  Expanded(flex: 2, child: ProductLabel(widget.item))
-                ],
+          ListTile(title: Text('${widget.item.code}', textAlign: TextAlign.center,),),
+          FlatButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) => ProductPage(widget.item)));
+            },
+            child: Container(
+              height: 150.0,
+              child: Card(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: <Widget>[
+                    Expanded(flex: 1, child: ProductImage(widget.item)),
+                    Expanded(flex: 2, child: ProductLabel(widget.item))
+                  ],
+                ),
               ),
             ),
           ),

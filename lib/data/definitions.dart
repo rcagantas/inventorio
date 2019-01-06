@@ -29,6 +29,7 @@ class InventoryItem implements Comparable<InventoryItem>
   int get daysFromToday => expiryDate.difference(DateTime.now()).inDays;
   DateTime get weekNotification => expiryDate.subtract(Duration(days: 7));
   DateTime get monthNotification => expiryDate.subtract(Duration(days: 30));
+  String get heroCode => this.uuid + '-' + this.code;
 
   @override
   int compareTo(InventoryItem other) {
