@@ -44,10 +44,11 @@ class ListingsPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          String code = await Navigator.of(context).push(MaterialPageRoute(builder: (context) => ScanPage()));
-          await Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => ItemAddPage(InventoryItem(uuid: RepositoryBloc.generateUuid(), code: code)))
-          );
+          Navigator.of(context).push<String>(MaterialPageRoute(builder: (context) => ScanPage())).then((code) {
+            if (code == null) return;
+            code = code.contains('/')? code.replaceAll('/', '#') : code;
+            Navigator.of(context).push(MaterialPageRoute(builder: (context) => ItemAddPage(_repo.buildItem(code))));
+          });
         },
         icon: Icon(FontAwesomeIcons.barcode),
         label: Text('Scan Barcode')

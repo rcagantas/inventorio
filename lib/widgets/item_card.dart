@@ -11,17 +11,18 @@ import 'package:inventorio/bloc/repository_bloc.dart';
 class ProductImage extends StatelessWidget {
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItem item;
-  ProductImage(this.item);
+  final double placeHolderSize;
+  ProductImage(this.item, {this.placeHolderSize});
 
   Widget _heroChildBuilder(AsyncSnapshot<Product> snap) {
     if (snap.hasData && qString.isNotEmpty(snap.data.imageUrl)) {
       return CachedNetworkImage(
         imageUrl: snap.data?.imageUrl ?? '', fit: BoxFit.cover,
-        placeholder: Center(child: Icon(Icons.camera_enhance, color: Colors.grey)),
-        errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
+        placeholder: Center(child: Icon(Icons.camera_enhance, color: Colors.grey, size: placeHolderSize,)),
+        errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: placeHolderSize)),
       );
     }
-    return Center(child: Icon(Icons.camera_alt, color: Colors.grey));
+    return Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: placeHolderSize,));
   }
 
   @override

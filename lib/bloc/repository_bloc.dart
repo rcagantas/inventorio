@@ -1,9 +1,15 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_native_image/flutter_native_image.dart';
 import 'package:logging/logging.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:path/path.dart';
 import 'package:uuid/uuid.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -148,7 +154,20 @@ class RepositoryBloc {
         _cachedProduct[code] = product;
         return product;
       }
-    ).asBroadcastStream();
+    ).asBroadcastStream()
+    .debounce(Duration(milliseconds: 30));
+  }
+
+  Future<Product> getProductFuture(String inventoryId, String code) async {
+    var docs = await Future.wait([
+      _fireInventory.document(inventoryId).collection('productDictionary').document(code).get(),
+      _fireDictionary.document(code).get()
+    ]);
+    Product product = Product(isInitial: true);
+    product = docs[1].exists? Product.fromJson(docs[1].data): product;
+    product = docs[0].exists? Product.fromJson(docs[0].data): product;
+    _cachedProduct[code] = product;
+    return product;
   }
 
   void dispose() {
@@ -176,7 +195,7 @@ class RepositoryBloc {
     return _updateFireUser(_currentUser);
   }
 
-  UserAccount getCachedUser() { return _currentUser; }
+  UserAccount getCachedUser() { return _currentUser == null ? unsetUser : _currentUser; }
 
   void removeItem(InventoryItem item) {
     _log.info('Removing item: ${item.uuid}');
@@ -186,5 +205,78 @@ class RepositoryBloc {
   void addItem(InventoryItem item) {
     _log.info('Adding item: ${item.uuid}');
     _fireInventory.document(item.inventoryId).collection('inventoryItems').document(item.uuid).setData(item.toJson());
+  }
+
+  void _uploadProduct(Product product) {
+    if (_currentUser == null) return;
+    _log.info('Trying to set product ${product.code} with ${product.toJson()}');
+    _fireInventory.document(_currentUser.currentInventoryId)
+      .collection('productDictionary')
+      .document(product.code)
+      .setData(product.toJson());
+    _fireDictionary.document(product.code).setData(product.toJson());
+  }
+
+  Future<String> _uploadDataToStorage(Uint8List data, String folder, String fileName) async {
+    StorageReference storage = FirebaseStorage.instance.ref().child(folder).child(fileName);
+    StorageUploadTask uploadTask = storage.putData(data);
+    await uploadTask.onComplete;
+    String url = await storage.getDownloadURL();
+    _log.info('Uploaded $fileName to url');
+    return url;
+  }
+
+  Future<Product> _uploadProductImage(Product product, Uint8List imageDataToUpload) async {
+    if (imageDataToUpload == null || imageDataToUpload.isEmpty) return product;
+
+    String uuid = generateUuid();
+    String fileName = '${product.code}_$uuid.jpg';
+    product.imageUrl = await _uploadDataToStorage(imageDataToUpload, 'images', fileName);
+    _log.info('Image URL: ${product.imageUrl}');
+
+    return product;
+  }
+
+  Future<Uint8List> _resizeImage(File toResize) async {
+    _log.info('Resizing image ${toResize.path}');
+    Stopwatch stopwatch = Stopwatch()..start();
+
+    int size = 512;
+    ImageProperties properties = await FlutterNativeImage.getImageProperties(toResize.path);
+
+    _log.info('Resizing image ${basename(toResize.path)}');
+    File thumbnail = await FlutterNativeImage.compressImage(
+      toResize.path,
+      quality: 100,
+      targetWidth: size,
+      targetHeight: (properties.height * size / properties.width).round()
+    );
+
+    stopwatch.stop();
+    _log.info('Took ${stopwatch.elapsedMilliseconds} ms to resize ${basename(toResize.path)}');
+    Uint8List data = thumbnail.readAsBytesSync();
+    thumbnail.delete();
+    return data;
+  }
+
+  void addProduct(Product product) {
+    _uploadProduct(product);
+    if (product.imageFile != null) {
+      _resizeImage(product.imageFile).then((resized) {
+        _uploadProductImage(product, resized).then((product) {
+          _log.info('Reuploading with image URL data.');
+          _uploadProduct(product);
+        });
+      });
+    }
+  }
+
+  InventoryItem buildItem(String code) {
+    return InventoryItem(
+      uuid: generateUuid(),
+      code: code,
+      dateAdded: DateTime.now().toIso8601String(),
+      inventoryId: _currentUser.currentInventoryId
+    );
   }
 }

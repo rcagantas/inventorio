@@ -1,5 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_simple_dependency_injection/injector.dart';
+import 'package:inventorio/bloc/inventory_bloc.dart';
+import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:inventorio/widgets/item_card.dart';
 import 'package:inventorio/widgets/product_page.dart';
@@ -11,6 +14,8 @@ class ItemAddPage extends StatefulWidget {
 }
 
 class _ItemAddPageState extends State<ItemAddPage> {
+  final _repo = Injector.getInjector().get<RepositoryBloc>();
+  final _bloc = Injector.getInjector().get<InventoryBloc>();
 
   DateTime _initialDateTime() {
     return widget.item.expiryDate;
@@ -34,7 +39,7 @@ class _ItemAddPageState extends State<ItemAddPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: <Widget>[
-                    Expanded(flex: 1, child: ProductImage(widget.item)),
+                    Expanded(flex: 1, child: ProductImage(widget.item, placeHolderSize: 80.0,)),
                     Expanded(flex: 2, child: ProductLabel(widget.item))
                   ],
                 ),
@@ -52,12 +57,25 @@ class _ItemAddPageState extends State<ItemAddPage> {
                 child: CupertinoDatePicker(
                   mode: CupertinoDatePickerMode.date,
                   initialDateTime: _initialDateTime(),
-                  onDateTimeChanged: (dateTime) {},
+                  onDateTimeChanged: (dateTime) {
+
+                  },
                 ),
               ),
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: () async {
+          Product product = await _repo.getProductFuture(widget.item.inventoryId, widget.item.code);
+          if (product.isInitial) {
+            await Navigator.of(context).push(MaterialPageRoute(builder: (context) => ProductPage(widget.item)));
+          }
+          _bloc.actionSink(Action(Act.AddItem, widget.item));
+          Navigator.of(context).pop();
+        }
       ),
     );
   }

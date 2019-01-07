@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:json_annotation/json_annotation.dart';
@@ -54,8 +55,10 @@ class Product implements Comparable<Product>
   String imageUrl;
   @JsonKey(ignore: true) bool isInitial;
   @JsonKey(ignore: true) bool isLoading;
+  @JsonKey(ignore: true) File imageFile;
 
-  Product({this.code, this.brand, this.name, this.variant, this.imageUrl, this.isInitial = false, this.isLoading = false});
+  Product({this.code, this.brand, this.name, this.variant, this.imageUrl,
+    this.isInitial = false, this.isLoading = false, this.imageFile});
   factory Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
   Map<String, dynamic> toJson() => _$ProductToJson(this);
 

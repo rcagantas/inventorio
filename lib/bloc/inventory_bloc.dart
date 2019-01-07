@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:logging/logging.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:rxdart/rxdart.dart';
@@ -11,7 +13,8 @@ enum Act {
   UpdateInventory,
   UnsubscribeInventory,
   RemoveItem,
-  AddItem
+  AddItem,
+  AddProduct
 }
 
 class Action {
@@ -50,6 +53,7 @@ class InventoryBloc {
         case Act.UnsubscribeInventory: _repo.unsubscribeFromInventory(action.payload); break;
         case Act.RemoveItem: _repo.removeItem(action.payload); break;
         case Act.AddItem: _repo.addItem(action.payload); break;
+        case Act.AddProduct: _repo.addProduct(action.payload); break;
         default: _log.warning('Action ${action.payload} NOT IMPLEMENTED'); break;
       }
     });
