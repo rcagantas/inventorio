@@ -17,6 +17,15 @@ class _ItemAddPageState extends State<ItemAddPage> {
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final _bloc = Injector.getInjector().get<InventoryBloc>();
 
+  InventoryItem stagingItem;
+
+  @override
+  void initState() {
+    stagingItem = InventoryItem.fromJson(widget.item.toJson())
+      ..inventoryId = widget.item.inventoryId;
+    super.initState();
+  }
+
   DateTime _initialDateTime() {
     return widget.item.expiryDate;
   }
@@ -57,8 +66,8 @@ class _ItemAddPageState extends State<ItemAddPage> {
                 child: CupertinoDatePicker(
                   mode: CupertinoDatePickerMode.date,
                   initialDateTime: _initialDateTime(),
-                  onDateTimeChanged: (dateTime) {
-
+                  onDateTimeChanged: (dateTime) async {
+                    stagingItem.expiry = _repo.setExpiryString(dateTime);
                   },
                 ),
               ),
@@ -73,7 +82,7 @@ class _ItemAddPageState extends State<ItemAddPage> {
           if (product.isInitial) {
             await Navigator.of(context).push(MaterialPageRoute(builder: (context) => ProductPage(widget.item)));
           }
-          _bloc.actionSink(Action(Act.AddItem, widget.item));
+          _bloc.actionSink(Action(Act.AddItem, stagingItem));
           Navigator.of(context).pop();
         }
       ),

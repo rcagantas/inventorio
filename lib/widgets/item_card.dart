@@ -3,6 +3,7 @@ import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/widgets/item_add_page.dart';
+import 'package:inventorio/widgets/product_page.dart';
 import 'package:quiver/strings.dart' as qString;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -130,8 +131,8 @@ class ItemCard extends StatelessWidget {
           caption: 'Edit Product',
           color: Colors.lightBlueAccent,
           icon: Icons.edit,
-          onTap: () {
-            print('edit product');
+          onTap: () async {
+            Navigator.of(context).push(MaterialPageRoute(builder: (context) => ProductPage(item)));
           }
         ),
         IconSlideAction(

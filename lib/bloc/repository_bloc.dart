@@ -24,7 +24,9 @@ class RepositoryBloc {
 
   static final unsetUser = UserAccount(UNSET, UNSET)
     ..displayName = ''
-    ..email = '';
+    ..email = ''
+    ..isSignedIn = false
+  ;
 
   final _fireUsers = Firestore.instance.collection('users');
   final _fireInventory = Firestore.instance.collection('inventory');
@@ -155,7 +157,7 @@ class RepositoryBloc {
         return product;
       }
     ).asBroadcastStream()
-    .debounce(Duration(milliseconds: 30));
+    .debounce(Duration(milliseconds: 300));
   }
 
   Future<Product> getProductFuture(String inventoryId, String code) async {
@@ -278,5 +280,13 @@ class RepositoryBloc {
       dateAdded: DateTime.now().toIso8601String(),
       inventoryId: _currentUser.currentInventoryId
     );
+  }
+
+  String setExpiryString(DateTime dateTime) {
+    DateTime now = DateTime.now();
+    var dateTimeString = dateTime.add(Duration(hours: now.hour, minutes: now.minute, seconds: now.second))
+        .toIso8601String();
+    _log.info('Setting expiry to $dateTimeString');
+    return dateTimeString;
   }
 }

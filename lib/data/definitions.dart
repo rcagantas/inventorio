@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:intl/intl.dart';
 import 'package:meta/meta.dart';
-import 'package:uuid/uuid.dart';
 import 'package:quiver/core.dart';
 
 part 'package:inventorio/data/definitions.g.dart';
@@ -22,8 +21,12 @@ class InventoryItem implements Comparable<InventoryItem>
   factory InventoryItem.fromJson(Map<String, dynamic> json) => _$InventoryItemFromJson(json);
   Map<String, dynamic> toJson() => _$InventoryItemToJson(this);
 
-  DateTime get expiryDate => DateTime.parse(expiry?.replaceAll('-', '')
-    ?? DateTime.now().add(Duration(days: 30)).toIso8601String());
+  DateTime get expiryDate {
+    if (expiry == null || expiry == '') return DateTime.now().add(Duration(days: 30));
+    if (expiry.length == 10) DateTime.parse(expiry?.replaceAll('-', ''));
+    return DateTime.parse(expiry);
+  }
+
   String get year => DateFormat.y().format(expiryDate);
   String get month => DateFormat.MMM().format(expiryDate);
   String get day => DateFormat.d().format(expiryDate);
@@ -184,13 +187,9 @@ class InventorySet {
 
   Product getAssociatedProduct(String code) {
     Product product;
-    if (productDictionary.containsKey(code)) {
-      product = productDictionary[code];
-    } else if (masterProductDictionary.containsKey(code)) {
-      product = masterProductDictionary[code];
-    } else if (masterProductCache.containsKey(code)) {
-      product = masterProductCache[code];
-    }
+    if (productDictionary.containsKey(code)) product = productDictionary[code];
+    else if (masterProductDictionary.containsKey(code)) product = masterProductDictionary[code];
+    else if (masterProductCache.containsKey(code)) product = masterProductCache[code];
     return product;
   }
 }
