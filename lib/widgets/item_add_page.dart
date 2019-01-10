@@ -40,7 +40,7 @@ class _ItemAddPageState extends State<ItemAddPage> {
           FlatButton(
             padding: EdgeInsets.zero,
             onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (context) => ProductPage(widget.item)));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(widget.item)));
             },
             child: Container(
               height: 150.0,
@@ -80,10 +80,10 @@ class _ItemAddPageState extends State<ItemAddPage> {
         onPressed: () async {
           Product product = await _repo.getProductFuture(widget.item.inventoryId, widget.item.code);
           if (product.isInitial) {
-            await Navigator.of(context).push(MaterialPageRoute(builder: (context) => ProductPage(widget.item)));
+            await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(widget.item)));
           }
-          _bloc.actionSink(Action(Act.AddItem, stagingItem));
-          Navigator.of(context).pop();
+          _bloc.actionSink(Action(Act.AddUpdateItem, stagingItem));
+          Navigator.pop(context);
         }
       ),
     );

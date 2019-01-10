@@ -138,7 +138,7 @@ class _ProductPageState extends State<ProductPage> {
             isLoading: false,
             imageFile: _stagingImage,
           );
-          _bloc.actionSink(Action(Act.AddProduct, product));
+          _bloc.actionSink(Action(Act.AddUpdateProduct, product));
           Navigator.of(context).pop(product);
         },
       ),

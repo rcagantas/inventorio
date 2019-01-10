@@ -147,7 +147,7 @@ class ItemCard extends StatelessWidget {
                 content: Text('Removed item ${product.name}'),
                 action: SnackBarAction(
                   label: 'UNDO',
-                  onPressed: () => _bloc.actionSink(Action(Act.AddItem, item)),
+                  onPressed: () => _bloc.actionSink(Action(Act.AddUpdateItem, item)),
                 ),
               )
             );

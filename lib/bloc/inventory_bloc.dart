@@ -9,12 +9,13 @@ import 'package:inventorio/data/definitions.dart';
 enum Act {
   SignIn,
   SignOut,
+  AddInventory,
   ChangeInventory,
   UpdateInventory,
   UnsubscribeInventory,
   RemoveItem,
-  AddItem,
-  AddProduct
+  AddUpdateItem,
+  AddUpdateProduct
 }
 
 class Action {
@@ -50,10 +51,12 @@ class InventoryBloc {
         case Act.SignIn: _repo.signIn(); break;
         case Act.SignOut: _cleanUp(); _repo.signOut(); break;
         case Act.ChangeInventory: _repo.changeCurrentInventory(action.payload); break;
-        case Act.UnsubscribeInventory: _repo.unsubscribeFromInventory(action.payload); break;
         case Act.RemoveItem: _repo.removeItem(action.payload); break;
-        case Act.AddItem: _repo.addItem(action.payload); break;
-        case Act.AddProduct: _repo.addProduct(action.payload); break;
+        case Act.AddUpdateItem: _repo.updateItem(action.payload); break;
+        case Act.AddUpdateProduct: _repo.updateProduct(action.payload); break;
+        case Act.UnsubscribeInventory: _repo.unsubscribeFromInventory(action.payload); break;
+        case Act.UpdateInventory: _repo.updateInventory(action.payload); break;
+        case Act.AddInventory: _repo.addInventory(action.payload); break;
         default: _log.warning('Action ${action.payload} NOT IMPLEMENTED'); break;
       }
     });

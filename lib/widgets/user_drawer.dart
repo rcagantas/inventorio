@@ -6,6 +6,7 @@ import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:inventorio/widgets/dialog_factory.dart';
 import 'package:inventorio/widgets/inventory_details_page.dart';
+import 'package:inventorio/widgets/scan_page.dart';
 
 class UserDrawer extends StatelessWidget {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
@@ -48,11 +49,20 @@ class UserDrawer extends StatelessWidget {
                 enabled: userAccount.currentInventoryId != null,
                 dense: true,
                 title: Text('Create New Inventory'),
+                onTap: () async {
+                  await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(null)));
+                  Navigator.pop(context);
+                },
               ),
               ListTile(
                 enabled: userAccount.currentInventoryId != null,
                 dense: true,
                 title: Text('Scan Existing Inventory Code'),
+                onTap: () async {
+                  String code = await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanPage()));
+                  _bloc.actionSink(Action(Act.AddInventory, code));
+                  Navigator.pop(context);
+                },
               ),
               ListTile(
                 enabled: userAccount.currentInventoryId != null,
@@ -61,6 +71,7 @@ class UserDrawer extends StatelessWidget {
                 onTap: () async {
                   InventoryDetails toEdit =  await _repo.getInventoryDetailFuture(userAccount.currentInventoryId);
                   await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(toEdit)));
+                  Navigator.pop(context);
                 },
               ),
             ],

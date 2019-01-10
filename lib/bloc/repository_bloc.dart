@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_native_image/flutter_native_image.dart';
 import 'package:logging/logging.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -13,6 +12,7 @@ import 'package:path/path.dart';
 import 'package:uuid/uuid.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:quiver/strings.dart' as qString;
 import 'package:inventorio/data/definitions.dart';
 
 class RepositoryBloc {
@@ -145,19 +145,25 @@ class RepositoryBloc {
     return _cachedProduct.containsKey(code) ? _cachedProduct[code] : Product(code: code, isLoading: true);
   }
 
+  Product _combineProductDocumentSnap(DocumentSnapshot a, DocumentSnapshot b) {
+    Product product = Product(isInitial: true);
+    product = b.exists? Product.fromJson(b.data): product;
+    product = a.exists? Product.fromJson(a.data): product;
+    if (product.code != null) _cachedProduct[product.code] = product;
+    return product;
+  }
+
+  final Map<String, Observable<Product>> _productObservables = Map();
+
   Observable<Product> getProductObservable(String inventoryId, String code) {
-    return Observable.combineLatest2(
-      _fireInventory.document(inventoryId).collection('productDictionary').document(code).snapshots(),
-      _fireDictionary.document(code).snapshots(),
-      (DocumentSnapshot a, DocumentSnapshot b) {
-        Product product = Product(isInitial: true);
-        product = b.exists? Product.fromJson(b.data): product;
-        product = a.exists? Product.fromJson(a.data): product;
-        _cachedProduct[code] = product;
-        return product;
-      }
-    ).asBroadcastStream()
-    .debounce(Duration(milliseconds: 300));
+    return _productObservables.putIfAbsent('$inventoryId $code', () {
+      return Observable.combineLatest2(
+        _fireInventory.document(inventoryId).collection('productDictionary').document(code).snapshots(),
+        _fireDictionary.document(code).snapshots(),
+        _combineProductDocumentSnap
+      ).asBroadcastStream()
+      .debounce(Duration(milliseconds: 100));
+    });
   }
 
   Future<Product> getProductFuture(String inventoryId, String code) async {
@@ -165,11 +171,7 @@ class RepositoryBloc {
       _fireInventory.document(inventoryId).collection('productDictionary').document(code).get(),
       _fireDictionary.document(code).get()
     ]);
-    Product product = Product(isInitial: true);
-    product = docs[1].exists? Product.fromJson(docs[1].data): product;
-    product = docs[0].exists? Product.fromJson(docs[0].data): product;
-    _cachedProduct[code] = product;
-    return product;
+    return _combineProductDocumentSnap(docs[1], docs[0]);
   }
 
   void dispose() {
@@ -204,7 +206,7 @@ class RepositoryBloc {
     _fireInventory.document(item.inventoryId).collection('inventoryItems').document(item.uuid).delete();
   }
 
-  void addItem(InventoryItem item) {
+  void updateItem(InventoryItem item) {
     _log.info('Adding item: ${item.uuid}');
     _fireInventory.document(item.inventoryId).collection('inventoryItems').document(item.uuid).setData(item.toJson());
   }
@@ -261,7 +263,7 @@ class RepositoryBloc {
     return data;
   }
 
-  void addProduct(Product product) {
+  void updateProduct(Product product) {
     _uploadProduct(product);
     if (product.imageFile != null) {
       _resizeImage(product.imageFile).then((resized) {
@@ -288,5 +290,28 @@ class RepositoryBloc {
         .toIso8601String();
     _log.info('Setting expiry to $dateTimeString');
     return dateTimeString;
+  }
+
+  void _addInventory(String inventoryId) {
+    if (!_currentUser.knownInventories.contains(inventoryId)) {
+      _currentUser.knownInventories.add(inventoryId);
+    }
+    _currentUser.currentInventoryId = inventoryId;
+    _updateFireUser(_currentUser);
+  }
+
+  void updateInventory(InventoryDetails inventory) {
+    if (_currentUser == null || inventory.uuid == null) return;
+    inventory.createdBy = _currentUser.userId;
+    _fireInventory.document(inventory.uuid).setData(inventory.toJson()).whenComplete(() {
+      _addInventory(inventory.uuid);
+    });
+  }
+
+  void addInventory(String inventoryId) {
+    if (_currentUser == null || inventoryId == null) return;
+    _fireInventory.document(inventoryId).get().then((doc) {
+      if (doc.exists) { _addInventory(inventoryId); }
+    });
   }
 }
