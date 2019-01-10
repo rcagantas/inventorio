@@ -9,14 +9,76 @@ import 'package:inventorio/widgets/item_card.dart';
 import 'package:inventorio/widgets/scan_page.dart';
 import 'package:inventorio/widgets/user_drawer.dart';
 
+class _InventoryItemSearchDelegate extends SearchDelegate<InventoryItem> {
+  final _bloc = Injector.getInjector().get<InventoryBloc>();
+
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.clear),
+        onPressed: () {
+          query = '';
+          _bloc.actionSink(Action(Act.SetSearchFilter, null));
+          showSuggestions(context);
+        },
+      ),
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+      tooltip: 'Back',
+      icon: Icon(Icons.arrow_back),
+      onPressed: () {
+        _bloc.actionSink(Action(Act.SetSearchFilter, null));
+        close(context, null);
+      },
+    );
+  }
+
+  Widget _buildList(BuildContext context) {
+    return StreamBuilder<List<InventoryItem>>(
+      stream: _bloc.selectedStream,
+      builder: (context, snap) {
+        if (!snap.hasData || snap.data.length == 0) return Container();
+        return ListView.builder(
+          itemCount: snap.data?.length ?? 0,
+          itemBuilder: (context, index) => ItemCard(snap.data[index]),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return _buildList(context);
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    _bloc.actionSink(Action(Act.SetSearchFilter, query));
+    return _buildList(context);
+  }
+}
+
+
 class ListingsPage extends StatelessWidget {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
 
   @override
   Widget build(BuildContext context) {
+    SearchDelegate<InventoryItem> _searchDelegate = _InventoryItemSearchDelegate();
     return Scaffold(
       appBar: AppBar(
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed:() async { showSearch(context: context, delegate: _searchDelegate); }
+          )
+        ],
         title: StreamBuilder<UserAccount>(
           stream: _repo.userUpdateStream,
           builder: (context, userSnapshot) {
@@ -30,7 +92,7 @@ class ListingsPage extends StatelessWidget {
               },
             );
           },
-        )
+        ),
       ),
       body: StreamBuilder<List<InventoryItem>>(
         stream: _bloc.selectedStream,

@@ -15,7 +15,8 @@ enum Act {
   UnsubscribeInventory,
   RemoveItem,
   AddUpdateItem,
-  AddUpdateProduct
+  AddUpdateProduct,
+  SetSearchFilter
 }
 
 class Action {
@@ -57,11 +58,33 @@ class InventoryBloc {
         case Act.UnsubscribeInventory: _repo.unsubscribeFromInventory(action.payload); break;
         case Act.UpdateInventory: _repo.updateInventory(action.payload); break;
         case Act.AddInventory: _repo.addInventory(action.payload); break;
+        case Act.SetSearchFilter: _setSearchFilter(action.payload); break;
         default: _log.warning('Action ${action.payload} NOT IMPLEMENTED'); break;
       }
     });
 
     _repo.signIn();
+  }
+
+  String _searchFilter;
+  void _setSearchFilter(String filter) {
+    if (filter == _searchFilter) return;
+    _searchFilter = filter;
+    _repo.getItemListFuture().then((data) {
+      var filtered = data.where(_filter).toList();
+      filtered.sort();
+      selectedSink(filtered);
+    });
+  }
+
+  bool _filter(InventoryItem item) {
+    Product product = _repo.getCachedProduct(item.code);
+    bool test = (_searchFilter == null || _searchFilter == ''
+      || (product?.brand?.toLowerCase()?.contains(_searchFilter) ?? false)
+      || (product?.name?.toLowerCase()?.contains(_searchFilter) ?? false)
+      || (product?.variant?.toLowerCase()?.contains(_searchFilter) ?? false)
+    );
+    return test;
   }
 
   void _populateSelectedItems(UserAccount userAccount) {
