@@ -68,12 +68,31 @@ class ListingsPage extends StatelessWidget {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
 
+  Icon _iconToggle(SortType sortType) {
+    switch(sortType) {
+      case SortType.DateExpiry: return Icon(Icons.sort);
+      case SortType.Alpha: return Icon(Icons.sort_by_alpha);
+      case SortType.DateAdded: return Icon(Icons.calendar_today);
+    }
+    return Icon(Icons.sort);
+  }
+
   @override
   Widget build(BuildContext context) {
     SearchDelegate<InventoryItem> _searchDelegate = _InventoryItemSearchDelegate();
     return Scaffold(
       appBar: AppBar(
         actions: <Widget>[
+          StreamBuilder<SortType>(
+            initialData: SortType.DateExpiry,
+            stream: _bloc.sortTypeStream,
+            builder: (context, snap) {
+              return IconButton(
+                icon: _iconToggle(snap.data),
+                onPressed: () async { _bloc.actionSink(Action(Act.ToggleSort, null)); },
+              );
+            },
+          ),
           IconButton(
             icon: Icon(Icons.search),
             onPressed:() async { showSearch(context: context, delegate: _searchDelegate); }

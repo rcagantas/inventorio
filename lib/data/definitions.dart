@@ -81,12 +81,10 @@ class Product implements Comparable<Product>
 
   @override
   int compareTo(Product other) {
-    int compare = 0;
+    int compare = 1;
     if (other == null) return 1;
-    compare = this.name?.compareTo(other.name ?? '') ?? 0;
-    if (compare != 0) return compare;
-    compare = this.brand?.compareTo(other.brand ?? '') ?? 0;
-    if (compare != 0) return compare;
+    compare = this.name?.compareTo(other.name ?? '') ?? 0; if (compare != 0) return compare;
+    compare = this.brand?.compareTo(other.brand ?? '') ?? 0; if (compare != 0) return compare;
     compare = this.variant?.compareTo(other.variant ?? '') ?? 0;
     return compare;
   }

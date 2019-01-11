@@ -13,7 +13,16 @@ class UserDrawer extends StatelessWidget {
   final _repo = Injector.getInjector().get<RepositoryBloc>();
 
   Widget build(BuildContext context) {
-    UserAccount userAccount = _repo.getCachedUser();
+    return StreamBuilder<UserAccount>(
+      initialData: _repo.getCachedUser(),
+      stream: _repo.userUpdateStream,
+      builder: (context, snap) {
+        return buildWithUser(context, snap.data);
+      },
+    );
+  }
+
+  Widget buildWithUser(BuildContext context, UserAccount userAccount) {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
