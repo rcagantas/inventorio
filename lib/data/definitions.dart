@@ -42,10 +42,12 @@ class InventoryItem implements Comparable<InventoryItem>
 
   @override String toString() { return this.toJson().toString(); }
   @override int get hashCode => hashObjects(this.toJson().values);
-  @override bool operator ==(other) => other is InventoryItem
-    && this.uuid == other.uuid
-    && this.code == other.code
-    && this.expiry == other.expiry;
+  @override bool operator ==(other) {
+    return other is InventoryItem
+      && this.uuid == other.uuid
+      && this.code == other.code
+      && this.expiry == other.expiry;
+  }
 }
 
 @JsonSerializable()

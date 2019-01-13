@@ -12,7 +12,6 @@ import 'package:path/path.dart';
 import 'package:uuid/uuid.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:quiver/strings.dart' as qString;
 import 'package:inventorio/data/definitions.dart';
 
 class RepositoryBloc {
@@ -150,15 +149,16 @@ class RepositoryBloc {
 
   // this is used so that hero widgets have initial values.
   final Map<String, Product> _cachedProduct = Map();
-  Product getCachedProduct(String code) {
-    return _cachedProduct.containsKey(code) ? _cachedProduct[code] : Product(code: code, isLoading: true);
+  Product getCachedProduct(String inventoryId, String code) {
+    String key = inventoryId + '_' + code;
+    return _cachedProduct.containsKey(key) ? _cachedProduct[key] : Product(isLoading: true);
   }
 
-  Product _combineProductDocumentSnap(DocumentSnapshot a, DocumentSnapshot b) {
+  Product _combineProductDocumentSnap(DocumentSnapshot local, DocumentSnapshot master, String inventoryId) {
     Product product = Product(isInitial: true);
-    product = b.exists? Product.fromJson(b.data): product;
-    product = a.exists? Product.fromJson(a.data): product;
-    if (product.code != null) _cachedProduct[product.code] = product;
+    product = master.exists? Product.fromJson(master.data): product;
+    product = local.exists? Product.fromJson(local.data): product;
+    if (product.code != null) _cachedProduct[inventoryId + '_' + product.code] = product;
     return product;
   }
 
@@ -169,7 +169,7 @@ class RepositoryBloc {
       return Observable.combineLatest2(
         _fireInventory.document(inventoryId).collection('productDictionary').document(code).snapshots(),
         _fireDictionary.document(code).snapshots(),
-        _combineProductDocumentSnap
+        (local, master) => _combineProductDocumentSnap(local, master, inventoryId),
       ).asBroadcastStream()
       .debounce(Duration(milliseconds: 100));
     });
@@ -180,7 +180,7 @@ class RepositoryBloc {
       _fireInventory.document(inventoryId).collection('productDictionary').document(code).get(),
       _fireDictionary.document(code).get()
     ]);
-    return _combineProductDocumentSnap(docs[1], docs[0]);
+    return _combineProductDocumentSnap(docs[0], docs[1], inventoryId);
   }
 
   void dispose() {

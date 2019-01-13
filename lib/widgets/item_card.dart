@@ -32,7 +32,7 @@ class ProductImage extends StatelessWidget {
       tag: item.heroCode,
       child: StreamBuilder<Product>(
         key: ObjectKey(item.uuid +'_image'),
-        initialData: _repo.getCachedProduct(item.code),
+        initialData: _repo.getCachedProduct(item.inventoryId, item.code),
         stream: _repo.getProductObservable(item.inventoryId, item.code),
         builder: (context, snap) {
           return _heroChildBuilder(snap);
@@ -52,7 +52,7 @@ class ProductLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<Product>(
       key: ObjectKey(item.uuid +'_label'),
-      initialData: _repo.getCachedProduct(item.code),
+      initialData: _repo.getCachedProduct(item.inventoryId, item.code),
       stream: _repo.getProductObservable(item.inventoryId, item.code),
       builder: (context, snap) {
         return Center(
@@ -140,11 +140,11 @@ class ItemCard extends StatelessWidget {
           color: Colors.red,
           icon: Icons.delete,
           onTap: () {
-            Product product = _repo.getCachedProduct(item.code);
+            Product productNameOfDeletedItem = _repo.getCachedProduct(item.inventoryId, item.code);
             _bloc.actionSink(Action(Act.RemoveItem, item));
             Scaffold.of(context).showSnackBar(
               SnackBar(
-                content: Text('Removed item ${product.name}'),
+                content: Text('Removed item ${productNameOfDeletedItem.name}'),
                 action: SnackBarAction(
                   label: 'UNDO',
                   onPressed: () => _bloc.actionSink(Action(Act.AddUpdateItem, item)),

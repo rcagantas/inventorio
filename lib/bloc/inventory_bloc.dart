@@ -43,9 +43,6 @@ class InventoryBloc {
   Function(List<InventoryItem>) get selectedSink => _selected.sink.add;
   Observable<List<InventoryItem>> get selectedStream => _selected.stream;
 
-  final _details = BehaviorSubject<List<InventoryDetails>>();
-  Function(List<InventoryDetails>) get detailSink => _details.sink.add;
-
   final _sortType = BehaviorSubject<SortType>();
   Function(SortType) get sortTypeSink => _sortType.sink.add;
   Observable<SortType> get sortTypeStream => _sortType.stream;
@@ -82,12 +79,13 @@ class InventoryBloc {
 
   int _itemAndProductComparator(InventoryItem item1, InventoryItem item2) {
     int compare = item1.compareTo(item2);
-    return compare != 0 ? compare: _productComparator(item1, item2);
+    if (compare != 0) return compare;
+    return _productComparator(item1, item2);
   }
 
   int _productComparator(InventoryItem item1, InventoryItem item2) {
-    Product product1 = _repo.getCachedProduct(item1.code);
-    Product product2 = _repo.getCachedProduct(item2.code);
+    Product product1 = _repo.getCachedProduct(item1.inventoryId, item1.code);
+    Product product2 = _repo.getCachedProduct(item2.inventoryId, item2.code);
     int compare = product1.compareTo(product2);
     return compare != 0? compare : item1.compareTo(item2);
   }
@@ -99,13 +97,20 @@ class InventoryBloc {
   }
 
   void _updateSelected(List<InventoryItem> data) {
+    selectedSink(data);
+
+    var productFutures = data.map((item) => _repo.getProductFuture(item.inventoryId, item.code)).toSet();
+    Future.wait(productFutures).then((p) {
+      switch (sortType) {
+        case SortType.Alpha: data.sort(_productComparator); break;
+        case SortType.DateAdded: data.sort(_dateAddedComparator); break;
+        case SortType.DateExpiry: data.sort(_itemAndProductComparator); break;
+        default: data.sort(); break;
+      }
+      selectedSink(data);
+    });
+
     data = data.where(_filter).toList();
-    switch (sortType) {
-      case SortType.Alpha: data.sort(_productComparator); break;
-      case SortType.DateAdded: data.sort(_dateAddedComparator); break;
-      case SortType.DateExpiry: data.sort(_itemAndProductComparator); break;
-      default: data.sort();
-    }
     selectedSink(data);
   }
 
@@ -124,7 +129,7 @@ class InventoryBloc {
   }
 
   bool _filter(InventoryItem item) {
-    Product product = _repo.getCachedProduct(item.code);
+    Product product = _repo.getCachedProduct(item.inventoryId, item.code);
     bool test = (_searchFilter == null || _searchFilter == ''
       || (product?.brand?.toLowerCase()?.contains(_searchFilter) ?? false)
       || (product?.name?.toLowerCase()?.contains(_searchFilter) ?? false)
@@ -146,7 +151,6 @@ class InventoryBloc {
   void dispose() async {
     _actions.close();
     _selected.close();
-    _details.close();
     _sortType.close();
   }
 }
