@@ -46,10 +46,10 @@ class InventoryBloc {
   final _sortType = BehaviorSubject<SortType>();
   Function(SortType) get sortTypeSink => _sortType.sink.add;
   Observable<SortType> get sortTypeStream => _sortType.stream;
-  SortType sortType;
+  SortType _sortingType;
 
   InventoryBloc() {
-    sortType = SortType.DateExpiry;
+    _sortingType = SortType.DateExpiry;
     _repo.userUpdateStream
       .listen((userAccount) async {
         if (userAccount != null) {
@@ -77,12 +77,6 @@ class InventoryBloc {
     _repo.signIn();
   }
 
-  int _itemAndProductComparator(InventoryItem item1, InventoryItem item2) {
-    int compare = item1.compareTo(item2);
-    if (compare != 0) return compare;
-    return _productComparator(item1, item2);
-  }
-
   int _productComparator(InventoryItem item1, InventoryItem item2) {
     Product product1 = _repo.getCachedProduct(item1.inventoryId, item1.code);
     Product product2 = _repo.getCachedProduct(item2.inventoryId, item2.code);
@@ -96,41 +90,43 @@ class InventoryBloc {
     return added2.compareTo(added1);
   }
 
-  void _updateSelected(List<InventoryItem> data) {
-    selectedSink(data);
+  int _expiryComparator(InventoryItem item1, InventoryItem item2) {
+    int compare = item1.compareTo(item2);
+    return compare != 0? compare : _productComparator(item1, item2);
+  }
 
-    var productFutures = data.map((item) => _repo.getProductFuture(item.inventoryId, item.code)).toSet();
-    Future.wait(productFutures).then((p) {
-      switch (sortType) {
-        case SortType.Alpha: data.sort(_productComparator); break;
-        case SortType.DateAdded: data.sort(_dateAddedComparator); break;
-        case SortType.DateExpiry: data.sort(_itemAndProductComparator); break;
-        default: data.sort(); break;
-      }
-      selectedSink(data);
-    });
-
-    data = data.where(_filter).toList();
+  void _updateSelected(List<InventoryItem> data) async {
+    switch (_sortingType) {
+      case SortType.DateAdded: data.sort(_dateAddedComparator); break;
+      case SortType.DateExpiry: data.sort(_expiryComparator); break;
+      case SortType.Alpha: data.sort(_productComparator); break;
+      default: data.sort();
+    }
     selectedSink(data);
   }
 
   void _toggleSort() {
-    var index = (sortType.index + 1) % SortType.values.length;
-    sortType = SortType.values[index];
+    var index = (_sortingType.index + 1) % SortType.values.length;
+    _sortingType = SortType.values[index];
     _repo.getItemListFuture().then(_updateSelected);
-    sortTypeSink(sortType);
+    sortTypeSink(_sortingType);
   }
 
   String _searchFilter;
   void _setSearchFilter(String filter) {
     if (filter == _searchFilter) return;
+    _log.info('Filter: $filter');
     _searchFilter = filter;
-    _repo.getItemListFuture().then(_updateSelected);
+    _repo.getItemListFuture().then((data) {
+      data = data.where(_filter).toList();
+      _updateSelected(data);
+    });
   }
 
   bool _filter(InventoryItem item) {
+    _searchFilter = _searchFilter?.trim();
     Product product = _repo.getCachedProduct(item.inventoryId, item.code);
-    bool test = (_searchFilter == null || _searchFilter == ''
+    bool test = (_searchFilter == '' || _searchFilter == null
       || (product?.brand?.toLowerCase()?.contains(_searchFilter) ?? false)
       || (product?.name?.toLowerCase()?.contains(_searchFilter) ?? false)
       || (product?.variant?.toLowerCase()?.contains(_searchFilter) ?? false)
@@ -141,7 +137,13 @@ class InventoryBloc {
   void _populateSelectedItems(UserAccount userAccount) {
     _repo.getItemListObservable(userAccount.currentInventoryId)
       .debounce(Duration(milliseconds: 300))
-      .listen(_updateSelected);
+      .listen((data) {
+        _repo.updateProductCache(data).listen((p) {
+          _setSearchFilter(_searchFilter);
+          if (_sortingType == SortType.Alpha) _toggleSort();
+        });
+        _updateSelected(data);
+      });
   }
 
   void _cleanUp() {
