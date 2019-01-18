@@ -10,12 +10,12 @@ class SchedulingBloc {
   final _notifications = Injector.getInjector().get<FlutterLocalNotificationsPlugin>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final _notificationDetails = NotificationDetails(
-      AndroidNotificationDetails(
-        'com.rcagantas.inventorio.scheduled.notifications',
-        'Inventorio Expiration Notification',
-        'Notification 7 and 30 days before expiry'
-      ),
-      IOSNotificationDetails()
+    AndroidNotificationDetails(
+      'com.rcagantas.inventorio.scheduled.notifications',
+      'Inventorio Expiration Notification',
+      'Notification 7 and 30 days before expiry'
+    ),
+    IOSNotificationDetails()
   );
 
 
@@ -83,12 +83,12 @@ class SchedulingBloc {
     }
 
     _notifications.schedule(
-        notificationId,
-        '$name $variant',
-        '$message',
-        notificationDate,
-        _notificationDetails,
-        payload: inventoryId
+      notificationId,
+      '$name $variant',
+      '$message',
+      notificationDate,
+      _notificationDetails,
+      payload: inventoryId
     );
 
     _log.info('Alerting $brand $name $variant on $notificationDate');
