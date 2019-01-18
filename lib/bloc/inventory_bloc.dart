@@ -78,8 +78,8 @@ class InventoryBloc {
   }
 
   int _productComparator(InventoryItem item1, InventoryItem item2) {
-    Product product1 = _repo.getCachedProduct(item1.inventoryId, item1.code);
-    Product product2 = _repo.getCachedProduct(item2.inventoryId, item2.code);
+    Product product1 = getCachedProduct(item1.inventoryId, item1.code);
+    Product product2 = getCachedProduct(item2.inventoryId, item2.code);
     int compare = product1.compareTo(product2);
     return compare != 0? compare : item1.compareTo(item2);
   }
@@ -92,7 +92,12 @@ class InventoryBloc {
 
   int _expiryComparator(InventoryItem item1, InventoryItem item2) {
     int compare = item1.compareTo(item2);
-    return compare != 0? compare : _productComparator(item1, item2);
+    if (compare != 0) return compare;
+
+    Product product1 = getCachedProduct(item1.inventoryId, item1.code);
+    Product product2 = getCachedProduct(item2.inventoryId, item2.code);
+
+    return product1.compareTo(product2);
   }
 
   void _updateSelected(List<InventoryItem> data) async {
@@ -115,7 +120,7 @@ class InventoryBloc {
   String _searchFilter;
   void _setSearchFilter(String filter) {
     if (filter == _searchFilter) return;
-    _log.info('Filter: $filter');
+
     _searchFilter = filter;
     _repo.getItemListFuture().then((data) {
       data = data.where(_filter).toList();
@@ -125,7 +130,7 @@ class InventoryBloc {
 
   bool _filter(InventoryItem item) {
     _searchFilter = _searchFilter?.trim();
-    Product product = _repo.getCachedProduct(item.inventoryId, item.code);
+    Product product = getCachedProduct(item.inventoryId, item.code);
     bool test = (_searchFilter == '' || _searchFilter == null
       || (product?.brand?.toLowerCase()?.contains(_searchFilter) ?? false)
       || (product?.name?.toLowerCase()?.contains(_searchFilter) ?? false)
@@ -138,11 +143,17 @@ class InventoryBloc {
     _repo.getItemListObservable(userAccount.currentInventoryId)
       .debounce(Duration(milliseconds: 300))
       .listen((data) {
-        _repo.updateProductCache(data).listen((p) {
-          _setSearchFilter(_searchFilter);
-          if (_sortingType == SortType.Alpha) _toggleSort();
-        });
         _updateSelected(data);
+        _listenAndCacheProductUpdates(data);
+
+        _listenToProductUpdates(data)
+          .debounce(Duration(milliseconds: 300))
+          .listen((p) {
+          _log.info('updating screen');
+          _updateSelected(data);
+          _setSearchFilter(_searchFilter);
+        });
+
       });
   }
 
@@ -154,5 +165,28 @@ class InventoryBloc {
     _actions.close();
     _selected.close();
     _sortType.close();
+  }
+
+  final Map<String, Product> _cachedProduct = Map();
+
+  String _getProductKey(String inventoryId, String code) => inventoryId + '_' + code;
+
+  Product getCachedProduct(String inventoryId, String code) {
+    String key = _getProductKey(inventoryId, code);
+    return _cachedProduct.containsKey(key) ? _cachedProduct[key] : Product(isLoading: true);
+  }
+
+  void _listenAndCacheProductUpdates(List<InventoryItem> data) {
+    data.forEach((item) {
+      _repo.getProductObservable(item.inventoryId, item.code).listen((product) {
+        _log.info('Updating cache for ${product.code}');
+        _cachedProduct[_getProductKey(item.inventoryId, item.code)] = product;
+      });
+    });
+  }
+
+  Observable<Product> _listenToProductUpdates(List<InventoryItem> data) {
+    var productStreams = data.map((item) => _repo.getProductObservable(item.inventoryId, item.code)).toList();
+    return Observable.concat(productStreams);
   }
 }

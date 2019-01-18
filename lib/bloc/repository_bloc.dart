@@ -35,10 +35,6 @@ class RepositoryBloc {
   Observable<UserAccount> get userUpdateStream => _userUpdate.stream;
   Function(UserAccount) get userUpdateSink => _userUpdate.sink.add;
 
-  final _productCacheUpdate = BehaviorSubject<Product>();
-  Observable<Product> get productCacheUpdateStream => _productCacheUpdate.stream;
-  Function(Product) get productCacheUpdateSink => _productCacheUpdate.sink.add;
-
   UserAccount _currentUser;
 
   RepositoryBloc() {
@@ -151,20 +147,10 @@ class RepositoryBloc {
     return _inventoryDetailZip(doc, query);
   }
 
-  // this is used so that hero widgets have initial values.
-  final Map<String, Product> _cachedProduct = Map();
-  Product getCachedProduct(String inventoryId, String code) {
-    String key = inventoryId + '_' + code;
-    return _cachedProduct.containsKey(key) ? _cachedProduct[key] : Product(isLoading: true);
-  }
-
-  String _getProductKey(String inventoryId, String code) => inventoryId + '_' + code;
-
   Product _combineProductDocumentSnap(DocumentSnapshot local, DocumentSnapshot master, String inventoryId) {
     Product product = Product(isInitial: true);
     product = master.exists? Product.fromJson(master.data): product;
     product = local.exists? Product.fromJson(local.data): product;
-    if (product.code != null) { _cachedProduct[_getProductKey(inventoryId, product.code)] = product; }
     return product;
   }
 
@@ -189,15 +175,8 @@ class RepositoryBloc {
     return _combineProductDocumentSnap(docs[0], docs[1], inventoryId);
   }
 
-  Future<Product> getProductCachedOrFuture(String inventoryId, String code) async {
-    Product cached = getCachedProduct(inventoryId, code);
-    if (!cached.isLoading) return Future.value(cached);
-    else return getProductFuture(inventoryId, code);
-  }
-
   void dispose() {
     _userUpdate.close();
-    _productCacheUpdate.close();
   }
 
   UserAccount changeCurrentInventory(InventoryDetails detail) {
@@ -335,15 +314,5 @@ class RepositoryBloc {
     _fireInventory.document(inventoryId).get().then((doc) {
       if (doc.exists) { _addInventory(inventoryId); }
     });
-  }
-
-  Observable<Product> updateProductCache(List<InventoryItem> data) {
-    data.forEach((item) {
-      getProductObservable(item.inventoryId, item.code).listen((product) {
-        _log.info('Updating cache with ${product.code}');
-        productCacheUpdateSink(product);
-      });
-    });
-    return productCacheUpdateStream.debounce(Duration(milliseconds: 300));
   }
 }

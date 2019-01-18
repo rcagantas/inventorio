@@ -10,6 +10,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 
 class ProductImage extends StatelessWidget {
+  final _bloc = Injector.getInjector().get<InventoryBloc>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItem item;
   final double placeHolderSize;
@@ -32,7 +33,7 @@ class ProductImage extends StatelessWidget {
       tag: item.heroCode,
       child: StreamBuilder<Product>(
         key: ObjectKey(item.uuid +'_image'),
-        initialData: _repo.getCachedProduct(item.inventoryId, item.code),
+        initialData: _bloc.getCachedProduct(item.inventoryId, item.code),
         stream: _repo.getProductObservable(item.inventoryId, item.code),
         builder: (context, snap) {
           return _heroChildBuilder(snap);
@@ -44,6 +45,7 @@ class ProductImage extends StatelessWidget {
 
 
 class ProductLabel extends StatelessWidget {
+  final _bloc = Injector.getInjector().get<InventoryBloc>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItem item;
   ProductLabel(this.item);
@@ -52,7 +54,7 @@ class ProductLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<Product>(
       key: ObjectKey(item.uuid +'_label'),
-      initialData: _repo.getCachedProduct(item.inventoryId, item.code),
+      initialData: _bloc.getCachedProduct(item.inventoryId, item.code),
       stream: _repo.getProductObservable(item.inventoryId, item.code),
       builder: (context, snap) {
         return Center(
@@ -140,7 +142,7 @@ class ItemCard extends StatelessWidget {
           color: Colors.red,
           icon: Icons.delete,
           onTap: () {
-            Product productNameOfDeletedItem = _repo.getCachedProduct(item.inventoryId, item.code);
+            Product productNameOfDeletedItem = _bloc.getCachedProduct(item.inventoryId, item.code);
             _bloc.actionSink(Action(Act.RemoveItem, item));
             Scaffold.of(context).showSnackBar(
               SnackBar(

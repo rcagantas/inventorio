@@ -59,8 +59,8 @@ class UserDrawer extends StatelessWidget {
                 dense: true,
                 title: Text('Create New Inventory'),
                 onTap: () async {
-                  await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(null)));
                   Navigator.pop(context);
+                  await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(null)));
                 },
               ),
               ListTile(
@@ -68,9 +68,9 @@ class UserDrawer extends StatelessWidget {
                 dense: true,
                 title: Text('Scan Existing Inventory Code'),
                 onTap: () async {
+                  Navigator.pop(context);
                   String code = await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanPage()));
                   _bloc.actionSink(Action(Act.AddInventory, code));
-                  Navigator.pop(context);
                 },
               ),
               ListTile(
@@ -78,9 +78,9 @@ class UserDrawer extends StatelessWidget {
                 dense: true,
                 title: Text('Edit/share Current Inventory'),
                 onTap: () async {
+                  Navigator.pop(context);
                   InventoryDetails toEdit =  await _repo.getInventoryDetailFuture(userAccount.currentInventoryId);
                   await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(toEdit)));
-                  Navigator.pop(context);
                 },
               ),
             ],
