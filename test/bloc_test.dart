@@ -88,7 +88,7 @@ void main() {
 
   test('User 999 selects inventory inv_2', () {
     setup();
-    _bloc.actionSink(Action(Act.ChangeInventory, inventoryDetail['inv_2']));
+    _bloc.actionSink(Action(Act.ChangeInventory, inventoryDetail['inv_2'].uuid));
     expect(_bloc.selectedStream, emitsInOrder([
       inventoryData['inv_1'],
       inventoryData['inv_2']

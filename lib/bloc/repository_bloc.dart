@@ -163,7 +163,7 @@ class RepositoryBloc {
         _fireDictionary.document(code).snapshots(),
         (local, master) => _combineProductDocumentSnap(local, master, inventoryId),
       ).asBroadcastStream()
-      .debounce(Duration(milliseconds: 100));
+      .debounce(Duration(milliseconds: 50));
     });
   }
 
@@ -179,10 +179,10 @@ class RepositoryBloc {
     _userUpdate.close();
   }
 
-  UserAccount changeCurrentInventory(InventoryDetails detail) {
+  UserAccount changeCurrentInventory(String uuid) {
     if (_currentUser == null) return _currentUser;
-    _log.info('Changing current inventory to ${detail.uuid}');
-    _currentUser.currentInventoryId = detail.uuid;
+    _log.info('Changing current inventory to $uuid');
+    _currentUser.currentInventoryId = uuid;
     return _updateFireUser(_currentUser);
   }
 

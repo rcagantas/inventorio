@@ -101,7 +101,7 @@ class UserDrawer extends StatelessWidget {
                     selected: snap.data.isSelected,
                     onTap: () {
                       Navigator.of(context).pop();
-                      _bloc.actionSink(Action(Act.ChangeInventory, snap.data));
+                      _bloc.actionSink(Action(Act.ChangeInventory, snap.data.uuid));
                     },
                   );
                 },

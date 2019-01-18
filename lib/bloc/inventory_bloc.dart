@@ -144,16 +144,14 @@ class InventoryBloc {
       .debounce(Duration(milliseconds: 300))
       .listen((data) {
         _updateSelected(data);
-        _listenAndCacheProductUpdates(data);
 
         _listenToProductUpdates(data)
           .debounce(Duration(milliseconds: 300))
           .listen((p) {
-          _log.info('updating screen');
-          _updateSelected(data);
-          _setSearchFilter(_searchFilter);
-        });
-
+            _log.info('updating screen');
+            _updateSelected(data);
+            _setSearchFilter(_searchFilter);
+          });
       });
   }
 
@@ -176,17 +174,15 @@ class InventoryBloc {
     return _cachedProduct.containsKey(key) ? _cachedProduct[key] : Product(isLoading: true);
   }
 
-  void _listenAndCacheProductUpdates(List<InventoryItem> data) {
-    data.forEach((item) {
-      _repo.getProductObservable(item.inventoryId, item.code).listen((product) {
-        _log.info('Updating cache for ${product.code}');
-        _cachedProduct[_getProductKey(item.inventoryId, item.code)] = product;
-      });
-    });
-  }
-
   Observable<Product> _listenToProductUpdates(List<InventoryItem> data) {
-    var productStreams = data.map((item) => _repo.getProductObservable(item.inventoryId, item.code)).toList();
+    var productStreams = data.map((item) {
+      var stream = _repo.getProductObservable(item.inventoryId, item.code);
+      stream.listen((product) {
+        _log.info('Updating cache for ${product.code}');
+        _cachedProduct[_getProductKey(item.inventoryId, product.code)] = product;
+      });
+      return stream;
+    }).toList();
     return Observable.concat(productStreams);
   }
 }
