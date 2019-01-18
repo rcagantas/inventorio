@@ -5,7 +5,7 @@ import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:inventorio/widgets/item_card.dart';
-import 'package:inventorio/widgets/product_page.dart';
+import 'package:inventorio/pages/product_page.dart';
 
 class ItemAddPage extends StatefulWidget {
   final InventoryItem item;

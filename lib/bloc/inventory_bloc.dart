@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:logging/logging.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:rxdart/rxdart.dart';
@@ -148,7 +146,7 @@ class InventoryBloc {
         _listenToProductUpdates(data)
           .debounce(Duration(milliseconds: 300))
           .listen((p) {
-            _log.info('updating screen');
+            _log.info('Updating screen.');
             _updateSelected(data);
             _setSearchFilter(_searchFilter);
           });

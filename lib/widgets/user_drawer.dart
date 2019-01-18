@@ -5,8 +5,8 @@ import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:inventorio/widgets/dialog_factory.dart';
-import 'package:inventorio/widgets/inventory_details_page.dart';
-import 'package:inventorio/widgets/scan_page.dart';
+import 'package:inventorio/pages/inventory_details_page.dart';
+import 'package:inventorio/pages/scan_page.dart';
 
 class UserDrawer extends StatelessWidget {
   final _bloc = Injector.getInjector().get<InventoryBloc>();

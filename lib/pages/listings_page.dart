@@ -3,10 +3,11 @@ import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
+import 'package:inventorio/bloc/scheduling_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
-import 'package:inventorio/widgets/item_add_page.dart';
+import 'package:inventorio/pages/item_add_page.dart';
 import 'package:inventorio/widgets/item_card.dart';
-import 'package:inventorio/widgets/scan_page.dart';
+import 'package:inventorio/pages/scan_page.dart';
 import 'package:inventorio/widgets/user_drawer.dart';
 
 class _InventoryItemSearchDelegate extends SearchDelegate<InventoryItem> {
@@ -67,6 +68,7 @@ class _InventoryItemSearchDelegate extends SearchDelegate<InventoryItem> {
 class ListingsPage extends StatelessWidget {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
+  final _notifications = Injector.getInjector().get<SchedulingBloc>();
 
   Icon _iconToggle(SortType sortType) {
     switch(sortType) {
