@@ -113,6 +113,7 @@ class ItemCard extends StatelessWidget {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItem item;
+  static const double BASE_HEIGHT = 110.0;
   ItemCard(this.item);
 
   Color _expiryColorScale(int days) {
@@ -162,7 +163,7 @@ class ItemCard extends StatelessWidget {
           Navigator.of(context).push(MaterialPageRoute(builder: (context) => ItemAddPage(item)));
         },
         child: Container(
-          height: 110.0 * textScaleFactor,
+          height: BASE_HEIGHT * textScaleFactor,
           child: Card(
             child: Row(
               children: <Widget>[

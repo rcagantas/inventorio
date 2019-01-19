@@ -108,9 +108,13 @@ class InventoryBloc {
     selectedSink(data);
   }
 
-  void _toggleSort() {
+  SortType nextSortType() {
     var index = (_sortingType.index + 1) % SortType.values.length;
-    _sortingType = SortType.values[index];
+    return SortType.values[index];
+  }
+
+  void _toggleSort() {
+    _sortingType = nextSortType();
     _repo.getItemListFuture().then(_updateSelected);
     sortTypeSink(_sortingType);
   }

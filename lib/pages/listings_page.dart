@@ -68,7 +68,6 @@ class _InventoryItemSearchDelegate extends SearchDelegate<InventoryItem> {
 class ListingsPage extends StatelessWidget {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
-  final _notifications = Injector.getInjector().get<SchedulingBloc>();
 
   Icon _iconToggle(SortType sortType) {
     switch(sortType) {
@@ -77,6 +76,19 @@ class ListingsPage extends StatelessWidget {
       case SortType.DateAdded: return Icon(Icons.calendar_today);
     }
     return Icon(Icons.sort);
+  }
+
+  void _showSnackBar(BuildContext context, SortType sortType) {
+    String message = '';
+    switch(sortType) {
+      case SortType.DateExpiry: message = 'Sorting by expiration date.'; break;
+      case SortType.Alpha: message = 'Sorting by product.'; break;
+      case SortType.DateAdded: message = 'Sorting by date added.'; break;
+    }
+
+    Scaffold.of(context).showSnackBar(
+      SnackBar(content: Text('$message'),)
+    );
   }
 
   @override
@@ -91,7 +103,10 @@ class ListingsPage extends StatelessWidget {
             builder: (context, snap) {
               return IconButton(
                 icon: _iconToggle(snap.data),
-                onPressed: () async { _bloc.actionSink(Action(Act.ToggleSort, null)); },
+                onPressed: () async {
+                  _showSnackBar(context, _bloc.nextSortType());
+                  _bloc.actionSink(Action(Act.ToggleSort, null));
+                },
               );
             },
           ),
@@ -118,8 +133,10 @@ class ListingsPage extends StatelessWidget {
       body: StreamBuilder<List<InventoryItem>>(
         stream: _bloc.selectedStream,
         builder: (context, snap) {
+          double textScaleFactor = MediaQuery.of(context).textScaleFactor;
           if (!snap.hasData || snap.data.length == 0) return _buildWelcome();
           return ListView.builder(
+            itemExtent: ItemCard.BASE_HEIGHT * textScaleFactor,
             itemCount: snap.data?.length ?? 0,
             itemBuilder: (context, index) => ItemCard(snap.data[index]),
           );

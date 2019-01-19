@@ -5,13 +5,6 @@ import 'package:inventorio/data/definitions.dart';
 import 'package:logging/logging.dart';
 import 'package:quiver/core.dart';
 
-void schedulerIsolate(Map<String, dynamic> params) {
-  int notificationId = params['notificationId'];
-  InventoryItem item = params['item'];
-  Product product = params['product'];
-  DateTime notificationDate = params['notificationDate'];
-}
-
 class NotificationKey {
   final InventoryItem item;
   final int modifier;
@@ -32,8 +25,6 @@ class SchedulingBloc {
   final Map<NotificationKey, int> _scheduledNotifications = {};
 
   SchedulingBloc() {
-    _log.info('Scheduling Bloc');
-
     _notifications.initialize(
       InitializationSettings(
         AndroidInitializationSettings('icon'),

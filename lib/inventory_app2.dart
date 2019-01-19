@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:inventorio/bloc/logger_bloc.dart';
 import 'package:inventorio/bloc/scheduling_bloc.dart';
 import 'package:logging/logging.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
@@ -16,6 +17,7 @@ class _InventoryApp2State extends State<InventoryApp2> {
   final _injector = Injector.getInjector();
 
   _InventoryApp2State() {
+    _injector.map<LoggerBloc>((_) => LoggerBloc(), isSingleton: true);
     _injector.map<RepositoryBloc>((_) => RepositoryBloc(), isSingleton: true);
     _injector.map<InventoryBloc>((_) => InventoryBloc(), isSingleton: true);
     _injector.map<FlutterLocalNotificationsPlugin>((_) => FlutterLocalNotificationsPlugin(), isSingleton: true);
@@ -29,11 +31,11 @@ class _InventoryApp2State extends State<InventoryApp2> {
       IOSNotificationDetails()
     ), isSingleton: true);
 
+    var _logger = _injector.get<LoggerBloc>();
     Logger.root.level = Level.ALL;
-    Logger.root.onRecord.listen((LogRecord rec) {
-      var logMessage = '${rec.time}: ${rec.message}';
-      print('$logMessage');
-    });
+    Logger.root.onRecord.listen((rec) => _logger.addMessage(rec));
+
+    _injector.get<SchedulingBloc>(); // start notification scheduling
   }
 
   @override
