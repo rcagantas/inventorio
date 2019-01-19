@@ -19,8 +19,8 @@ enum Act {
 }
 
 enum SortType {
-  Alpha,
   DateAdded,
+  Alpha,
   DateExpiry
 }
 

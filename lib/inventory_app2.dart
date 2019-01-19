@@ -26,6 +26,14 @@ class _InventoryApp2State extends State<InventoryApp2> {
     _injector.map<InventoryBloc>((_) => InventoryBloc(), isSingleton: true);
     _injector.map<FlutterLocalNotificationsPlugin>((_) => FlutterLocalNotificationsPlugin(), isSingleton: true);
     _injector.map<SchedulingBloc>((_) => SchedulingBloc(), isSingleton: true);
+    _injector.map<NotificationDetails>((_) => NotificationDetails(
+        AndroidNotificationDetails(
+            'com.rcagantas.inventorio.scheduled.notifications',
+            'Inventorio Expiration Notification',
+            'Notification 7 and 30 days before expiry'
+        ),
+        IOSNotificationDetails()
+    ), isSingleton: true);
   }
 
   @override

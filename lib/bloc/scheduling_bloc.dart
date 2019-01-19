@@ -3,21 +3,33 @@ import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:logging/logging.dart';
-import 'package:path/path.dart';
+import 'package:quiver/core.dart';
+
+void schedulerIsolate(Map<String, dynamic> params) {
+  int notificationId = params['notificationId'];
+  InventoryItem item = params['item'];
+  Product product = params['product'];
+  DateTime notificationDate = params['notificationDate'];
+}
+
+class NotificationKey {
+  final InventoryItem item;
+  final int modifier;
+  NotificationKey(this.item, this.modifier);
+  @override int get hashCode => hash2(item, modifier);
+  @override
+  bool operator ==(other) {
+    return other is NotificationKey
+      && this.item == other.item
+      && this.modifier == other.modifier;
+  }
+}
 
 class SchedulingBloc {
   final _log = Logger('SchedulingBloc');
   final _notifications = Injector.getInjector().get<FlutterLocalNotificationsPlugin>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
-  final _notificationDetails = NotificationDetails(
-    AndroidNotificationDetails(
-      'com.rcagantas.inventorio.scheduled.notifications',
-      'Inventorio Expiration Notification',
-      'Notification 7 and 30 days before expiry'
-    ),
-    IOSNotificationDetails()
-  );
-
+  final Map<NotificationKey, int> _scheduledNotifications = {};
 
   SchedulingBloc() {
     _log.info('Scheduling Bloc');
@@ -36,8 +48,10 @@ class SchedulingBloc {
       .debounce(Duration(milliseconds: 300))
       .listen((userAccount) {
         _log.info('Resetting schedules.');
-        _notifications.cancelAll();
-        _scheduleItemIfNeeded(userAccount);
+        _notifications.cancelAll().then((_) {
+          _scheduledNotifications.clear();
+          _scheduleItemIfNeeded(userAccount);
+        });
       });
   }
 
@@ -49,8 +63,15 @@ class SchedulingBloc {
     return expiry;
   }
 
-  int _hashNotification(String uuid, DateTime expiry) {
-    return hash('$uuid/${expiry.toIso8601String()}') % ((2^31) - 1);
+  NotificationKey _hashNotificationKey(InventoryItem item, int modifier) {
+    return NotificationKey(item, modifier);
+  }
+
+  int _hashNotificationId(NotificationKey key) {
+    //return item.hashCode % ((2^31) - 1);
+    return _scheduledNotifications.containsKey(key)
+      ? _scheduledNotifications[key]
+      : _scheduledNotifications.length + 1;
   }
 
   void _scheduleItemIfNeeded(UserAccount userAccount) {
@@ -58,39 +79,50 @@ class SchedulingBloc {
       _repo.getItemListObservable(inventoryId)
         .debounce(Duration(milliseconds: 300))
         .listen((items) {
+
+          _scheduledNotifications.removeWhere((key, id) {
+            bool shouldRemove = !items.contains(key.item);
+            if (shouldRemove) {
+              _log.info('Cancelling notification for ${key.item.uuid} on modifier ${key.modifier}');
+              _notifications.cancel(id);
+            }
+            return shouldRemove;
+          });
+
           items.where((item) => item.expiryDate.compareTo(DateTime.now()) > 0).forEach((item) async {
             Product product = await _repo.getProductFuture(item.inventoryId, item.code);
 
-            int weekNotificationId = _hashNotification(item.uuid, item.weekNotification);
-            String weekMessage = 'is about to expire within 7 days on ${item.year} ${item.month} ${item.day}';
-            _scheduleNotification(weekNotificationId, inventoryId, product, weekMessage, _expiryPatch(item, item.weekNotification));
+            NotificationKey weekKey = _hashNotificationKey(item, 7);
+            int weekId = _hashNotificationId(weekKey);
+            _scheduledNotifications.putIfAbsent(weekKey, () {
+              var log = _scheduleNotification(weekId, item, product, _expiryPatch(item, item.weekNotification));
+              if (log != '') _log.info('$log');
+              return weekId;
+            });
 
-            int monthNotificationId = _hashNotification(item.uuid, item.monthNotification);
-            String monthMessage = 'is about to expire within 30 days on ${item.year} ${item.month} ${item.day}';
-            _scheduleNotification(monthNotificationId, inventoryId, product, monthMessage, _expiryPatch(item, item.monthNotification));
+            NotificationKey monthKey = _hashNotificationKey(item, 30);
+            int monthId = _hashNotificationId(monthKey);
+            _scheduledNotifications.putIfAbsent(monthKey, () {
+              var log = _scheduleNotification(monthId, item, product, _expiryPatch(item, item.monthNotification));
+              if (log != '') _log.info('$log');
+              return monthId;
+            });
+
           });
         });
     });
   }
 
-  void _scheduleNotification(int notificationId, String inventoryId, Product product, String message, DateTime notificationDate) {
-    String brand = product.brand ?? '';
-    String name = product.name ?? '';
-    String variant = product.variant ?? '';
+  String _scheduleNotification(int notificationId, InventoryItem item, Product product, DateTime notificationDate) {
+    var _notificationDetails = Injector.getInjector().get<NotificationDetails>();
 
-    if (notificationDate.compareTo(DateTime.now()) <= 0) {
-      return;
-    }
+    if (notificationDate.compareTo(DateTime.now()) <= 0) { return ''; }
+    String title = '${product.brand ?? ''} ${product.name ?? ''} ${product.variant ?? ''}';
+    Duration difference = notificationDate.difference(item.expiryDate);
+    String message = 'is about to expire within ${difference.inDays} days on ${item.year} ${item.month} ${item.day}';
 
-    _notifications.schedule(
-      notificationId,
-      '$name $variant',
-      '$message',
-      notificationDate,
-      _notificationDetails,
-      payload: inventoryId
-    );
-
-    _log.info('Alerting $brand $name $variant on $notificationDate');
+    _notifications.schedule(notificationId, '$title', '$message', notificationDate,
+        _notificationDetails, payload: item.inventoryId);
+    return 'Alerting $title on ${item.monthNotification}';
   }
 }
