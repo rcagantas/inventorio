@@ -83,7 +83,7 @@ class SchedulingBloc {
           _scheduledNotifications.removeWhere((key, id) {
             bool shouldRemove = !items.contains(key.item);
             if (shouldRemove) {
-              _log.info('Cancelling notification for ${key.item.uuid} on modifier ${key.modifier}');
+              _log.info('Cancelling ${key.modifier}-day notification for ${key.item.uuid}');
               _notifications.cancel(id);
             }
             return shouldRemove;
