@@ -123,6 +123,6 @@ class SchedulingBloc {
 
     _notifications.schedule(notificationId, '$title', '$message', notificationDate,
         _notificationDetails, payload: item.inventoryId);
-    return 'Alerting $title on ${item.monthNotification}';
+    return 'Alerting $title on $notificationDate';
   }
 }
