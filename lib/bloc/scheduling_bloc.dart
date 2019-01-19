@@ -3,29 +3,23 @@ import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:logging/logging.dart';
-import 'package:quiver/core.dart';
+import 'dart:math' as math;
 
-class NotificationKey {
+class NotifiedItem {
   final InventoryItem item;
   final int modifier;
-  NotificationKey(this.item, this.modifier);
-  @override int get hashCode => hash2(item, modifier);
-  @override
-  bool operator ==(other) {
-    return other is NotificationKey
-      && this.item == other.item
-      && this.modifier == other.modifier;
-  }
+  int get scheduleId => '${item.uuid}/$modifier'.hashCode % ((math.pow(2, 31)) - 1);
+  NotifiedItem(this.item, this.modifier);
 }
 
 class SchedulingBloc {
   final _log = Logger('SchedulingBloc');
-  final _notifications = Injector.getInjector().get<FlutterLocalNotificationsPlugin>();
+  final _notifier = Injector.getInjector().get<FlutterLocalNotificationsPlugin>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
-  final Map<NotificationKey, int> _scheduledNotifications = {};
+  final _notifiedItems = Map<int, NotifiedItem>();
 
   SchedulingBloc() {
-    _notifications.initialize(
+    _notifier.initialize(
       InitializationSettings(
         AndroidInitializationSettings('icon'),
         IOSInitializationSettings()
@@ -35,34 +29,15 @@ class SchedulingBloc {
       },
     );
 
-    _repo.userUpdateStream
-      .debounce(Duration(milliseconds: 300))
-      .listen((userAccount) {
-        _log.info('Resetting schedules.');
-        _notifications.cancelAll().then((_) {
-          _scheduledNotifications.clear();
+    _notifier.cancelAll().then((_) {
+      _log.info('Resetting schedules.');
+      _notifiedItems.clear();
+      _repo.userUpdateStream
+        .debounce(Duration(milliseconds: 300))
+        .listen((userAccount) {
           _scheduleItemIfNeeded(userAccount);
         });
-      });
-  }
-
-  DateTime _expiryPatch(InventoryItem item, DateTime expiry) {
-    DateTime added = item.dateAdded != null
-        ? DateTime.parse(item.dateAdded.substring(0, 19).replaceAll('-', '').replaceAll(':', ''))
-        : DateTime.now();
-    expiry = expiry.add(Duration(hours: added.hour, minutes: added.minute + 1));
-    return expiry;
-  }
-
-  NotificationKey _hashNotificationKey(InventoryItem item, int modifier) {
-    return NotificationKey(item, modifier);
-  }
-
-  int _hashNotificationId(NotificationKey key) {
-    //return item.hashCode % ((2^31) - 1);
-    return _scheduledNotifications.containsKey(key)
-      ? _scheduledNotifications[key]
-      : _scheduledNotifications.length + 1;
+    });
   }
 
   void _scheduleItemIfNeeded(UserAccount userAccount) {
@@ -71,49 +46,44 @@ class SchedulingBloc {
         .debounce(Duration(milliseconds: 300))
         .listen((items) {
 
-          _scheduledNotifications.removeWhere((key, id) {
-            bool shouldRemove = !items.contains(key.item);
-            if (shouldRemove) {
-              _log.info('Cancelling ${key.modifier}-day notification for ${key.item.uuid}');
-              _notifications.cancel(id);
+          _notifiedItems.removeWhere((index, notified) {
+            if (notified.item.inventoryId == inventoryId && !items.contains(notified.item)) {
+              _repo.getProductFuture(notified.item.inventoryId, notified.item.code).then((product) {
+                _log.info('Cancelling [${notified.scheduleId}] '
+                    '${notified.modifier}-day notification for ${product.brand ?? ''} ${product.name ?? ''}');
+                _notifier.cancel(notified.scheduleId);
+              });
+              return true;
             }
-            return shouldRemove;
+            return false;
           });
 
-          items.where((item) => item.expiryDate.compareTo(DateTime.now()) > 0).forEach((item) async {
-            Product product = await _repo.getProductFuture(item.inventoryId, item.code);
-
-            NotificationKey weekKey = _hashNotificationKey(item, 7);
-            int weekId = _hashNotificationId(weekKey);
-            _scheduledNotifications.putIfAbsent(weekKey, () {
-              var log = _scheduleNotification(weekId, item, product, _expiryPatch(item, item.weekNotification));
-              if (log != '') _log.info('$log');
-              return weekId;
+          items.where((item) => item.expiryDate.compareTo(DateTime.now()) > 0).forEach((item) {
+            _repo.getProductFuture(item.inventoryId, item.code).then((product) {
+              _scheduleNotification(item, product, item.weekNotification);
+              _scheduleNotification(item, product, item.monthNotification);
             });
-
-            NotificationKey monthKey = _hashNotificationKey(item, 30);
-            int monthId = _hashNotificationId(monthKey);
-            _scheduledNotifications.putIfAbsent(monthKey, () {
-              var log = _scheduleNotification(monthId, item, product, _expiryPatch(item, item.monthNotification));
-              if (log != '') _log.info('$log');
-              return monthId;
-            });
-
           });
+
         });
     });
   }
 
-  String _scheduleNotification(int notificationId, InventoryItem item, Product product, DateTime notificationDate) {
+  void _scheduleNotification(InventoryItem item, Product product, DateTime notificationDate)  {
     var _notificationDetails = Injector.getInjector().get<NotificationDetails>();
 
-    if (notificationDate.compareTo(DateTime.now()) <= 0) { return ''; }
+    Duration difference = item.expiryDate.difference(notificationDate);
+    if (notificationDate.compareTo(DateTime.now()) <= 0) { return; }
+
     String title = '${product.brand ?? ''} ${product.name ?? ''} ${product.variant ?? ''}';
-    Duration difference = notificationDate.difference(item.expiryDate);
     String message = 'is about to expire within ${difference.inDays} days on ${item.year} ${item.month} ${item.day}';
 
-    _notifications.schedule(notificationId, '$title', '$message', notificationDate,
-        _notificationDetails, payload: item.inventoryId);
-    return 'Alerting $title on $notificationDate';
+    NotifiedItem notifiedItem = NotifiedItem(item, difference.inDays);
+    _notifiedItems.putIfAbsent(notifiedItem.scheduleId, () {
+      _notifier.schedule(notifiedItem.scheduleId, '$title', '$message', notificationDate,
+          _notificationDetails, payload: item.inventoryId);
+      _log.info('Alerting [${notifiedItem.scheduleId}] $title on $notificationDate');
+      return notifiedItem;
+    });
   }
 }

@@ -8,7 +8,7 @@ class LoggerBloc {
 
   void addMessage(LogRecord record) {
     print('${record.time}: ${record.message}');
-    _audit.add(record);
+    _audit.insert(0, record);
     _auditStream.sink.add(_audit);
   }
 

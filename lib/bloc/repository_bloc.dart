@@ -208,7 +208,7 @@ class RepositoryBloc {
   }
 
   void updateItem(InventoryItem item) {
-    _log.info('Adding item: ${item.uuid}');
+    _log.info('Adding item: ${item.uuid} expiring on ${item.expiryDate}');
     _fireInventory.document(item.inventoryId).collection('inventoryItems').document(item.uuid).setData(item.toJson());
   }
 
@@ -287,9 +287,9 @@ class RepositoryBloc {
 
   String setExpiryString(DateTime dateTime) {
     DateTime now = DateTime.now();
-    var dateTimeString = dateTime.add(Duration(hours: now.hour, minutes: now.minute, seconds: now.second))
+    var dateTimeString = dateTime
+        .add(Duration(hours: now.hour, minutes: now.minute + 1, seconds: now.second))
         .toIso8601String();
-    _log.info('Setting expiry to $dateTimeString');
     return dateTimeString;
   }
 

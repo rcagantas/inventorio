@@ -25,11 +25,11 @@ class InventoryItem implements Comparable<InventoryItem>
     if (expiry == null || expiry == '') return DateTime.now().add(Duration(days: 30));
     if (expiry.length == 10) {
       DateTime added = dateAdded != null
-          ? DateTime.parse(dateAdded.substring(0, 19).replaceAll('-', '').replaceAll(':', ''))
-          : DateTime.now();
+        ? DateTime.parse(dateAdded.substring(0, 19).replaceAll('-', '').replaceAll(':', ''))
+        : DateTime.now();
 
-      return DateTime.parse(expiry?.replaceAll('-', ''))
-          .add(Duration(hours: added.hour, minutes: added.minute + 1));
+      return DateTime.parse(expiry.replaceAll('-', ''))
+        .add(Duration(hours: added.hour, minutes: added.minute + 1));
     }
     return DateTime.parse(expiry.substring(0, 19).replaceAll('-', '').replaceAll(':', ''));
   }

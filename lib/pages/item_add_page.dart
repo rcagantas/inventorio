@@ -67,6 +67,7 @@ class _ItemAddPageState extends State<ItemAddPage> {
                   mode: CupertinoDatePickerMode.date,
                   initialDateTime: _initialDateTime(),
                   onDateTimeChanged: (dateTime) async {
+                    stagingItem.dateAdded = DateTime.now().toIso8601String();
                     stagingItem.expiry = _repo.setExpiryString(dateTime);
                   },
                 ),
