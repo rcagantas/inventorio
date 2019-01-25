@@ -87,7 +87,7 @@ class ListingsPage extends StatelessWidget {
     }
 
     Scaffold.of(context).showSnackBar(
-      SnackBar(content: Text('$message'),)
+      SnackBar(duration: Duration(milliseconds: 500), content: Text('$message'),)
     );
   }
 

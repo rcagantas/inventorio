@@ -63,6 +63,10 @@ class SchedulingBloc {
               _scheduleNotification(item, product, item.monthNotification);
             });
           });
+
+          Future.delayed(Duration(seconds: 2), () {
+            _log.info('Scheduled ${_notifiedItems.length} items');
+          });
         });
     });
   }

@@ -62,7 +62,12 @@ class InventoryBloc {
         case Act.ChangeInventory: _repo.changeCurrentInventory(action.payload); break;
         case Act.RemoveItem: _repo.removeItem(action.payload); break;
         case Act.AddUpdateItem: _repo.updateItem(action.payload); break;
-        case Act.AddUpdateProduct: _repo.updateProduct(action.payload); break;
+        case Act.AddUpdateProduct: {
+          Product product = action.payload;
+          _updateCache(_getCacheKey(_repo.getCachedUser().currentInventoryId, product.code), product);
+          _repo.updateProduct(product);
+          break;
+        }
         case Act.UnsubscribeInventory: _repo.unsubscribeFromInventory(action.payload); break;
         case Act.UpdateInventory: _repo.updateInventory(action.payload); break;
         case Act.AddInventory: _repo.addInventory(action.payload); break;
@@ -147,7 +152,8 @@ class InventoryBloc {
         _updateSelected(data);
 
         _listenToProductUpdates(data)
-          .listen((p) {
+          .listen((productList) {
+            _log.info('Finished updating product details. Updating list.');
             _updateSelected(data);
             _setSearchFilter(_searchFilter);
           });
@@ -166,22 +172,26 @@ class InventoryBloc {
 
   final Map<String, Product> _cachedProduct = Map();
 
-  String _getProductKey(String inventoryId, String code) => inventoryId + '_' + code;
+  String _getCacheKey(String inventoryId, String code) => inventoryId + '_' + code;
 
   Product getCachedProduct(String inventoryId, String code) {
-    String key = _getProductKey(inventoryId, code);
+    String key = _getCacheKey(inventoryId, code);
     return _cachedProduct.containsKey(key) ? _cachedProduct[key] : Product(isLoading: true);
   }
 
-  Observable<Product> _listenToProductUpdates(List<InventoryItem> data) {
+  void _updateCache(String cacheKey, Product product) {
+    _log.info('Updated cache for product ${product.code} ${product.name}');
+    _cachedProduct[cacheKey] = product;
+  }
+
+  Observable<List<Product>> _listenToProductUpdates(List<InventoryItem> data) {
     var productStreams = data.map((item) {
       var stream = _repo.getProductObservable(item.inventoryId, item.code);
       stream.listen((product) {
-        _log.info('Updated cache for product ${product.code} ${product.name}');
-        _cachedProduct[_getProductKey(item.inventoryId, product.code)] = product;
+        _updateCache(_getCacheKey(item.inventoryId, product.code), product);
       });
       return stream;
     }).toList();
-    return Observable.concat(productStreams);
+    return Observable.combineLatestList(productStreams);
   }
 }

@@ -103,20 +103,9 @@ class _ProductPageState extends State<ProductPage> {
                   setState(() { _stagingImage = file; });
                 });
               },
-              child: Stack(
-                alignment: Alignment.center,
-                children: <Widget>[
-                  SizedBox(
-                    width: imageSize, height: imageSize,
-                    child: ProductImage(widget.item, placeHolderSize: imageSize * .60)
-                  ),
-                  SizedBox(
-                    width: imageSize, height: imageSize,
-                    child: _stagingImage == null
-                      ? Container()
-                      : Image.file(_stagingImage, width: imageSize, height: imageSize, fit: BoxFit.cover,),
-                  )
-                ],
+              child: SizedBox(
+                width: imageSize, height: imageSize,
+                child: ProductImage(widget.item, placeHolderSize: imageSize * .60, stagingImage: _stagingImage,)
               ),
             ),
             ListTile(title: Text('Tap to change image', textAlign: TextAlign.center,),),

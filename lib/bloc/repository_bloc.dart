@@ -165,9 +165,7 @@ class RepositoryBloc {
         _fireInventory.document(inventoryId).collection('productDictionary').document(code).snapshots(),
         _fireDictionary.document(code).snapshots(),
         (local, master) => _combineProductDocumentSnap(local, master, inventoryId),
-      )
-      .debounce(DURATION_SHORT)
-      .asBroadcastStream();
+      ).asBroadcastStream();
     });
   }
 

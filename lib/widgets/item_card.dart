@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
@@ -14,16 +16,26 @@ class ProductImage extends StatelessWidget {
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItem item;
   final double placeHolderSize;
-  ProductImage(this.item, {this.placeHolderSize});
+  final File stagingImage;
+  ProductImage(this.item, {this.placeHolderSize, this.stagingImage});
 
   Widget _heroChildBuilder(AsyncSnapshot<Product> snap) {
     if (snap.hasData && qString.isNotEmpty(snap.data.imageUrl)) {
+      if (this.stagingImage != null) {
+        return Image.file(stagingImage, fit: BoxFit.cover,);
+      }
+
+      if (snap.data.imageFile != null) {
+        return Image.file(snap.data.imageFile, fit: BoxFit.cover,);
+      }
+
       return CachedNetworkImage(
         imageUrl: snap.data?.imageUrl ?? '', fit: BoxFit.cover,
         placeholder: Center(child: Icon(Icons.camera_enhance, color: Colors.grey, size: placeHolderSize,)),
         errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: placeHolderSize)),
       );
     }
+
     return Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: placeHolderSize,));
   }
 

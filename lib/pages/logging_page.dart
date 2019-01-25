@@ -18,7 +18,7 @@ class LoggingPage extends StatelessWidget {
           if (!snap.hasData) return Container();
           return ListView.builder(
             itemCount: snap.data.length,
-            itemExtent: 45.0 * textScaleFactor,
+            itemExtent: 60.0 * textScaleFactor,
             itemBuilder: (context, index) {
               TextStyle style = new TextStyle(fontSize: 11.0);
               String date = snap.data[index].time.toIso8601String().substring(0, 10);
