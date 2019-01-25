@@ -64,11 +64,13 @@ class SchedulingBloc {
             });
           });
 
-          Future.delayed(Duration(seconds: 2), () {
-            _log.info('Scheduled ${_notifiedItems.length} items');
-          });
         });
     });
+
+    Future.delayed(Duration(seconds: 3), () {
+      _log.info('Scheduled ${_notifiedItems.length} items');
+    });
+
   }
 
   void _scheduleNotification(InventoryItem item, Product product, DateTime notificationDate)  {
