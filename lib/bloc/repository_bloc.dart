@@ -21,6 +21,8 @@ class RepositoryBloc {
   static String generateUuid() => _uuid.v4();
   static const UNSET = '---';
 
+  static const DURATION_SHORT = Duration(milliseconds: 30);
+
   static final unsetUser = UserAccount(UNSET, UNSET)
     ..displayName = ''
     ..email = ''
@@ -116,6 +118,7 @@ class RepositoryBloc {
   Observable<List<InventoryItem>> getItemListObservable(String inventoryId) {
     if (inventoryId == null) return Observable<List<InventoryItem>>.empty();
     return Observable(_fireInventory.document(inventoryId).collection('inventoryItems').snapshots())
+      .debounce(DURATION_SHORT)
       .map((snaps) => _itemMapper(snaps, inventoryId));
   }
 
@@ -138,7 +141,7 @@ class RepositoryBloc {
       _fireInventory.document(inventoryId).snapshots(),
       _fireInventory.document(inventoryId).collection('inventoryItems').snapshots(),
       _inventoryDetailZip
-    );
+    ).debounce(DURATION_SHORT);
   }
 
   Future<InventoryDetails> getInventoryDetailFuture(String inventoryId) async {
@@ -162,8 +165,9 @@ class RepositoryBloc {
         _fireInventory.document(inventoryId).collection('productDictionary').document(code).snapshots(),
         _fireDictionary.document(code).snapshots(),
         (local, master) => _combineProductDocumentSnap(local, master, inventoryId),
-      ).asBroadcastStream()
-      .debounce(Duration(milliseconds: 50));
+      )
+      .debounce(DURATION_SHORT)
+      .asBroadcastStream();
     });
   }
 

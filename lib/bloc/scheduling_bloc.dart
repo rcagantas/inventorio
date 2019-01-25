@@ -33,7 +33,7 @@ class SchedulingBloc {
       _log.info('Resetting schedules.');
       _notifiedItems.clear();
       _repo.userUpdateStream
-        .debounce(Duration(milliseconds: 300))
+        .debounce(Duration(milliseconds: 30))
         .listen((userAccount) {
           _scheduleItemIfNeeded(userAccount);
         });
@@ -43,7 +43,6 @@ class SchedulingBloc {
   void _scheduleItemIfNeeded(UserAccount userAccount) {
     userAccount.knownInventories.forEach((inventoryId) {
       _repo.getItemListObservable(inventoryId)
-        .debounce(Duration(milliseconds: 300))
         .listen((items) {
 
           _notifiedItems.removeWhere((index, notified) {
@@ -64,7 +63,6 @@ class SchedulingBloc {
               _scheduleNotification(item, product, item.monthNotification);
             });
           });
-
         });
     });
   }
@@ -80,9 +78,10 @@ class SchedulingBloc {
 
     NotifiedItem notifiedItem = NotifiedItem(item, difference.inDays);
     _notifiedItems.putIfAbsent(notifiedItem.scheduleId, () {
-      _notifier.schedule(notifiedItem.scheduleId, '$title', '$message', notificationDate,
-          _notificationDetails, payload: item.inventoryId);
-      _log.info('Alerting [${notifiedItem.scheduleId}] $title on $notificationDate');
+      _notifier.schedule(notifiedItem.scheduleId, '$title', '$message',
+          notificationDate, _notificationDetails, payload: item.inventoryId).then((_) {
+        _log.info('Alerting [${notifiedItem.scheduleId}] $title on $notificationDate');
+      });
       return notifiedItem;
     });
   }

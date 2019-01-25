@@ -9,6 +9,7 @@ class LoggerBloc {
   void addMessage(LogRecord record) {
     print('${record.time}: ${record.message}');
     _audit.insert(0, record);
+    if (_audit.length > 1000) _audit.removeRange(1000, _audit.length);
     _auditStream.sink.add(_audit);
   }
 

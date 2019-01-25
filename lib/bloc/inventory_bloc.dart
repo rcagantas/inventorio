@@ -143,14 +143,11 @@ class InventoryBloc {
 
   void _populateSelectedItems(UserAccount userAccount) {
     _repo.getItemListObservable(userAccount.currentInventoryId)
-      .debounce(Duration(milliseconds: 300))
       .listen((data) {
         _updateSelected(data);
 
         _listenToProductUpdates(data)
-          .debounce(Duration(milliseconds: 300))
           .listen((p) {
-            _log.info('Updating screen.');
             _updateSelected(data);
             _setSearchFilter(_searchFilter);
           });
@@ -180,7 +177,7 @@ class InventoryBloc {
     var productStreams = data.map((item) {
       var stream = _repo.getProductObservable(item.inventoryId, item.code);
       stream.listen((product) {
-        _log.info('Updating cache for ${product.code}');
+        _log.info('Updated cache for product ${product.code} ${product.name}');
         _cachedProduct[_getProductKey(item.inventoryId, product.code)] = product;
       });
       return stream;
