@@ -173,6 +173,9 @@ class InventoryBloc {
     var productStreams = data.map((item) {
       return _repo.getProductObservable(item.inventoryId, item.code);
     }).toList();
+
+    if (data.length == 0) return Observable.empty();
+    if (data.length == 1) productStreams.add(Observable.empty());
     return Observable.combineLatestList(productStreams);
   }
 }

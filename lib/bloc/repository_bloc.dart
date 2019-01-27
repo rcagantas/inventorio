@@ -160,7 +160,9 @@ class RepositoryBloc {
   }
 
   void _updateCache(String cacheKey, Product product) {
-    _log.info('Updated cache for ${product.code} ${product.name}');
+    if (!_cachedProduct.containsKey(cacheKey) || _cachedProduct[cacheKey] != product) {
+      _log.info('Updated cache for ${product.code} ${product.name}');
+    }
     _cachedProduct[cacheKey] = product;
   }
 
@@ -232,7 +234,8 @@ class RepositoryBloc {
   void _uploadProduct(Product product) {
     if (_currentUser == null) return;
     _log.info('Trying to set product ${product.code} with ${product.toJson()}');
-    _fireInventory.document(_currentUser.currentInventoryId)
+    String inventoryId = product.inventoryId ?? _currentUser.currentInventoryId;
+    _fireInventory.document(inventoryId)
       .collection('productDictionary')
       .document(product.code)
       .setData(product.toJson());
@@ -282,7 +285,8 @@ class RepositoryBloc {
   }
 
   void updateProduct(Product product) {
-    _updateCache(_getCacheKey(_currentUser.currentInventoryId, product.code), product);
+    String inventoryId = product.inventoryId ?? _currentUser.currentInventoryId;
+    _updateCache(_getCacheKey(inventoryId, product.code), product);
     _uploadProduct(product);
     if (product.imageFile != null) {
       _resizeImage(product.imageFile).then((resized) {

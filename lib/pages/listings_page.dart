@@ -3,7 +3,6 @@ import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
-import 'package:inventorio/bloc/scheduling_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:inventorio/pages/item_add_page.dart';
 import 'package:inventorio/widgets/item_card.dart';
@@ -39,28 +38,15 @@ class _InventoryItemSearchDelegate extends SearchDelegate<InventoryItem> {
     );
   }
 
-  Widget _buildList(BuildContext context) {
-    return StreamBuilder<List<InventoryItem>>(
-      stream: _bloc.selectedStream,
-      builder: (context, snap) {
-        if (!snap.hasData || snap.data.length == 0) return Container();
-        return ListView.builder(
-          itemCount: snap.data?.length ?? 0,
-          itemBuilder: (context, index) => ItemCard(snap.data[index]),
-        );
-      },
-    );
-  }
-
   @override
   Widget buildResults(BuildContext context) {
-    return _buildList(context);
+    return ListingsPage._buildList(context, () => Container(), _bloc.selectedStream);
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
     _bloc.actionSink(Action(Act.SetSearchFilter, query));
-    return _buildList(context);
+    return ListingsPage._buildList(context, () => Container(), _bloc.selectedStream);
   }
 }
 
@@ -88,6 +74,21 @@ class ListingsPage extends StatelessWidget {
 
     Scaffold.of(context).showSnackBar(
       SnackBar(duration: Duration(milliseconds: 500), content: Text('$message'),)
+    );
+  }
+
+  static Widget _buildList(BuildContext context, Function whenEmpty, Stream<List<InventoryItem>> stream) {
+    return StreamBuilder<List<InventoryItem>>(
+      stream: stream,
+      builder: (context, snap) {
+        if (!snap.hasData || snap.data.length == 0) return whenEmpty();
+        double textScaleFactor = MediaQuery.of(context).textScaleFactor;
+        return ListView.builder(
+          itemExtent: ItemCard.BASE_HEIGHT * textScaleFactor,
+          itemCount: snap.data?.length ?? 0,
+          itemBuilder: (context, index) => ItemCard(snap.data[index]),
+        );
+      },
     );
   }
 
@@ -130,18 +131,7 @@ class ListingsPage extends StatelessWidget {
           },
         ),
       ),
-      body: StreamBuilder<List<InventoryItem>>(
-        stream: _bloc.selectedStream,
-        builder: (context, snap) {
-          double textScaleFactor = MediaQuery.of(context).textScaleFactor;
-          if (!snap.hasData || snap.data.length == 0) return _buildWelcome();
-          return ListView.builder(
-            itemExtent: ItemCard.BASE_HEIGHT * textScaleFactor,
-            itemCount: snap.data?.length ?? 0,
-            itemBuilder: (context, index) => ItemCard(snap.data[index]),
-          );
-        },
-      ),
+      body: _buildList(context, _buildWelcome, _bloc.selectedStream),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           Navigator.of(context).push<String>(MaterialPageRoute(builder: (context) => ScanPage())).then((code) {

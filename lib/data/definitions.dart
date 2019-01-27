@@ -68,9 +68,10 @@ class Product implements Comparable<Product>
   @JsonKey(ignore: true) bool isInitial;
   @JsonKey(ignore: true) bool isLoading;
   @JsonKey(ignore: true) File imageFile;
+  @JsonKey(ignore: true) String inventoryId;
 
   Product({this.code, this.brand, this.name, this.variant, this.imageUrl,
-    this.isInitial = false, this.isLoading = false, this.imageFile});
+    this.isInitial = false, this.isLoading = false, this.imageFile, this.inventoryId});
   factory Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
   Map<String, dynamic> toJson() => _$ProductToJson(this);
 

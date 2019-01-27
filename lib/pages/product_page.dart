@@ -126,6 +126,7 @@ class _ProductPageState extends State<ProductPage> {
             isInitial: false,
             isLoading: false,
             imageFile: _stagingImage,
+            inventoryId: widget.item.inventoryId
           );
           _bloc.actionSink(Action(Act.AddUpdateProduct, product));
           Navigator.pop(context, product);

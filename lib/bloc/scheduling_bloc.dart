@@ -35,8 +35,14 @@ class SchedulingBloc {
       _repo.userUpdateStream
         .debounce(Duration(milliseconds: 30))
         .listen((userAccount) {
+          var scheduledItemCount = _notifiedItems.length;
           _scheduleItemIfNeeded(userAccount);
-        });
+          Future.delayed(Duration(seconds: 2), () {
+            if (scheduledItemCount != _notifiedItems.length) {
+              _log.info('Scheduled ${_notifiedItems.length} items');
+            }
+          });
+      });
     });
   }
 
@@ -66,11 +72,6 @@ class SchedulingBloc {
 
         });
     });
-
-    Future.delayed(Duration(seconds: 3), () {
-      _log.info('Scheduled ${_notifiedItems.length} items');
-    });
-
   }
 
   void _scheduleNotification(InventoryItem item, Product product, DateTime notificationDate)  {
