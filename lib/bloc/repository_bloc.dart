@@ -160,7 +160,7 @@ class RepositoryBloc {
   }
 
   void _updateCache(String cacheKey, Product product) {
-    _log.info('Updated cache for key $cacheKey: ${product.code} ${product.name}');
+    _log.info('Updated cache for ${product.code} ${product.name}');
     _cachedProduct[cacheKey] = product;
   }
 
