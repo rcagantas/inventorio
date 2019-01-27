@@ -150,10 +150,25 @@ class RepositoryBloc {
     return _inventoryDetailZip(doc, query);
   }
 
-  Product _combineProductDocumentSnap(DocumentSnapshot local, DocumentSnapshot master, String inventoryId) {
-    Product product = Product(isInitial: true);
+  final Map<String, Product> _cachedProduct = Map();
+
+  String _getCacheKey(String inventoryId, String code) => inventoryId + '_' + code;
+
+  Product getCachedProduct(String inventoryId, String code) {
+    String key = _getCacheKey(inventoryId, code);
+    return _cachedProduct.containsKey(key) ? _cachedProduct[key] : Product(isLoading: true);
+  }
+
+  void _updateCache(String cacheKey, Product product) {
+    _log.info('Updated cache for key $cacheKey: ${product.code} ${product.name}');
+    _cachedProduct[cacheKey] = product;
+  }
+
+  Product _combineProductDocumentSnap(DocumentSnapshot local, DocumentSnapshot master, String inventoryId, String code) {
+    Product product = Product(code: code, isInitial: true);
     product = master.exists? Product.fromJson(master.data): product;
     product = local.exists? Product.fromJson(local.data): product;
+    _updateCache(_getCacheKey(inventoryId, code), product);
     return product;
   }
 
@@ -164,7 +179,7 @@ class RepositoryBloc {
       return Observable.combineLatest2(
         _fireInventory.document(inventoryId).collection('productDictionary').document(code).snapshots(),
         _fireDictionary.document(code).snapshots(),
-        (local, master) => _combineProductDocumentSnap(local, master, inventoryId),
+        (local, master) => _combineProductDocumentSnap(local, master, inventoryId, code),
       ).asBroadcastStream();
     });
   }
@@ -174,7 +189,7 @@ class RepositoryBloc {
       _fireInventory.document(inventoryId).collection('productDictionary').document(code).get(),
       _fireDictionary.document(code).get()
     ]);
-    return _combineProductDocumentSnap(docs[0], docs[1], inventoryId);
+    return _combineProductDocumentSnap(docs[0], docs[1], inventoryId, code);
   }
 
   void dispose() {
@@ -267,6 +282,7 @@ class RepositoryBloc {
   }
 
   void updateProduct(Product product) {
+    _updateCache(_getCacheKey(_currentUser.currentInventoryId, product.code), product);
     _uploadProduct(product);
     if (product.imageFile != null) {
       _resizeImage(product.imageFile).then((resized) {

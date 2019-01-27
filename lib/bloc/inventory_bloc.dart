@@ -64,7 +64,6 @@ class InventoryBloc {
         case Act.AddUpdateItem: _repo.updateItem(action.payload); break;
         case Act.AddUpdateProduct: {
           Product product = action.payload;
-          _updateCache(_getCacheKey(_repo.getCachedUser().currentInventoryId, product.code), product);
           _repo.updateProduct(product);
           break;
         }
@@ -81,8 +80,8 @@ class InventoryBloc {
   }
 
   int _productComparator(InventoryItem item1, InventoryItem item2) {
-    Product product1 = getCachedProduct(item1.inventoryId, item1.code);
-    Product product2 = getCachedProduct(item2.inventoryId, item2.code);
+    Product product1 = _repo.getCachedProduct(item1.inventoryId, item1.code);
+    Product product2 = _repo.getCachedProduct(item2.inventoryId, item2.code);
     int compare = product1.compareTo(product2);
     return compare != 0? compare : item1.compareTo(item2);
   }
@@ -97,8 +96,8 @@ class InventoryBloc {
     int compare = item1.compareTo(item2);
     if (compare != 0) return compare;
 
-    Product product1 = getCachedProduct(item1.inventoryId, item1.code);
-    Product product2 = getCachedProduct(item2.inventoryId, item2.code);
+    Product product1 = _repo.getCachedProduct(item1.inventoryId, item1.code);
+    Product product2 = _repo.getCachedProduct(item2.inventoryId, item2.code);
 
     return product1.compareTo(product2);
   }
@@ -137,7 +136,7 @@ class InventoryBloc {
 
   bool _filter(InventoryItem item) {
     _searchFilter = _searchFilter?.trim();
-    Product product = getCachedProduct(item.inventoryId, item.code);
+    Product product = _repo.getCachedProduct(item.inventoryId, item.code);
     bool test = (_searchFilter == '' || _searchFilter == null
       || (product?.brand?.toLowerCase()?.contains(_searchFilter) ?? false)
       || (product?.name?.toLowerCase()?.contains(_searchFilter) ?? false)
@@ -170,27 +169,9 @@ class InventoryBloc {
     _sortType.close();
   }
 
-  final Map<String, Product> _cachedProduct = Map();
-
-  String _getCacheKey(String inventoryId, String code) => inventoryId + '_' + code;
-
-  Product getCachedProduct(String inventoryId, String code) {
-    String key = _getCacheKey(inventoryId, code);
-    return _cachedProduct.containsKey(key) ? _cachedProduct[key] : Product(isLoading: true);
-  }
-
-  void _updateCache(String cacheKey, Product product) {
-    _log.info('Updated cache for product ${product.code} ${product.name}');
-    _cachedProduct[cacheKey] = product;
-  }
-
   Observable<List<Product>> _listenToProductUpdates(List<InventoryItem> data) {
     var productStreams = data.map((item) {
-      var stream = _repo.getProductObservable(item.inventoryId, item.code);
-      stream.listen((product) {
-        _updateCache(_getCacheKey(item.inventoryId, product.code), product);
-      });
-      return stream;
+      return _repo.getProductObservable(item.inventoryId, item.code);
     }).toList();
     return Observable.combineLatestList(productStreams);
   }

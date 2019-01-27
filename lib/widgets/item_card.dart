@@ -21,10 +21,6 @@ class ProductImage extends StatelessWidget {
 
   Widget _heroChildBuilder(AsyncSnapshot<Product> snap) {
     if (snap.hasData && qString.isNotEmpty(snap.data.imageUrl)) {
-      if (this.stagingImage != null) {
-        return Image.file(stagingImage, fit: BoxFit.cover,);
-      }
-
       if (snap.data.imageFile != null) {
         return Image.file(snap.data.imageFile, fit: BoxFit.cover,);
       }
@@ -43,9 +39,11 @@ class ProductImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Hero(
       tag: item.heroCode,
-      child: StreamBuilder<Product>(
+      child: stagingImage != null
+        ? Image.file(stagingImage, fit: BoxFit.cover,)
+        : StreamBuilder<Product>(
         key: ObjectKey(item.uuid +'_image'),
-        initialData: _bloc.getCachedProduct(item.inventoryId, item.code),
+        initialData: _repo.getCachedProduct(item.inventoryId, item.code),
         stream: _repo.getProductObservable(item.inventoryId, item.code),
         builder: (context, snap) {
           return _heroChildBuilder(snap);
@@ -66,7 +64,7 @@ class ProductLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<Product>(
       key: ObjectKey(item.uuid +'_label'),
-      initialData: _bloc.getCachedProduct(item.inventoryId, item.code),
+      initialData: _repo.getCachedProduct(item.inventoryId, item.code),
       stream: _repo.getProductObservable(item.inventoryId, item.code),
       builder: (context, snap) {
         return Center(
@@ -155,7 +153,7 @@ class ItemCard extends StatelessWidget {
           color: Colors.red,
           icon: Icons.delete,
           onTap: () {
-            Product productNameOfDeletedItem = _bloc.getCachedProduct(item.inventoryId, item.code);
+            Product productNameOfDeletedItem = _repo.getCachedProduct(item.inventoryId, item.code);
             _bloc.actionSink(Action(Act.RemoveItem, item));
             Scaffold.of(context).showSnackBar(
               SnackBar(
