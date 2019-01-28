@@ -152,9 +152,11 @@ class InventoryBloc {
 
         _listenToProductUpdates(data)
           .listen((productList) {
-            _log.info('Finished updating product details. Updating list.');
-            _updateSelected(data);
-            _setSearchFilter(_searchFilter);
+            if (productList.length > 0) {
+              _log.info('Finished updating product details. Updating list.');
+              _updateSelected(data);
+              _setSearchFilter(_searchFilter);
+            }
           });
       });
   }
