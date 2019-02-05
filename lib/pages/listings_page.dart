@@ -9,7 +9,7 @@ import 'package:inventorio/widgets/item_card.dart';
 import 'package:inventorio/pages/scan_page.dart';
 import 'package:inventorio/widgets/user_drawer.dart';
 
-class _InventoryItemSearchDelegate extends SearchDelegate<InventoryItem> {
+class InventoryItemSearchDelegate extends SearchDelegate<InventoryItem> {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
 
   @override
@@ -40,13 +40,13 @@ class _InventoryItemSearchDelegate extends SearchDelegate<InventoryItem> {
 
   @override
   Widget buildResults(BuildContext context) {
-    return ListingsPage._buildList(context, () => Container(), _bloc.selectedStream);
+    return ListingsPage.buildList(context, () => Container(), _bloc.selectedStream);
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
     _bloc.actionSink(Action(Act.SetSearchFilter, query));
-    return ListingsPage._buildList(context, () => Container(), _bloc.selectedStream);
+    return ListingsPage.buildList(context, () => Container(), _bloc.selectedStream);
   }
 }
 
@@ -55,7 +55,7 @@ class ListingsPage extends StatelessWidget {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
 
-  Icon _iconToggle(SortType sortType) {
+  static Icon iconToggle(SortType sortType) {
     switch(sortType) {
       case SortType.DateExpiry: return Icon(Icons.sort);
       case SortType.Alpha: return Icon(Icons.sort_by_alpha);
@@ -64,7 +64,7 @@ class ListingsPage extends StatelessWidget {
     return Icon(Icons.sort);
   }
 
-  void _showSnackBar(BuildContext context, SortType sortType) {
+  static showSnackBar(BuildContext context, SortType sortType) {
     String message = '';
     switch(sortType) {
       case SortType.DateExpiry: message = 'Sorting by expiration date.'; break;
@@ -77,7 +77,7 @@ class ListingsPage extends StatelessWidget {
     );
   }
 
-  static Widget _buildList(BuildContext context, Function whenEmpty, Stream<List<InventoryItem>> stream) {
+  static Widget buildList(BuildContext context, Function whenEmpty, Stream<List<InventoryItem>> stream) {
     return StreamBuilder<List<InventoryItem>>(
       stream: stream,
       builder: (context, snap) {
@@ -94,7 +94,7 @@ class ListingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    SearchDelegate<InventoryItem> _searchDelegate = _InventoryItemSearchDelegate();
+    SearchDelegate<InventoryItem> _searchDelegate = InventoryItemSearchDelegate();
     return Scaffold(
       appBar: AppBar(
         actions: <Widget>[
@@ -103,9 +103,9 @@ class ListingsPage extends StatelessWidget {
             stream: _bloc.sortTypeStream,
             builder: (context, snap) {
               return IconButton(
-                icon: _iconToggle(snap.data),
+                icon: iconToggle(snap.data),
                 onPressed: () async {
-                  _showSnackBar(context, _bloc.nextSortType());
+                  showSnackBar(context, _bloc.nextSortType());
                   _bloc.actionSink(Action(Act.ToggleSort, null));
                 },
               );
@@ -131,7 +131,7 @@ class ListingsPage extends StatelessWidget {
           },
         ),
       ),
-      body: _buildList(context, _buildWelcome, _bloc.selectedStream),
+      body: buildList(context, _buildWelcome, _bloc.selectedStream),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           Navigator.of(context).push<String>(MaterialPageRoute(builder: (context) => ScanPage())).then((code) {

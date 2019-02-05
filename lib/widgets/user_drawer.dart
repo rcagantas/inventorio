@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
+import 'package:inventorio/pages/all_items_page.dart';
 import 'package:inventorio/widgets/dialog_factory.dart';
 import 'package:inventorio/pages/inventory_details_page.dart';
 import 'package:inventorio/pages/scan_page.dart';
@@ -95,6 +96,16 @@ class UserDrawer extends StatelessWidget {
               )
             ],
           ),
+          ListTile(
+            title: Text('All Items'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => AllItemsPage()));
+              Future.delayed(Duration(milliseconds: 300), () {
+                _bloc.actionSink(Action(Act.ChangeInventory, ''));
+              });
+            },
+          ),
           ListView.builder(
             shrinkWrap: true,
             itemCount: userAccount.knownInventories?.length ?? 0,
@@ -107,8 +118,8 @@ class UserDrawer extends StatelessWidget {
                 builder: (context, snap) {
                   return ListTile(
                     title: Text('${snap.data?.name ?? 'Inventory $index'}'),
-                    subtitle: Text('${snap.data.currentCount} items'),
-                    selected: snap.data.isSelected,
+                    subtitle: Text('${snap.data?.currentCount ?? 0} items'),
+                    selected: snap.data?.isSelected ?? false,
                     onTap: () {
                       Navigator.of(context).pop();
                       Future.delayed(Duration(milliseconds: 300), () {

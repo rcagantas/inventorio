@@ -5,24 +5,13 @@ import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 
 enum Act {
-  SignIn,
-  SignOut,
-  AddInventory,
-  ChangeInventory,
-  UpdateInventory,
-  UnsubscribeInventory,
-  RemoveItem,
-  AddUpdateItem,
-  AddUpdateProduct,
-  SetSearchFilter,
-  ToggleSort,
+  SignIn, SignOut,
+  AddInventory, ChangeInventory, UpdateInventory, UnsubscribeInventory,
+  RemoveItem, AddUpdateItem, AddUpdateProduct,
+  SetSearchFilter, ToggleSort,
 }
 
-enum SortType {
-  DateAdded,
-  Alpha,
-  DateExpiry
-}
+enum SortType { DateAdded, Alpha, DateExpiry }
 
 class Action {
   final Act act;
@@ -37,17 +26,35 @@ class InventoryBloc {
   final _actions = BehaviorSubject<Action>();
   Function(Action) get actionSink => _actions.sink.add;
 
+  final _sortAction = BehaviorSubject<SortType>();
+  Function(SortType) get sortTypeSink => _sortAction.sink.add;
+  Observable<SortType> get sortTypeStream => _sortAction.stream;
+  SortType _sortingType;
+
+  String _searchFilter;
+
+  List<InventoryItem> Function(List<InventoryItem> itemList) _mutator
+    = (List<InventoryItem> itemList) => itemList;
+
   final _selected = BehaviorSubject<List<InventoryItem>>();
   Function(List<InventoryItem>) get selectedSink => _selected.sink.add;
-  Observable<List<InventoryItem>> get selectedStream => _selected.stream;
-
-  final _sortType = BehaviorSubject<SortType>();
-  Function(SortType) get sortTypeSink => _sortType.sink.add;
-  Observable<SortType> get sortTypeStream => _sortType.stream;
-  SortType _sortingType;
+  Observable<List<InventoryItem>> get selectedStream => _selected.stream.map(_mutator);
 
   InventoryBloc() {
     _sortingType = SortType.DateExpiry;
+
+    _mutator = (List<InventoryItem> itemList) {
+      switch (_sortingType) {
+        case SortType.DateAdded: itemList.sort(_dateAddedComparator); break;
+        case SortType.DateExpiry: itemList.sort(_expiryComparator); break;
+        case SortType.Alpha: itemList.sort(_productComparator); break;
+        default: itemList.sort();
+      }
+
+      if (_searchFilter == '' || _searchFilter == null) return itemList;
+      return itemList.where(_filter).toList();
+    };
+
     _repo.userUpdateStream
       .listen((userAccount) async {
         if (userAccount != null) {
@@ -59,14 +66,10 @@ class InventoryBloc {
       switch (action.act) {
         case Act.SignIn: _repo.signIn(); break;
         case Act.SignOut: _cleanUp(); _repo.signOut(); break;
-        case Act.ChangeInventory: _repo.changeCurrentInventory(action.payload); break;
+        case Act.ChangeInventory: _handleInventorySelection(action.payload); break;
         case Act.RemoveItem: _repo.removeItem(action.payload); break;
         case Act.AddUpdateItem: _repo.updateItem(action.payload); break;
-        case Act.AddUpdateProduct: {
-          Product product = action.payload;
-          _repo.updateProduct(product);
-          break;
-        }
+        case Act.AddUpdateProduct: _repo.updateProduct(action.payload); break;
         case Act.UnsubscribeInventory: _repo.unsubscribeFromInventory(action.payload); break;
         case Act.UpdateInventory: _repo.updateInventory(action.payload); break;
         case Act.AddInventory: _repo.addInventory(action.payload); break;
@@ -77,6 +80,14 @@ class InventoryBloc {
     });
 
     _repo.signIn();
+  }
+
+  void _handleInventorySelection(String uuid) {
+    if (uuid == '') _populateAllItems();
+    else if (_repo.getCachedUser().currentInventoryId == uuid) { // must reset from populate all
+      _populateSelectedItems(_repo.getCachedUser());
+    }
+    else _repo.changeCurrentInventory(uuid);
   }
 
   int _productComparator(InventoryItem item1, InventoryItem item2) {
@@ -102,16 +113,6 @@ class InventoryBloc {
     return product1.compareTo(product2);
   }
 
-  void _updateSelected(List<InventoryItem> data) async {
-    switch (_sortingType) {
-      case SortType.DateAdded: data.sort(_dateAddedComparator); break;
-      case SortType.DateExpiry: data.sort(_expiryComparator); break;
-      case SortType.Alpha: data.sort(_productComparator); break;
-      default: data.sort();
-    }
-    selectedSink(data);
-  }
-
   SortType nextSortType() {
     var index = (_sortingType.index + 1) % SortType.values.length;
     return SortType.values[index];
@@ -119,26 +120,22 @@ class InventoryBloc {
 
   void _toggleSort() {
     _sortingType = nextSortType();
-    _repo.getItemListFuture().then(_updateSelected);
+    _log.info('Sorting with $_sortingType');
     sortTypeSink(_sortingType);
+    _selected.take(1).single.then(selectedSink);
   }
 
-  String _searchFilter;
   void _setSearchFilter(String filter) {
     if (filter == _searchFilter) return;
-
     _searchFilter = filter;
-    _repo.getItemListFuture().then((data) {
-      data = data.where(_filter).toList();
-      _updateSelected(data);
-    });
+    _log.info('Search filter: $_searchFilter');
   }
 
   bool _filter(InventoryItem item) {
     _searchFilter = _searchFilter?.trim();
     Product product = _repo.getCachedProduct(item.inventoryId, item.code);
     bool test = (_searchFilter == '' || _searchFilter == null
-      || (product?.brand?.toLowerCase()?.contains(_searchFilter) ?? false)
+      ||  (product?.brand?.toLowerCase()?.contains(_searchFilter) ?? false)
       || (product?.name?.toLowerCase()?.contains(_searchFilter) ?? false)
       || (product?.variant?.toLowerCase()?.contains(_searchFilter) ?? false)
     );
@@ -148,17 +145,27 @@ class InventoryBloc {
   void _populateSelectedItems(UserAccount userAccount) {
     _repo.getItemListObservable(userAccount.currentInventoryId)
       .listen((data) {
-        _updateSelected(data);
+        selectedSink(data);
 
         _listenToProductUpdates(data)
           .listen((productList) {
             if (productList.length > 0) {
               _log.info('Finished updating product details. Updating list.');
-              _updateSelected(data);
-              _setSearchFilter(_searchFilter);
+              selectedSink(data);
             }
           });
       });
+  }
+
+  void _populateAllItems() {
+    _log.info('Trying to get all items');
+    var inventoryList = _repo.getCachedUser().knownInventories;
+    var futures = inventoryList.map((inventoryId) => _repo.getItemListObservable(inventoryId).take(1).single);
+    Future.wait(futures).then((listOfList) {
+      var allItems = listOfList.expand((l) => l).toList();
+      _log.info('All items: ${allItems.length}');
+      selectedSink(allItems);
+    });
   }
 
   void _cleanUp() {
@@ -168,7 +175,7 @@ class InventoryBloc {
   void dispose() async {
     _actions.close();
     _selected.close();
-    _sortType.close();
+    _sortAction.close();
   }
 
   Observable<List<Product>> _listenToProductUpdates(List<InventoryItem> data) {

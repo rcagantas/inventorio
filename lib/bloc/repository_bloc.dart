@@ -90,6 +90,12 @@ class RepositoryBloc {
           ..email = email
           ..imageUrl = imageUrl
           ..isSignedIn = true;
+
+        if (userAccount.currentInventoryId == '') {
+          // Guard against blank current inventory
+          userAccount.currentInventoryId = userAccount.knownInventories[0];
+        }
+
         userUpdateSink(userAccount);
       }
     });
@@ -120,13 +126,6 @@ class RepositoryBloc {
     return Observable(_fireInventory.document(inventoryId).collection('inventoryItems').snapshots())
       .debounce(DURATION_SHORT)
       .map((snaps) => _itemMapper(snaps, inventoryId));
-  }
-
-  Future<List<InventoryItem>> getItemListFuture() async {
-    String inventoryId = _currentUser?.currentInventoryId;
-    if (inventoryId == null) return Future.value([]);
-    var snaps = await _fireInventory.document(inventoryId).collection('inventoryItems').getDocuments();
-    return _itemMapper(snaps, inventoryId);
   }
 
   InventoryDetails _inventoryDetailZip(DocumentSnapshot doc, QuerySnapshot query) {
