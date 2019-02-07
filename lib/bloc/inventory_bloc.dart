@@ -83,8 +83,9 @@ class InventoryBloc {
   }
 
   void _handleInventorySelection(String uuid) {
-    if (uuid == '') _populateAllItems();
-    else if (_repo.getCachedUser().currentInventoryId == uuid) { // must reset from populate all
+    if (uuid == '') {
+      _populateAllItems();
+    } else if (_repo.getCachedUser().currentInventoryId == uuid) { // must reset from populate all
       _populateSelectedItems(_repo.getCachedUser());
     }
     else _repo.changeCurrentInventory(uuid);
@@ -128,18 +129,13 @@ class InventoryBloc {
   void _setSearchFilter(String filter) {
     if (filter == _searchFilter) return;
     _searchFilter = filter;
-    _log.info('Search filter: $_searchFilter');
   }
 
   bool _filter(InventoryItem item) {
     _searchFilter = _searchFilter?.trim();
+    if (_searchFilter == '' || _searchFilter == null) return true;
     Product product = _repo.getCachedProduct(item.inventoryId, item.code);
-    bool test = (_searchFilter == '' || _searchFilter == null
-      ||  (product?.brand?.toLowerCase()?.contains(_searchFilter) ?? false)
-      || (product?.name?.toLowerCase()?.contains(_searchFilter) ?? false)
-      || (product?.variant?.toLowerCase()?.contains(_searchFilter) ?? false)
-    );
-    return test;
+    return product.toString().toLowerCase().contains(_searchFilter.toLowerCase());
   }
 
   void _populateSelectedItems(UserAccount userAccount) {

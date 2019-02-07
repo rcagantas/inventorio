@@ -80,7 +80,7 @@ class SchedulingBloc {
     Duration difference = item.expiryDate.difference(notificationDate);
     if (notificationDate.compareTo(DateTime.now()) <= 0) { return; }
 
-    String title = '${product.brand ?? ''} ${product.name ?? ''} ${product.variant ?? ''}';
+    String title = product.toString();
     String message = 'is about to expire within ${difference.inDays} days on ${item.year} ${item.month} ${item.day}';
 
     NotifiedItem notifiedItem = NotifiedItem(item, difference.inDays);

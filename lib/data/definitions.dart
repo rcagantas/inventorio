@@ -90,11 +90,14 @@ class Product implements Comparable<Product>
   }
 
   @override
+  String toString() {
+    return ((this.brand ?? '') + ' ' + (this.name ?? '') + ' ' + (this.variant ?? '')).trim();
+  }
+
+  @override
   int compareTo(Product other) {
     if (other == null) return 1;
-    String left = (this.brand ?? '') + (this.name ?? '') + (this.variant ?? '');
-    String right = (other.brand ?? '') + (other.name ?? '') + (other.variant ?? '');
-    return left.compareTo(right);
+    return this.toString().compareTo(other.toString());
   }
 }
 

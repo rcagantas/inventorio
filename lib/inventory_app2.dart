@@ -47,7 +47,10 @@ class _InventoryApp2State extends State<InventoryApp2> {
         accentColor: Colors.blue.shade700,
       ),
       title: 'Inventorio',
-      home: ListingsPage()
+      initialRoute: '/',
+      routes: {
+        '/': (context) => ListingsPage(),
+      }
     );
   }
 

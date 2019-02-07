@@ -44,7 +44,7 @@ class UserDrawer extends StatelessWidget {
             leading: Icon(Icons.exit_to_app),
             title: Text(userAccount.isSignedIn ? 'Log out' : 'Login with Google', style: TextStyle(fontWeight: FontWeight.bold),),
             onTap: () async {
-              Navigator.of(context).pop();
+              Navigator.popUntil(context, ModalRoute.withName('/'));
               if (userAccount.isSignedIn) {
                 var confirmed = await DialogFactory.sureDialog(context, 'Are you sure you want to log out', 'Log out', 'Cancel');
                 if (confirmed) _bloc.actionSink(Action(Act.SignOut, null));
@@ -60,38 +60,40 @@ class UserDrawer extends StatelessWidget {
                 enabled: userAccount.currentInventoryId != null,
                 dense: true,
                 title: Text('Create New Inventory'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(null)));
+                onTap: () {
+                  Navigator.popUntil(context, ModalRoute.withName('/'));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(null)));
                 },
               ),
               ListTile(
                 enabled: userAccount.currentInventoryId != null,
                 dense: true,
                 title: Text('Scan Existing Inventory Code'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  String code = await Navigator.push(context, MaterialPageRoute(builder: (context) => ScanPage()));
-                  _bloc.actionSink(Action(Act.AddInventory, code));
+                onTap: () {
+                  Navigator.popUntil(context, ModalRoute.withName('/'));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => ScanPage())).then((code) {
+                    _bloc.actionSink(Action(Act.AddInventory, code));
+                  });
                 },
               ),
               ListTile(
                 enabled: userAccount.currentInventoryId != null,
                 dense: true,
                 title: Text('Edit/share Current Inventory'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  InventoryDetails toEdit =  await _repo.getInventoryDetailFuture(userAccount.currentInventoryId);
-                  await Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(toEdit)));
+                onTap: () {
+                  Navigator.popUntil(context, ModalRoute.withName('/'));
+                  _repo.getInventoryDetailFuture(userAccount.currentInventoryId).then((toEdit) {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(toEdit)));
+                  });
                 },
               ),
               ListTile(
                 enabled: true,
                 dense: true,
                 title: Text('Logs'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await Navigator.push(context, MaterialPageRoute(builder: (context) => LoggingPage()));
+                onTap: () {
+                  Navigator.popUntil(context, ModalRoute.withName('/'));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => LoggingPage()));
                 }
               )
             ],
@@ -99,7 +101,7 @@ class UserDrawer extends StatelessWidget {
           ListTile(
             title: Text('All Items'),
             onTap: () {
-              Navigator.pop(context);
+              Navigator.popUntil(context, ModalRoute.withName('/'));
               Navigator.push(context, MaterialPageRoute(builder: (context) => AllItemsPage()));
               Future.delayed(Duration(milliseconds: 300), () {
                 _bloc.actionSink(Action(Act.ChangeInventory, ''));
@@ -121,7 +123,7 @@ class UserDrawer extends StatelessWidget {
                     subtitle: Text('${snap.data?.currentCount ?? 0} items'),
                     selected: snap.data?.isSelected ?? false,
                     onTap: () {
-                      Navigator.of(context).pop();
+                      Navigator.popUntil(context, ModalRoute.withName('/'));
                       Future.delayed(Duration(milliseconds: 300), () {
                         _bloc.actionSink(Action(Act.ChangeInventory, snap.data.uuid));
                       });
