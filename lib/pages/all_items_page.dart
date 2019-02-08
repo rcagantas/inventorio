@@ -39,7 +39,7 @@ class AllItemsPage extends StatelessWidget {
         child: ListingsPage.buildList(context, () => Container(), _bloc.selectedStream),
         onWillPop: () async {
           Future.delayed(Duration(milliseconds: 300), () {
-            _bloc.actionSink(Action(Act.ChangeInventory, _repo.getCachedUser().currentInventoryId));
+            _bloc.actionSink(Action(Act.SelectAll, false));
           });
           return true;
         },

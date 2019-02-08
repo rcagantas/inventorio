@@ -6,7 +6,7 @@ import 'package:inventorio/data/definitions.dart';
 
 enum Act {
   SignIn, SignOut,
-  AddInventory, ChangeInventory, UpdateInventory, UnsubscribeInventory,
+  AddInventory, ChangeInventory, UpdateInventory, UnsubscribeInventory, SelectAll,
   RemoveItem, AddUpdateItem, AddUpdateProduct,
   SetSearchFilter, ToggleSort,
 }
@@ -32,6 +32,7 @@ class InventoryBloc {
   SortType _sortingType;
 
   String _searchFilter;
+  bool _selectAllItems = false;
 
   List<InventoryItem> Function(List<InventoryItem> itemList) _mutator
     = (List<InventoryItem> itemList) => itemList;
@@ -58,7 +59,7 @@ class InventoryBloc {
     _repo.userUpdateStream
       .listen((userAccount) async {
         if (userAccount != null) {
-          _populateSelectedItems(userAccount);
+          _listenToInventoryUpdates(userAccount);
         }
       });
 
@@ -66,7 +67,7 @@ class InventoryBloc {
       switch (action.act) {
         case Act.SignIn: _repo.signIn(); break;
         case Act.SignOut: _cleanUp(); _repo.signOut(); break;
-        case Act.ChangeInventory: _handleInventorySelection(action.payload); break;
+        case Act.ChangeInventory: _repo.changeCurrentInventory(action.payload); break;
         case Act.RemoveItem: _repo.removeItem(action.payload); break;
         case Act.AddUpdateItem: _repo.updateItem(action.payload); break;
         case Act.AddUpdateProduct: _repo.updateProduct(action.payload); break;
@@ -75,20 +76,15 @@ class InventoryBloc {
         case Act.AddInventory: _repo.addInventory(action.payload); break;
         case Act.SetSearchFilter: _setSearchFilter(action.payload); break;
         case Act.ToggleSort: _toggleSort(); break;
+        case Act.SelectAll:
+          _selectAllItems = action.payload;
+          _listenToInventoryUpdates(_repo.getCachedUser());
+          break;
         default: _log.warning('Action ${action.payload} NOT IMPLEMENTED'); break;
       }
     });
 
     _repo.signIn();
-  }
-
-  void _handleInventorySelection(String uuid) {
-    if (uuid == '') {
-      _populateAllItems();
-    } else if (_repo.getCachedUser().currentInventoryId == uuid) { // must reset from populate all
-      _populateSelectedItems(_repo.getCachedUser());
-    }
-    else _repo.changeCurrentInventory(uuid);
   }
 
   int _productComparator(InventoryItem item1, InventoryItem item2) {
@@ -138,29 +134,31 @@ class InventoryBloc {
     return product.toString().toLowerCase().contains(_searchFilter.toLowerCase());
   }
 
-  void _populateSelectedItems(UserAccount userAccount) {
+  void _listenToInventoryUpdates(UserAccount userAccount) {
     _repo.getItemListObservable(userAccount.currentInventoryId)
       .listen((data) {
-        selectedSink(data);
+
+        _padItemsWhenSelectAll(data).then(selectedSink);
 
         _listenToProductUpdates(data)
           .listen((productList) {
             if (productList.length > 0) {
               _log.info('Finished updating product details. Updating list.');
-              selectedSink(data);
+
+              _padItemsWhenSelectAll(data).then(selectedSink);
             }
           });
       });
   }
 
-  void _populateAllItems() {
+  Future<List<InventoryItem>> _padItemsWhenSelectAll(List<InventoryItem> itemList) async {
+    if (!_selectAllItems) return itemList;
+
     _log.info('Trying to get all items');
     var inventoryList = _repo.getCachedUser().knownInventories;
     var futures = inventoryList.map((inventoryId) => _repo.getItemListObservable(inventoryId).take(1).single);
-    Future.wait(futures).then((listOfList) {
-      var allItems = listOfList.expand((l) => l).toList();
-      _log.info('All items: ${allItems.length}');
-      selectedSink(allItems);
+    return await Future.wait(futures).then((listOfList) {
+      return listOfList.expand((l) => l).toList();
     });
   }
 

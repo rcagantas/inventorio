@@ -104,7 +104,7 @@ class UserDrawer extends StatelessWidget {
               Navigator.popUntil(context, ModalRoute.withName('/'));
               Navigator.push(context, MaterialPageRoute(builder: (context) => AllItemsPage()));
               Future.delayed(Duration(milliseconds: 300), () {
-                _bloc.actionSink(Action(Act.ChangeInventory, ''));
+                _bloc.actionSink(Action(Act.SelectAll, true));
               });
             },
           ),
