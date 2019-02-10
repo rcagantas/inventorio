@@ -44,7 +44,7 @@ class InventoryItem implements Comparable<InventoryItem>
 
   @override
   int compareTo(InventoryItem other) {
-    return this.daysFromToday.compareTo(other.daysFromToday);
+    return this.expiryDate.compareTo(other.expiryDate);
   }
 
   @override String toString() { return this.toJson().toString(); }
