@@ -56,6 +56,10 @@ class InventoryBloc {
       return itemList.where(_filter).toList();
     };
 
+    selectedStream.listen((items) {
+      _log.info('Streamed ${items.length} items.');
+    });
+
     _repo.userUpdateStream
       .listen((userAccount) async {
         if (userAccount != null) {
@@ -78,7 +82,7 @@ class InventoryBloc {
         case Act.ToggleSort: _toggleSort(); break;
         case Act.SelectAll:
           _selectAllItems = action.payload;
-          _listenToInventoryUpdates(_repo.getCachedUser());
+          _repo.userUpdateSink(_repo.getCachedUser());
           break;
         default: _log.warning('Action ${action.payload} NOT IMPLEMENTED'); break;
       }
@@ -135,29 +139,29 @@ class InventoryBloc {
   }
 
   void _listenToInventoryUpdates(UserAccount userAccount) {
-    _repo.getItemListObservable(userAccount.currentInventoryId)
-      .where((data) => data.length == 0 || data[0].inventoryId == _repo.getCachedUser().currentInventoryId)
-      .listen((data) {
-        _populateSelectedItems(data).then(selectedSink);
+    // update the list when an inventory is selected
+    userAccount.knownInventories.forEach((inventoryId) {
+      _repo.getItemListObservable(inventoryId).listen((items) {
+        if (!_selectAllItems && (items.length == 0 || items[0].inventoryId == _repo.getCachedUser().currentInventoryId)) {
+          _updateSelectedSink(items);
+        }
+      });
+    });
 
-        _repo.productStream
-          .debounce(Duration(milliseconds: 300))
-          .listen((productList) {
-            _log.info('Updated product details. Updating list of ${data.length} items.');
-            _populateSelectedItems(data).then(selectedSink);
-          });
+    // update the list when selecting all items
+    var allInventories = userAccount.knownInventories.map((inventoryId) => _repo.getItemListObservable(inventoryId)).toList();
+    Observable.combineLatest(allInventories, (List<List<InventoryItem>> listOfItems) => listOfItems.expand((l) => l).toList())
+      .listen((items) {
+        if (_selectAllItems) {
+          _updateSelectedSink(items);
+        }
       });
   }
 
-  Future<List<InventoryItem>> _populateSelectedItems(List<InventoryItem> itemList) async {
-    if (!_selectAllItems) return itemList;
-
-    _log.info('Trying to get all items');
-    var inventoryList = _repo.getCachedUser().knownInventories;
-    var futures = inventoryList.map((inventoryId) => _repo.getItemListObservable(inventoryId).take(1).single);
-    return await Future.wait(futures).then((listOfList) {
-      return listOfList.expand((l) => l).toList();
-    });
+  void _updateSelectedSink(List<InventoryItem> items) {
+    selectedSink(items);
+    var futures = items.map((item) => _repo.getProductFuture(item.inventoryId, item.code)).toList();
+    Future.wait(futures).then((products) => selectedSink(items));
   }
 
   void _cleanUp() {
