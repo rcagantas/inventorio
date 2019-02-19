@@ -4,7 +4,7 @@ import 'package:rxdart/rxdart.dart';
 class LoggerBloc {
   final List<LogRecord> _audit = [];
   final _auditStream = BehaviorSubject<List<LogRecord>>();
-  Observable<List<LogRecord>> get auditStream => _auditStream.stream.debounce(Duration(milliseconds: 300));
+  Observable<List<LogRecord>> get auditStream => _auditStream.stream;
 
   void addMessage(LogRecord record) {
     print('${record.time}: ${record.message}');

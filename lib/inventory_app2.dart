@@ -44,7 +44,7 @@ class _InventoryApp2State extends State<InventoryApp2> {
       theme: ThemeData(
         fontFamily: 'OpenSans',
         primaryColor: Colors.blue.shade700,
-        accentColor: Colors.blue.shade700,
+        accentColor: Colors.blue.shade600,
       ),
       title: 'Inventorio',
       initialRoute: '/',

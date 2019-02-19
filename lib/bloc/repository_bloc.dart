@@ -39,6 +39,11 @@ class RepositoryBloc {
 
   UserAccount _currentUser;
 
+  final _productSubject = BehaviorSubject<Product>();
+  Observable<Product> get productStream => _productSubject.stream;
+
+  final Map<String, Observable<Product>> _productObservables = Map();
+
   RepositoryBloc() {
     _googleSignIn.onCurrentUserChanged.listen((gAccount) => _accountFromSignIn(gAccount));
     userUpdateStream.listen((userAccount) => _currentUser = userAccount);
@@ -173,15 +178,17 @@ class RepositoryBloc {
     return product;
   }
 
-  final Map<String, Observable<Product>> _productObservables = Map();
-
   Observable<Product> getProductObservable(String inventoryId, String code) {
-    return _productObservables.putIfAbsent('$inventoryId $code', () {
-      return Observable.combineLatest2(
+    return _productObservables.putIfAbsent(_getCacheKey(inventoryId, code), () {
+      Observable.combineLatest2(
         _fireInventory.document(inventoryId).collection('productDictionary').document(code).snapshots(),
         _fireDictionary.document(code).snapshots(),
         (local, master) => _combineProductDocumentSnap(local, master, inventoryId, code),
-      ).asBroadcastStream();
+      ).listen((product) {
+        _productSubject.sink.add(product);
+      });
+
+      return _productSubject.where((product) => product.code == code);
     });
   }
 
@@ -195,6 +202,7 @@ class RepositoryBloc {
 
   void dispose() {
     _userUpdate.close();
+    _productSubject.close();;
   }
 
   UserAccount changeCurrentInventory(String uuid) {
@@ -284,8 +292,7 @@ class RepositoryBloc {
   }
 
   void updateProduct(Product product) {
-    String inventoryId = product.inventoryId ?? _currentUser.currentInventoryId;
-    _updateCache(_getCacheKey(inventoryId, product.code), product);
+    _productSubject.sink.add(product);
     _uploadProduct(product);
     if (product.imageFile != null) {
       _resizeImage(product.imageFile).then((resized) {

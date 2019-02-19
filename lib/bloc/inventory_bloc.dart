@@ -136,22 +136,20 @@ class InventoryBloc {
 
   void _listenToInventoryUpdates(UserAccount userAccount) {
     _repo.getItemListObservable(userAccount.currentInventoryId)
+      .where((data) => data.length == 0 || data[0].inventoryId == _repo.getCachedUser().currentInventoryId)
       .listen((data) {
+        _populateSelectedItems(data).then(selectedSink);
 
-        _padItemsWhenSelectAll(data).then(selectedSink);
-
-        _listenToProductUpdates(data)
+        _repo.productStream
+          .debounce(Duration(milliseconds: 300))
           .listen((productList) {
-            if (productList.length > 0) {
-              _log.info('Finished updating product details. Updating list.');
-
-              _padItemsWhenSelectAll(data).then(selectedSink);
-            }
+            _log.info('Updated product details. Updating list of ${data.length} items.');
+            _populateSelectedItems(data).then(selectedSink);
           });
       });
   }
 
-  Future<List<InventoryItem>> _padItemsWhenSelectAll(List<InventoryItem> itemList) async {
+  Future<List<InventoryItem>> _populateSelectedItems(List<InventoryItem> itemList) async {
     if (!_selectAllItems) return itemList;
 
     _log.info('Trying to get all items');
@@ -170,15 +168,5 @@ class InventoryBloc {
     _actions.close();
     _selected.close();
     _sortAction.close();
-  }
-
-  Observable<List<Product>> _listenToProductUpdates(List<InventoryItem> data) {
-    var productStreams = data.map((item) {
-      return _repo.getProductObservable(item.inventoryId, item.code);
-    }).toList();
-
-    if (data.length == 0) return Observable.empty();
-    if (data.length == 1) productStreams.add(Observable.empty());
-    return Observable.combineLatestList(productStreams);
   }
 }

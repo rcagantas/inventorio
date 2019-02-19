@@ -128,7 +128,7 @@ class ItemCard extends StatelessWidget {
 
   Color _expiryColorScale(int days) {
     if (days < 30) return Colors.redAccent;
-    else if (days < 90) return Colors.orangeAccent;
+    else if (days < 90) return Colors.yellow;
     return Colors.greenAccent;
   }
 
@@ -180,10 +180,9 @@ class ItemCard extends StatelessWidget {
                 Expanded(flex: 3, child: ProductImage(item),),
                 Expanded(flex: 7, child: ProductLabel(item),),
                 Expanded(flex: 3, child: ItemExpiry(item),),
-                ConstrainedBox(
-                  constraints: BoxConstraints.tight(Size(3.0, double.infinity)),
-                  child: Container(color: _expiryColorScale(item.daysFromToday),),
-                )
+                SizedBox(height: BASE_HEIGHT, width: 5.0,
+                  child: Container(color: _expiryColorScale(item.daysFromToday),)
+                ),
               ],
             ),
           ),
