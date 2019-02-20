@@ -54,7 +54,7 @@ class LoggingPage extends StatelessWidget {
 
     return ListView.builder(
       itemCount: list.length,
-      itemExtent: 60.0 * textScaleFactor,
+      itemExtent: 80.0 * textScaleFactor,
       itemBuilder: (context, index) {
         TextStyle style = new TextStyle(fontSize: 11.0);
         String date = list[index].time.toIso8601String().substring(0, 10);

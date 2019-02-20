@@ -56,10 +56,6 @@ class InventoryBloc {
       return itemList.where(_filter).toList();
     };
 
-    selectedStream.listen((items) {
-      _log.info('Streamed ${items.length} items.');
-    });
-
     _repo.userUpdateStream
       .listen((userAccount) async {
         if (userAccount != null) {
@@ -142,7 +138,8 @@ class InventoryBloc {
     // update the list when an inventory is selected
     userAccount.knownInventories.forEach((inventoryId) {
       _repo.getItemListObservable(inventoryId).listen((items) {
-        if (!_selectAllItems && (items.length == 0 || items[0].inventoryId == _repo.getCachedUser().currentInventoryId)) {
+        if (!_selectAllItems
+            && (items.length == 0 || items[0].inventoryId == _repo.getCachedUser().currentInventoryId)) {
           _updateSelectedSink(items);
         }
       });

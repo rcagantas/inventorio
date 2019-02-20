@@ -168,13 +168,13 @@ class RepositoryBloc {
       _log.info('Updated cache for ${product.code} ${product.name}');
     }
     _cachedProduct[cacheKey] = product;
+    _productSubject.sink.add(product);
   }
 
   Product _combineProductDocumentSnap(DocumentSnapshot local, DocumentSnapshot master, String inventoryId, String code) {
     Product product = Product(code: code, isInitial: true);
     product = master.exists? Product.fromJson(master.data): product;
     product = local.exists? Product.fromJson(local.data): product;
-    _updateCache(_getCacheKey(inventoryId, code), product);
     return product;
   }
 
@@ -185,7 +185,7 @@ class RepositoryBloc {
         _fireDictionary.document(code).snapshots(),
         (local, master) => _combineProductDocumentSnap(local, master, inventoryId, code),
       ).listen((product) {
-        _productSubject.sink.add(product);
+        _updateCache(_getCacheKey(inventoryId, code), product);
       });
 
       return _productSubject.where((product) => product.code == code);
@@ -242,6 +242,7 @@ class RepositoryBloc {
     if (_currentUser == null) return;
     _log.info('Trying to set product ${product.code} with ${product.toJson()}');
     String inventoryId = product.inventoryId ?? _currentUser.currentInventoryId;
+    _updateCache(_getCacheKey(inventoryId, product.code), product);
     _fireInventory.document(inventoryId)
       .collection('productDictionary')
       .document(product.code)
@@ -292,7 +293,6 @@ class RepositoryBloc {
   }
 
   void updateProduct(Product product) {
-    _productSubject.sink.add(product);
     _uploadProduct(product);
     if (product.imageFile != null) {
       _resizeImage(product.imageFile).then((resized) {
