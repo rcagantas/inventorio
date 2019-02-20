@@ -37,7 +37,7 @@ class SchedulingBloc {
         .listen((userAccount) {
           var notifiedCountBefore = _notifiedItems.length;
           Future.delayed(Duration(seconds: userAccount.knownInventories.length), () {
-            if (notifiedCountBefore != _notifiedItems.length) {
+            if (notifiedCountBefore != _notifiedItems.length + 1) {
               _log.info('Scheduled ${_notifiedItems.length} items');
             }
           });

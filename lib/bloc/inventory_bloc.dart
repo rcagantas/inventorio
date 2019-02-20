@@ -44,6 +44,10 @@ class InventoryBloc {
   InventoryBloc() {
     _sortingType = SortType.DateExpiry;
 
+    selectedStream.listen((items) {
+      print('Updated list of ${items.length}');
+    });
+
     _mutator = (List<InventoryItem> itemList) {
       switch (_sortingType) {
         case SortType.DateAdded: itemList.sort(_dateAddedComparator); break;
