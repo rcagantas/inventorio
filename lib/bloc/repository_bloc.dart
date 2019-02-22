@@ -163,12 +163,13 @@ class RepositoryBloc {
     return _cachedProduct.containsKey(key) ? _cachedProduct[key] : Product(isLoading: true);
   }
 
-  void _updateCache(String cacheKey, Product product) {
+  Product _updateCache(String cacheKey, Product product) {
     if (!_cachedProduct.containsKey(cacheKey) || _cachedProduct[cacheKey] != product) {
       _log.info('Updated cache for ${product.code} ${product.name}');
     }
     _cachedProduct[cacheKey] = product;
     _productSubject.sink.add(product);
+    return product;
   }
 
   Product _combineProductDocumentSnap(DocumentSnapshot local, DocumentSnapshot master, String inventoryId, String code) {
@@ -193,16 +194,21 @@ class RepositoryBloc {
   }
 
   Future<Product> getProductFuture(String inventoryId, String code) async {
+    Product cachedProduct = getCachedProduct(inventoryId, code);
+    if (!cachedProduct.isLoading) return cachedProduct;
+
     var docs = await Future.wait([
       _fireInventory.document(inventoryId).collection('productDictionary').document(code).get(),
       _fireDictionary.document(code).get()
     ]);
-    return _combineProductDocumentSnap(docs[0], docs[1], inventoryId, code);
+    Product product = _combineProductDocumentSnap(docs[0], docs[1], inventoryId, code);
+    _cachedProduct[_getCacheKey(inventoryId, code)] = product;
+    return product;
   }
 
   void dispose() {
     _userUpdate.close();
-    _productSubject.close();;
+    _productSubject.close();
   }
 
   UserAccount changeCurrentInventory(String uuid) {

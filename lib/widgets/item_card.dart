@@ -26,9 +26,10 @@ class ProductImage extends StatelessWidget {
       }
 
       return CachedNetworkImage(
-        imageUrl: snap.data?.imageUrl ?? '', fit: BoxFit.cover,
-        placeholder: Center(child: Icon(Icons.camera_enhance, color: Colors.grey, size: placeHolderSize,)),
-        errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: placeHolderSize)),
+        imageUrl: snap.data?.imageUrl,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => Center(child: Icon(Icons.camera_enhance, color: Colors.grey, size: placeHolderSize,)),
+        errorWidget: (context, url, error) => Center(child: Icon(Icons.error_outline, color: Colors.grey, size: placeHolderSize)),
       );
     }
 

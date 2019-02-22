@@ -36,6 +36,7 @@ class InventoryBloc {
 
   List<InventoryItem> Function(List<InventoryItem> itemList) _mutator
     = (List<InventoryItem> itemList) => itemList;
+  List<InventoryItem> _snapshot;
 
   final _selected = BehaviorSubject<List<InventoryItem>>();
   Function(List<InventoryItem>) get selectedSink => _selected.sink.add;
@@ -45,6 +46,7 @@ class InventoryBloc {
     _sortingType = SortType.DateExpiry;
 
     selectedStream.listen((items) {
+      _snapshot = items;
       print('Updated list of ${items.length}');
     });
 
@@ -156,13 +158,16 @@ class InventoryBloc {
         if (_selectAllItems) {
           _updateSelectedSink(items);
         }
-      });
+        var productObservables = items.map((item) => _repo.getProductObservable(item.inventoryId, item.code));
+        Observable.concatEager(productObservables)
+          .delay(Duration(seconds: 1))
+          .debounce((Duration(milliseconds: 300)))
+          .listen((p) => selectedSink(_snapshot));
+    });
   }
 
   void _updateSelectedSink(List<InventoryItem> items) {
     selectedSink(items);
-    var futures = items.map((item) => _repo.getProductFuture(item.inventoryId, item.code)).toList();
-    Future.wait(futures).then((products) => selectedSink(items));
   }
 
   void _cleanUp() {

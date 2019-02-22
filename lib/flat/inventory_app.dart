@@ -391,8 +391,8 @@ class InventoryTile extends StatelessWidget {
                   ? Center(child: Icon(Icons.camera_alt, color: Colors.grey.shade400))
                   : CachedNetworkImage(
                       imageUrl: product?.imageUrl ?? '', fit: BoxFit.cover,
-                      placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey)),
-                      errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
+                      //placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey)),
+                      //errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey)),
                   ),
                 ),
               ),
@@ -613,8 +613,8 @@ class _ProductPageState extends State<ProductPage> {
                       _imageUrl == null || _imageUrl == '' ? Container(): CachedNetworkImage(
                         imageUrl: _imageUrl , fit: BoxFit.cover,
                         height: imageSize, width: imageSize,
-                        placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: imageSize * .60,)),
-                        errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: imageSize * .60,)),
+                        //placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: imageSize * .60,)),
+                        //errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: imageSize * .60,)),
                       ),
                       _stagingImage == null
                       ? Container()
@@ -766,8 +766,9 @@ class _InventoryAddPageState extends State<InventoryAddPage> {
     } else if (staging?.imageUrl != null && staging?.imageUrl != '') {
       return CachedNetworkImage(
         imageUrl: staging?.imageUrl ?? '', fit: BoxFit.cover,
-        placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 80.0,)),
-        errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: 80.0,)));
+        //placeholder: Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: 80.0,)),
+        //errorWidget: Center(child: Icon(Icons.error_outline, color: Colors.grey, size: 80.0,))
+      );
     }
     return Icon(Icons.camera_alt, color: Colors.grey.shade400, size: 80.0,);
   }
