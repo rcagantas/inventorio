@@ -185,7 +185,9 @@ class RepositoryBloc {
         _fireInventory.document(inventoryId).collection('productDictionary').document(code).snapshots(),
         _fireDictionary.document(code).snapshots(),
         (local, master) => _combineProductDocumentSnap(local, master, inventoryId, code),
-      ).listen((product) {
+      )
+      .debounce(DURATION_SHORT)
+      .listen((product) {
         _updateCache(_getCacheKey(inventoryId, code), product);
       });
 

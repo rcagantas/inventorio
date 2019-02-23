@@ -124,7 +124,8 @@ class ItemCard extends StatelessWidget {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItem item;
-  static const double BASE_HEIGHT = 110.0;
+  static const double _BASE_HEIGHT = 110.0;
+
   ItemCard(this.item);
 
   Color _expiryColorScale(int days) {
@@ -133,9 +134,13 @@ class ItemCard extends StatelessWidget {
     return Colors.greenAccent;
   }
 
+  static double height(BuildContext context) {
+    double textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    return _BASE_HEIGHT * textScaleFactor;
+  }
+
   @override
   Widget build(BuildContext context) {
-    double textScaleFactor = MediaQuery.of(context).textScaleFactor;
 
     return Slidable(
       delegate: SlidableDrawerDelegate(),
@@ -168,27 +173,24 @@ class ItemCard extends StatelessWidget {
           },
         ),
       ],
-      child: FlatButton(
-        padding: EdgeInsets.zero,
-        onPressed: () {
-          Navigator.of(context).push(MaterialPageRoute(builder: (context) => ItemAddPage(item)));
-        },
-        child: Container(
-          height: BASE_HEIGHT * textScaleFactor,
-          child: Card(
-            child: Row(
-              children: <Widget>[
-                Expanded(flex: 3, child: ProductImage(item),),
-                Expanded(flex: 7, child: ProductLabel(item),),
-                Expanded(flex: 3, child: ItemExpiry(item),),
-                SizedBox(height: BASE_HEIGHT, width: 5.0,
-                  child: Container(color: _expiryColorScale(item.daysFromToday),)
-                ),
-              ],
-            ),
+      child: Card(
+        child: InkWell(
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute(builder: (context) => ItemAddPage(item)));
+          },
+          child: Row(
+            children: <Widget>[
+              Expanded(flex: 1, child: ProductImage(item),),
+              Expanded(flex: 3, child: ProductLabel(item),),
+              Expanded(flex: 1, child: ItemExpiry(item),),
+              Container(
+                height: height(context), width: 5.0,
+                color: _expiryColorScale(item.daysFromToday),
+              ),
+            ],
           ),
         ),
-      ),
+      )
     );
   }
 }

@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:meta/meta.dart';
 import 'package:quiver/core.dart';
 
-part 'package:inventorio/data/definitions.g.dart';
+part 'definitions.g.dart';
 
 @JsonSerializable()
 class InventoryItem implements Comparable<InventoryItem>
@@ -16,31 +16,23 @@ class InventoryItem implements Comparable<InventoryItem>
   String expiry;
   String dateAdded;
   String inventoryId;
+  @JsonKey(ignore: true) DateTime expiryDate;
+  @JsonKey(ignore: true) String year;
+  @JsonKey(ignore: true) String month;
+  @JsonKey(ignore: true) String day;
+  @JsonKey(ignore: true) int daysFromToday;
+  @JsonKey(ignore: true) DateTime weekNotification;
+  @JsonKey(ignore: true) DateTime monthNotification;
+  @JsonKey(ignore: true) String heroCode;
 
-  InventoryItem({this.uuid, this.code, this.expiry, this.dateAdded, this.inventoryId});
-  factory InventoryItem.fromJson(Map<String, dynamic> json) => _$InventoryItemFromJson(json);
-  Map<String, dynamic> toJson() => _$InventoryItemToJson(this);
-
-  DateTime get expiryDate {
-    if (expiry == null || expiry == '') return DateTime.now().add(Duration(days: 30));
-    if (expiry.length == 10) {
-      DateTime added = dateAdded != null
-        ? DateTime.parse(dateAdded.substring(0, 19).replaceAll('-', '').replaceAll(':', ''))
-        : DateTime.now();
-
-      return DateTime.parse(expiry.replaceAll('-', ''))
-        .add(Duration(hours: added.hour, minutes: added.minute + 1));
-    }
-    return DateTime.parse(expiry.substring(0, 19).replaceAll('-', '').replaceAll(':', ''));
+  InventoryItem({this.uuid, this.code, this.expiry, this.dateAdded, this.inventoryId}) {
+    _initialize();
   }
 
-  String get year => DateFormat.y().format(expiryDate);
-  String get month => DateFormat.MMM().format(expiryDate);
-  String get day => DateFormat.d().format(expiryDate);
-  int get daysFromToday => expiryDate.difference(DateTime.now()).inDays;
-  DateTime get weekNotification => expiryDate.subtract(Duration(days: 7));
-  DateTime get monthNotification => expiryDate.subtract(Duration(days: 30));
-  String get heroCode => this.uuid + '-' + this.code;
+  factory InventoryItem.fromJson(Map<String, dynamic> json) => _$InventoryItemFromJson(json)
+    .._initialize();
+
+  Map<String, dynamic> toJson() => _$InventoryItemToJson(this);
 
   @override
   int compareTo(InventoryItem other) {
@@ -54,6 +46,30 @@ class InventoryItem implements Comparable<InventoryItem>
       && this.uuid == other.uuid
       && this.code == other.code
       && this.expiry == other.expiry;
+  }
+
+  DateTime _initExpiry() {
+    if (expiry == null || expiry == '') return DateTime.now().add(Duration(days: 30));
+    if (expiry.length == 10) {
+      DateTime added = dateAdded != null
+        ? DateTime.parse(dateAdded.substring(0, 19).replaceAll('-', '').replaceAll(':', ''))
+        : DateTime.now();
+
+      return DateTime.parse(expiry.replaceAll('-', ''))
+        .add(Duration(hours: added.hour, minutes: added.minute + 1));
+    }
+    return DateTime.parse(expiry.substring(0, 19).replaceAll('-', '').replaceAll(':', ''));
+  }
+
+  void _initialize() {
+    expiryDate = _initExpiry();
+    year = DateFormat.y().format(expiryDate);
+    month = DateFormat.MMM().format(expiryDate);
+    day = DateFormat.d().format(expiryDate);
+    daysFromToday = expiryDate.difference(DateTime.now()).inDays;
+    weekNotification = expiryDate.subtract(Duration(days: 7));
+    monthNotification = expiryDate.subtract(Duration(days: 30));
+    heroCode = this.uuid + '-' + this.code;
   }
 }
 
