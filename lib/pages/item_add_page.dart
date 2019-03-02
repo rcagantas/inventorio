@@ -44,14 +44,12 @@ class _ItemAddPageState extends State<ItemAddPage> {
             },
             child: Container(
               height: 150.0,
-              child: Card(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: <Widget>[
-                    Expanded(flex: 1, child: ProductImage(widget.item, placeHolderSize: 80.0,)),
-                    Expanded(flex: 2, child: ProductLabel(widget.item))
-                  ],
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: <Widget>[
+                  Expanded(flex: 1, child: ProductImage(widget.item, height: 150.0, width: 150.0,)),
+                  Expanded(flex: 2, child: ProductLabel(widget.item))
+                ],
               ),
             ),
           ),

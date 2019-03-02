@@ -15,40 +15,46 @@ class ProductImage extends StatelessWidget {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItem item;
-  final double placeHolderSize;
+  final double width;
+  final double height;
   final File stagingImage;
-  ProductImage(this.item, {this.placeHolderSize, this.stagingImage});
+  ProductImage(this.item, {this.width = 100.0, this.height = 100.0, this.stagingImage});
 
   Widget _heroChildBuilder(AsyncSnapshot<Product> snap) {
-    if (snap.hasData && qString.isNotEmpty(snap.data.imageUrl)) {
-      if (snap.data.imageFile != null) {
-        return Image.file(snap.data.imageFile, fit: BoxFit.cover,);
-      }
+    double pWidth = width / 2;
 
-      return CachedNetworkImage(
-        imageUrl: snap.data?.imageUrl,
-        fit: BoxFit.cover,
-        placeholder: (context, url) => Center(child: Icon(Icons.camera_enhance, color: Colors.grey, size: placeHolderSize,)),
-        errorWidget: (context, url, error) => Center(child: Icon(Icons.error_outline, color: Colors.grey, size: placeHolderSize)),
-      );
+    Widget widget = Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: pWidth,),);
+    const BoxFit boxFit = BoxFit.cover;
+
+    if (stagingImage != null) {
+      widget = Image.file(stagingImage, fit: boxFit, width: width, height: height,);
+    } else if (snap.hasData) {
+      if (snap.data.imageFile != null) {
+        widget = Image.file(snap.data.imageFile, fit: boxFit, width: width, height: height,);
+      } else if (qString.isNotEmpty(snap.data.imageUrl)) {
+        widget = CachedNetworkImage(
+          width: width,
+          height: height,
+          imageUrl: snap.data.imageUrl,
+          fit: boxFit,
+          placeholder: (context, url) => Center(child: Icon(Icons.camera_enhance, color: Colors.grey, size: pWidth,)),
+          errorWidget: (context, url, error) => Center(child: Icon(Icons.error_outline, color: Colors.grey, size: pWidth)),
+        );
+      }
     }
 
-    return Center(child: Icon(Icons.camera_alt, color: Colors.grey, size: placeHolderSize,));
+    return SizedBox(child: widget, width: width, height: height,);
   }
 
   @override
   Widget build(BuildContext context) {
     return Hero(
       tag: item.heroCode,
-      child: stagingImage != null
-        ? Image.file(stagingImage, fit: BoxFit.cover,)
-        : StreamBuilder<Product>(
+      child: StreamBuilder<Product>(
         key: ObjectKey(item.uuid +'_image'),
         initialData: _repo.getCachedProduct(item.inventoryId, item.code),
         stream: _repo.getProductObservable(item.inventoryId, item.code),
-        builder: (context, snap) {
-          return _heroChildBuilder(snap);
-        },
+        builder: (context, snap) => _heroChildBuilder(snap),
       ),
     );
   }
@@ -59,63 +65,106 @@ class ProductLabel extends StatelessWidget {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItem item;
-  ProductLabel(this.item);
+  final double width;
+  static const bold = TextStyle(inherit: true, fontWeight: FontWeight.bold);
+  static const align = TextAlign.center;
+
+  ProductLabel(this.item, {this.width = 0.0});
 
   @override
   Widget build(BuildContext context) {
+    double calculatedWidth = width == 0.0? MediaQuery.of(context).size.width * 0.5: width;
+
     return StreamBuilder<Product>(
-      key: ObjectKey(item.uuid +'_label'),
+      key: ObjectKey('label_${item.uuid}'),
       initialData: _repo.getCachedProduct(item.inventoryId, item.code),
       stream: _repo.getProductObservable(item.inventoryId, item.code),
       builder: (context, snap) {
-        return Center(
-          child: snap.hasData && snap.data.isLoading == false
+        return Container(
+          width: calculatedWidth,
+          child: snap.hasData && !snap.data.isLoading
             ? _buildLabel(snap.data)
-            : CircularProgressIndicator(),
+            : Center(child: CircularProgressIndicator()),
         );
       },
     );
   }
 
   Widget _buildLabel(Product product) {
-    if (product.isInitial)
-      return Text('Add New Product Information', textAlign: TextAlign.center, style: TextStyle(fontSize: 22.0),);
+    if (product.isInitial || product == null) {
+      return Text('Add New Product Information',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 22.0),
+      );
+    }
 
-    var style =  TextStyle(inherit: true, fontWeight: FontWeight.bold);
-    var align = TextAlign.center;
-    List<Text> labels = [
-      Text('${product?.brand ?? ''}',   textAlign: align,),
-      Text('${product?.name ?? ''}',    textAlign: align, style: style,),
-      Text('${product?.variant ?? ''}', textAlign: align,),
-    ];
-    labels.retainWhere((text) => text.data.isNotEmpty);
+    List<Text> textLabels = [];
+    if (qString.isNotEmpty(product?.brand)) {
+      textLabels.add(Text('${product.brand}',
+        softWrap: true, overflow: TextOverflow.fade, textAlign: align,
+        key: ObjectKey('product_brand_${item.uuid}'),),);
+    }
 
-    return Padding(
-      padding: const EdgeInsets.only(left: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: labels,
-      ),
+    if (qString.isNotEmpty(product?.name)) {
+      textLabels.add(Text('${product?.name}',
+        softWrap: true, overflow: TextOverflow.fade, textAlign: align, style: bold,
+        key: ObjectKey('product_name_${item.uuid}'),),);
+    }
+
+    if (qString.isNotEmpty(product?.variant)) {
+      textLabels.add(Text('${product?.variant}',
+        softWrap: true, overflow: TextOverflow.fade, textAlign: align,
+        key: ObjectKey('product_variant_${item.uuid}'),),);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: textLabels,
     );
   }
 }
 
 class ItemExpiry extends StatelessWidget {
   final InventoryItem item;
-  ItemExpiry(this.item);
+  final double width;
+  static const style = TextStyle(inherit: true, fontFamily: 'Raleway',fontWeight: FontWeight.bold);
+  static const align = TextAlign.center;
+
+  ItemExpiry(this.item, {this.width});
+
+  Color _expiryColorScale(int days) {
+    if (days < 30) return Colors.redAccent;
+    else if (days < 90) return Colors.yellow;
+    return Colors.greenAccent;
+  }
 
   @override
   Widget build(BuildContext context) {
-    var style = TextStyle(inherit: true, fontFamily: 'Raleway',fontWeight: FontWeight.bold);
-    var align = TextAlign.center;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        Text('${item.year}', style: style, textAlign: align,),
-        Text('${item.month} ${item.day}', style: style, textAlign: align,),
-      ],
+    return Container(
+      key: ObjectKey('expiry_${item.uuid}'),
+      width: width,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(right: 20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text('${item.year}', style: style, textAlign: align, key: ObjectKey('expiry_year_${item.uuid}'), ),
+                Text('${item.month} ${item.day}', style: style, textAlign: align, key: ObjectKey('expiry_mmdd_${item.uuid}'), ),
+              ],
+            ),
+          ),
+          Container(
+            key: ObjectKey('expiry_color_${item.uuid}'),
+            width: 5.0,
+            decoration: BoxDecoration(color: _expiryColorScale(item.daysFromToday),),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -125,72 +174,75 @@ class ItemCard extends StatelessWidget {
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItem item;
   static const double _BASE_HEIGHT = 110.0;
+  static const double _MAX_SIDE_WIDTH = 90.0;
 
   ItemCard(this.item);
 
-  Color _expiryColorScale(int days) {
-    if (days < 30) return Colors.redAccent;
-    else if (days < 90) return Colors.yellow;
-    return Colors.greenAccent;
-  }
-
-  static double height(BuildContext context) {
+  static double _computeHeight(BuildContext context) {
     double textScaleFactor = MediaQuery.of(context).textScaleFactor;
     return _BASE_HEIGHT * textScaleFactor;
   }
 
   @override
   Widget build(BuildContext context) {
+    var widgetHeight = _computeHeight(context);
+    var width = MediaQuery.of(context).size.width;
+    var sideWidth = widgetHeight > _MAX_SIDE_WIDTH? _MAX_SIDE_WIDTH: widgetHeight;
 
-    return Slidable(
-      delegate: SlidableDrawerDelegate(),
-      key: ObjectKey(item.uuid),
-      secondaryActions: <Widget>[
-        IconSlideAction(
-          caption: 'Edit Product',
-          color: Colors.lightBlueAccent,
-          icon: Icons.edit,
-          onTap: () async {
-            Navigator.of(context).push(MaterialPageRoute(builder: (context) => ProductPage(item)));
-          }
-        ),
-        IconSlideAction(
-          caption: 'Delete',
-          color: Colors.red,
-          icon: Icons.delete,
-          onTap: () {
-            Product productNameOfDeletedItem = _repo.getCachedProduct(item.inventoryId, item.code);
-            _bloc.actionSink(Action(Act.RemoveItem, item));
-            Scaffold.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Removed item ${productNameOfDeletedItem.name}'),
-                action: SnackBarAction(
-                  label: 'UNDO',
-                  onPressed: () => _bloc.actionSink(Action(Act.AddUpdateItem, item)),
-                ),
-              )
-            );
-          },
-        ),
-      ],
-      child: Card(
-        child: InkWell(
-          onTap: () {
+    return Container(
+      key: ObjectKey('card_${item.uuid}'),
+      height: widgetHeight,
+      child: Slidable(
+        delegate: SlidableDrawerDelegate(),
+        key: ObjectKey(item.uuid),
+        secondaryActions: <Widget>[
+          IconSlideAction(
+            caption: 'Edit Product',
+            color: Colors.lightBlueAccent,
+            icon: Icons.edit,
+            onTap: () async {
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) => ProductPage(item)));
+            }
+          ),
+          IconSlideAction(
+            caption: 'Delete',
+            color: Colors.red,
+            icon: Icons.delete,
+            onTap: () {
+              Product productNameOfDeletedItem = _repo.getCachedProduct(item.inventoryId, item.code);
+              _bloc.actionSink(Action(Act.RemoveItem, item));
+              Scaffold.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Removed item ${productNameOfDeletedItem.name}'),
+                  action: SnackBarAction(
+                    label: 'UNDO',
+                    onPressed: () => _bloc.actionSink(Action(Act.AddUpdateItem, item)),
+                  ),
+                )
+              );
+            },
+          ),
+        ],
+        child: FlatButton(
+          key: ObjectKey('button_${item.uuid}'),
+          padding: EdgeInsets.zero,
+          onPressed: () async {
             Navigator.of(context).push(MaterialPageRoute(builder: (context) => ItemAddPage(item)));
           },
-          child: Row(
-            children: <Widget>[
-              Expanded(flex: 1, child: ProductImage(item),),
-              Expanded(flex: 3, child: ProductLabel(item),),
-              Expanded(flex: 1, child: ItemExpiry(item),),
-              Container(
-                height: height(context), width: 5.0,
-                color: _expiryColorScale(item.daysFromToday),
-              ),
-            ],
+          child: Card(
+            clipBehavior: Clip.hardEdge,
+            child: Row(
+              key: ObjectKey('row_${item.uuid}'),
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                ProductImage(item, width: sideWidth, height: widgetHeight,),
+                ProductLabel(item, width: width * 0.50,),
+                ItemExpiry(item, width: sideWidth,),
+              ],
+            ),
           ),
         ),
-      )
+      ),
     );
   }
 }

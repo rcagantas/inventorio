@@ -103,10 +103,7 @@ class _ProductPageState extends State<ProductPage> {
                   setState(() { _stagingImage = file; });
                 });
               },
-              child: SizedBox(
-                width: imageSize, height: imageSize,
-                child: ProductImage(widget.item, placeHolderSize: imageSize * .60, stagingImage: _stagingImage,)
-              ),
+              child: ProductImage(widget.item, width: imageSize, height: imageSize, stagingImage: _stagingImage,),
             ),
             ListTile(title: Text('Tap to change image', textAlign: TextAlign.center,),),
           ],

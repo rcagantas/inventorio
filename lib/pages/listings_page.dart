@@ -78,14 +78,14 @@ class ListingsPage extends StatelessWidget {
   }
 
   static Widget buildList(BuildContext context, Function whenEmpty, Stream<List<InventoryItem>> stream) {
-    double height = ItemCard.height(context);
-
     return StreamBuilder<List<InventoryItem>>(
       stream: stream,
       builder: (context, snap) {
         if (!snap.hasData || snap.data.length == 0) return whenEmpty();
         return ListView.builder(
-          itemExtent: height,
+          padding: EdgeInsets.zero,
+          addAutomaticKeepAlives: false,
+          addRepaintBoundaries: false,
           itemCount: snap.data?.length ?? 0,
           itemBuilder: (context, index) => ItemCard(snap.data[index]),
         );

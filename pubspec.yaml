@@ -16,11 +16,8 @@ dependencies:
   cloud_firestore: ^0.8.2+3
   firebase_storage: ^1.0.4
   json_annotation: ^2.0.0
-  #connectivity: ^0.3.0
-  #transparent_image: ^0.1.0
   intl: ^0.15.7
-  qr_flutter: ^1.1.5
-  #loader_search_bar: 1.0.0+1
+  #qr_flutter: ^1.1.6
   shared_preferences: ^0.4.3
   date_utils: ^0.1.0+2
   flutter_local_notifications: ^0.4.2
@@ -32,6 +29,10 @@ dependencies:
   font_awesome_flutter: ^8.2.0
   flutter_native_image:
     git: https://github.com/btastic/flutter_native_image.git
+  qr_flutter:
+    git:
+      url: git://github.com/lukef/qr.flutter.git
+      ref: 2.0.0-dev
 
 
   # The following adds the Cupertino Icons font to your application.
