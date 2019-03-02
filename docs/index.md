@@ -13,6 +13,8 @@ and anything else that needs to have a date tracked against it as long as it has
 * Create and label several inventories.
 * Share inventories with other account holders. 
 
-Application framework by Flutter.io
-App Icon by Sophie Liverman
+## Credits
+* App Icon by Sophie Liverman
+* Application framework by [Flutter.io](https://flutter.dev)
+* Written in [Dart](http://dartlang.org)
 
