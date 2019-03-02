@@ -25,6 +25,7 @@ Link to privacy policy of third party service providers used by the app
 
 * [Google Sign-In](https://policies.google.com/privacy)
 * [Firebase Analytics](https://firebase.google.com/policies/analytics)
+* [Google Play Services](https://www.google.com/policies/privacy/)
 
 ## Log Data
 
