@@ -1,6 +1,6 @@
 # Inventorio
 
-[Privacy Policy]({% link inventorio_privacy_policy.md %})
+[Privacy Policy]({{ site.baseurl }}{% link inventorio_privacy_policy.md %})
 
 Inventorio is a home inventory system that manages collections of items against their expiration dates.
 

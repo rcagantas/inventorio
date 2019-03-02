@@ -3,4 +3,4 @@ theme: jekyll-theme-minimal
 title: Inventorio
 description: Inventorio is a home inventory system that manages collections of items against their expiration dates.
 
-logo: ../resources/icons/icon.png
+logo: /assets/icon.png
