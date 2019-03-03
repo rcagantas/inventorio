@@ -144,8 +144,7 @@ class InventoryBloc {
     // update the list when an inventory is selected
     userAccount.knownInventories.forEach((inventoryId) {
       _repo.getItemListObservable(inventoryId).listen((items) {
-        if (!_selectAllItems
-            && (items.length == 0 || items[0].inventoryId == _repo.getCachedUser().currentInventoryId)) {
+        if (!_selectAllItems && (inventoryId == _repo.getCachedUser().currentInventoryId)) {
           _updateSelectedSink(items);
         }
       });
