@@ -36,7 +36,7 @@ class _ItemAddPageState extends State<ItemAddPage> {
       appBar: AppBar(title: Text('Set Expiry Date'),),
       body: ListView(
         children: <Widget>[
-          ListTile(title: Text('${widget.item.code}', textAlign: TextAlign.center,),),
+          ListTile(title: Text('${widget.item.code}', textAlign: TextAlign.center, style: TextStyle(fontFamily: 'Raleway'),),),
           FlatButton(
             padding: EdgeInsets.zero,
             onPressed: () {
@@ -44,12 +44,14 @@ class _ItemAddPageState extends State<ItemAddPage> {
             },
             child: Container(
               height: 150.0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: <Widget>[
-                  Expanded(flex: 1, child: ProductImage(widget.item, height: 150.0, width: 150.0,)),
-                  Expanded(flex: 2, child: ProductLabel(widget.item))
-                ],
+              child: Card(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: <Widget>[
+                    ProductImage(widget.item, height: 150.0, width: 150.0,),
+                    ProductLabel(widget.item, width: 200.0,),
+                  ],
+                ),
               ),
             ),
           ),

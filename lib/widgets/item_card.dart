@@ -73,7 +73,7 @@ class ProductLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double calculatedWidth = width == 0.0? MediaQuery.of(context).size.width * 0.5: width;
+    double calculatedWidth = width == 0.0? MediaQuery.of(context).size.width * 0.3: width;
 
     return StreamBuilder<Product>(
       key: ObjectKey('label_${item.uuid}'),
@@ -128,7 +128,7 @@ class ProductLabel extends StatelessWidget {
 class ItemExpiry extends StatelessWidget {
   final InventoryItem item;
   final double width;
-  static const style = TextStyle(inherit: true, fontFamily: 'Raleway',fontWeight: FontWeight.bold);
+  static const style = TextStyle(inherit: true, fontFamily: 'Raleway', fontWeight: FontWeight.bold);
   static const align = TextAlign.center;
 
   ItemExpiry(this.item, {this.width});
