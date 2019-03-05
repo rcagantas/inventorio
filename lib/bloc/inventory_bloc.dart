@@ -64,7 +64,7 @@ class InventoryBloc {
 
     _repo.userUpdateStream
       .listen((userAccount) async {
-        if (userAccount != null) {
+        if (userAccount.isSignedIn) {
           _listenToInventoryUpdates(userAccount);
         }
       });

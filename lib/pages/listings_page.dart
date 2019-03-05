@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_auth_buttons/flutter_auth_buttons.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:inventorio/pages/item_add_page.dart';
-import 'package:inventorio/widgets/item_card.dart';
 import 'package:inventorio/pages/scan_page.dart';
 import 'package:inventorio/widgets/user_drawer.dart';
+import 'package:inventorio/widgets/widget_factory.dart';
 
 class InventoryItemSearchDelegate extends SearchDelegate<InventoryItem> {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
@@ -40,13 +41,13 @@ class InventoryItemSearchDelegate extends SearchDelegate<InventoryItem> {
 
   @override
   Widget buildResults(BuildContext context) {
-    return ListingsPage.buildList(context, () => Container(), _bloc.selectedStream);
+    return WidgetFactory.buildList(context, () => Container(), _bloc.selectedStream);
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
     _bloc.actionSink(Action(Act.SetSearchFilter, query));
-    return ListingsPage.buildList(context, () => Container(), _bloc.selectedStream);
+    return WidgetFactory.buildList(context, () => Container(), _bloc.selectedStream);
   }
 }
 
@@ -54,6 +55,7 @@ class InventoryItemSearchDelegate extends SearchDelegate<InventoryItem> {
 class ListingsPage extends StatelessWidget {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
+  final SearchDelegate<InventoryItem> _searchDelegate = InventoryItemSearchDelegate();
 
   static Icon iconToggle(SortType sortType) {
     switch(sortType) {
@@ -77,25 +79,25 @@ class ListingsPage extends StatelessWidget {
     );
   }
 
-  static Widget buildList(BuildContext context, Function whenEmpty, Stream<List<InventoryItem>> stream) {
-    return StreamBuilder<List<InventoryItem>>(
-      stream: stream,
-      builder: (context, snap) {
-        if (!snap.hasData || snap.data.length == 0) return whenEmpty();
-        return ListView.builder(
-          padding: EdgeInsets.zero,
-          addAutomaticKeepAlives: false,
-          addRepaintBoundaries: false,
-          itemCount: snap.data?.length ?? 0,
-          itemBuilder: (context, index) => ItemCard(snap.data[index]),
-        );
-      },
+  Widget loginWidget(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          WidgetFactory.imageLogo(),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: GoogleSignInButton(onPressed: () {
+              _repo.signIn();
+            }),
+          ),
+        ],
+      ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    SearchDelegate<InventoryItem> _searchDelegate = InventoryItemSearchDelegate();
+  Widget mainScaffold(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         actions: <Widget>[
@@ -132,7 +134,7 @@ class ListingsPage extends StatelessWidget {
           },
         ),
       ),
-      body: buildList(context, _buildWelcome, _bloc.selectedStream),
+      body: WidgetFactory.buildList(context, WidgetFactory.buildWelcome, _bloc.selectedStream),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           Navigator.of(context).push<String>(MaterialPageRoute(builder: (context) => ScanPage())).then((code) {
@@ -149,18 +151,19 @@ class ListingsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildWelcome() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          Image.asset('resources/icons/icon.png', width: 150.0, height: 150.0,),
-          ListTile(title: Text('Welcome to Inventorio', textAlign: TextAlign.center,)),
-          ListTile(title: Text('Scanned items and expiration dates will appear here. ', textAlign: TextAlign.center,)),
-          ListTile(title: Text('Scan new items by clicking the button below.', textAlign: TextAlign.center,)),
-        ],
-      ),
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<UserAccount>(
+      stream: _repo.userUpdateStream,
+      builder: (context, snap) {
+        if (snap.hasData && snap.data.isSignedIn) {
+          return mainScaffold(context);
+        }
+        return Scaffold(
+          backgroundColor: Colors.blueAccent,
+          body: loginWidget(context),
+        );
+      },
     );
   }
 }

@@ -7,11 +7,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:inventorio/flat/inventory_app.dart';
-import 'package:inventorio/inventory_app2.dart';
-import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:mockito/mockito.dart';
 
 class MockGoogleSignIn extends Mock implements GoogleSignIn {}

@@ -37,7 +37,7 @@ class RepositoryBloc {
   Observable<UserAccount> get userUpdateStream => _userUpdate.stream;
   Function(UserAccount) get userUpdateSink => _userUpdate.sink.add;
 
-  UserAccount _currentUser;
+  UserAccount _currentUser = unsetUser;
 
   final _productSubject = BehaviorSubject<Product>();
   Observable<Product> get productStream => _productSubject.stream;
@@ -49,7 +49,7 @@ class RepositoryBloc {
     userUpdateStream.listen((userAccount) => _currentUser = userAccount);
   }
 
-  void signIn() async {
+  Future<GoogleSignInAccount> signIn() async {
     try {
       if (_googleSignIn.currentUser == null) await _googleSignIn.signInSilently(suppressErrors: true);
       if (_googleSignIn.currentUser == null) await _googleSignIn.signIn();
@@ -58,6 +58,8 @@ class RepositoryBloc {
       _log.severe('Something wrong with sign-in', error);
       _loadFromPreferences();
     }
+
+    return _googleSignIn.currentUser;
   }
 
   void signOut() {
@@ -107,6 +109,8 @@ class RepositoryBloc {
   }
 
   UserAccount _createNewUserAccount(String userId) {
+    if (userId == null) return unsetUser;
+
     _log.info('Attempting to create user account for $userId');
     UserAccount userAccount = UserAccount(userId, generateUuid());
 
@@ -214,7 +218,7 @@ class RepositoryBloc {
   }
 
   UserAccount changeCurrentInventory(String uuid) {
-    if (_currentUser == null) return _currentUser;
+    if (!_currentUser.isSignedIn) return _currentUser;
     _log.info('Changing current inventory to $uuid');
     _currentUser.currentInventoryId = uuid;
     return _updateFireUser(_currentUser);
@@ -226,7 +230,7 @@ class RepositoryBloc {
   }
 
   UserAccount unsubscribeFromInventory(InventoryDetails detail) {
-    if (_currentUser == null) return _currentUser;
+    if (!_currentUser.isSignedIn) return _currentUser;
     if (_currentUser.knownInventories.length == 1) return _currentUser;
     _currentUser.knownInventories.remove(detail.uuid);
     _currentUser.currentInventoryId = _currentUser.knownInventories[0];
@@ -247,7 +251,7 @@ class RepositoryBloc {
   }
 
   void _uploadProduct(Product product) {
-    if (_currentUser == null) return;
+    if (!_currentUser.isSignedIn) return;
     _log.info('Trying to set product ${product.code} with ${product.toJson()}');
     String inventoryId = product.inventoryId ?? _currentUser.currentInventoryId;
     _updateCache(_getCacheKey(inventoryId, product.code), product);
@@ -273,8 +277,6 @@ class RepositoryBloc {
     String uuid = generateUuid();
     String fileName = '${product.code}_$uuid.jpg';
     product.imageUrl = await _uploadDataToStorage(imageDataToUpload, 'images', fileName);
-    _log.info('Image URL: ${product.imageUrl}');
-
     return product;
   }
 
@@ -317,7 +319,7 @@ class RepositoryBloc {
       uuid: generateUuid(),
       code: code,
       dateAdded: DateTime.now().toIso8601String(),
-      inventoryId: _currentUser.currentInventoryId
+      inventoryId: _currentUser?.currentInventoryId ?? UNSET
     );
   }
 
@@ -338,7 +340,7 @@ class RepositoryBloc {
   }
 
   void updateInventory(InventoryDetails inventory) {
-    if (_currentUser == null || inventory.uuid == null) return;
+    if (!_currentUser.isSignedIn || inventory.uuid == null) return;
     inventory.createdBy = _currentUser.userId;
     _fireInventory.document(inventory.uuid).setData(inventory.toJson()).whenComplete(() {
       _addInventory(inventory.uuid);
@@ -346,7 +348,7 @@ class RepositoryBloc {
   }
 
   void addInventory(String inventoryId) {
-    if (_currentUser == null || inventoryId == null) return;
+    if (!_currentUser.isSignedIn || inventoryId == null) return;
     _fireInventory.document(inventoryId).get().then((doc) {
       if (doc.exists) { _addInventory(inventoryId); }
     });

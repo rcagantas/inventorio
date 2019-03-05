@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
-import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:inventorio/pages/listings_page.dart';
+import 'package:inventorio/widgets/widget_factory.dart';
 
 class AllItemsPage extends StatelessWidget {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
-  final _repo = Injector.getInjector().get<RepositoryBloc>();
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +35,7 @@ class AllItemsPage extends StatelessWidget {
         title: Text('All Items'),
       ),
       body: WillPopScope(
-        child: ListingsPage.buildList(context, () => Container(), _bloc.selectedStream),
+        child: WidgetFactory.buildList(context, () => Container(), _bloc.selectedStream),
         onWillPop: () async {
           Future.delayed(Duration(milliseconds: 300), () {
             _bloc.actionSink(Action(Act.SelectAll, false));
