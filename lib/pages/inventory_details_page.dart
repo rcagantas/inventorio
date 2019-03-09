@@ -62,7 +62,7 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
                     ? Container(width: 0.0, height: 0.0,)
                     : ListTile(
                   title: RaisedButton(
-                    child: Text('Unsubscribe to inventory'),
+                    child: Text('Unsubscribe from inventory'),
                     onPressed: () async {
                       var confirmed = await DialogFactory.sureDialog(context,
                           'Unsubscribing would remove this inventory and all its items from your list', 'Unsubscribe', 'Cancel');

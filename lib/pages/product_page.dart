@@ -71,6 +71,7 @@ class _ProductPageState extends State<ProductPage> {
 
   TextFormField _fieldBuilder(TextEditingController controller, String labelText, Function clearCallback) {
     return TextFormField(
+      style: TextStyle(fontFamily: 'OpenSans'),
       maxLength: 60,
       controller: controller,
       keyboardType: TextInputType.text,
@@ -87,7 +88,7 @@ class _ProductPageState extends State<ProductPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.item.code}')),
+      appBar: AppBar(title: Text('${widget.item.code}', style: TextStyle(fontFamily: 'Raleway'),)),
       body: Form(
         key: _formKey,
         child: ListView(

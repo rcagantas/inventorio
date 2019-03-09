@@ -19,8 +19,27 @@ class WidgetFactory {
     );
   }
 
-  static Widget buildWelcome() {
-    var welcomeStyle = TextStyle(fontFamily: 'Montserrat', fontSize: 20.0);
+  static Widget _welcomeItem(String text) {
+    return ListTile(title: Text(text, textAlign: TextAlign.center,),);
+  }
+
+  static Widget buildWelcome({bool withInstructions = true}) {
+    List<Widget> textList = [
+      ListTile(
+        title: Text('Welcome to Inventorio',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22.0),
+        ),
+      ),
+    ];
+    if (withInstructions) {
+      textList.addAll([
+        _welcomeItem('Scanned items and expiration dates will appear here.'),
+        _welcomeItem('Scan new items by clicking the button below.'),
+      ]);
+    } else {
+      textList.add(_welcomeItem('Maximize your inventory'));
+    }
 
     return Center(
       child: Column(
@@ -29,28 +48,21 @@ class WidgetFactory {
         children: <Widget>[
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Image.asset('resources/icons/icon_transparent.png', width: 150.0, height: 150.0,),
+            child: Image.asset('resources/icons/icon_transparent.png', width: 180.0, height: 180.0,),
           ),
-          Text('Welcome to Inventorio', textAlign: TextAlign.center, style: welcomeStyle,),
-          Text('Scanned items and expiration dates will appear here.', textAlign: TextAlign.center, style: welcomeStyle,),
-          Text('Scan new items by clicking the button below.', textAlign: TextAlign.center, style: welcomeStyle,),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(children: textList),
+          ),
         ],
       ),
     );
   }
 
-  static Widget imageLogo(BuildContext context) {
-    return Container(
-      width: 200.0,
-      height: 200.0,
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        shape: BoxShape.circle,
-        image: new DecorationImage(
-          fit: BoxFit.fill,
-          image: AssetImage('resources/icons/icon_transparent.png')
-        )
-      ),
-    );
+
+  static TextStyle styleOverride({double size, FontWeight weight}) {
+    weight = weight == null? FontWeight.normal: weight;
+    if (size == null) return TextStyle(fontFamily: 'Montserrat', fontWeight: weight);
+    return TextStyle(fontFamily: 'Montserrat', fontSize: size, fontWeight: weight);
   }
 }

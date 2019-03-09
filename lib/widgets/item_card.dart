@@ -66,7 +66,6 @@ class ProductLabel extends StatelessWidget {
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItem item;
   final double width;
-  static const bold = TextStyle(inherit: true, fontWeight: FontWeight.bold);
   static const align = TextAlign.center;
 
   ProductLabel(this.item, {this.width = 0.0});
@@ -94,25 +93,28 @@ class ProductLabel extends StatelessWidget {
     if (product.isInitial || product == null) {
       return Text('Add New Product Information',
         textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 22.0),
+        style: TextStyle(fontSize: 22.0, fontFamily: 'OpenSans'),
       );
     }
 
     List<Text> textLabels = [];
     if (qString.isNotEmpty(product?.brand)) {
       textLabels.add(Text('${product.brand}',
+        style: TextStyle(fontFamily: 'OpenSans'),
         softWrap: true, overflow: TextOverflow.fade, textAlign: align,
         key: ObjectKey('product_brand_${item.uuid}'),),);
     }
 
     if (qString.isNotEmpty(product?.name)) {
       textLabels.add(Text('${product?.name}',
-        softWrap: true, overflow: TextOverflow.fade, textAlign: align, style: bold,
+        style: TextStyle(fontFamily: 'OpenSans', fontWeight: FontWeight.bold),
+        softWrap: true, overflow: TextOverflow.fade, textAlign: align,
         key: ObjectKey('product_name_${item.uuid}'),),);
     }
 
     if (qString.isNotEmpty(product?.variant)) {
       textLabels.add(Text('${product?.variant}',
+        style: TextStyle(fontFamily: 'OpenSans'),
         softWrap: true, overflow: TextOverflow.fade, textAlign: align,
         key: ObjectKey('product_variant_${item.uuid}'),),);
     }

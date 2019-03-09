@@ -26,6 +26,8 @@ class UserDrawer extends StatelessWidget {
   }
 
   Widget buildWithUser(BuildContext context, UserAccount userAccount) {
+    var styleItem = TextStyle(fontFamily: 'OpenSans');
+    var styleSubTitle = TextStyle(fontFamily: 'Raleway');
     return Drawer(
       child: ListView.builder(
         padding: EdgeInsets.zero,
@@ -59,12 +61,12 @@ class UserDrawer extends StatelessWidget {
               },
             );
             case 2: return ExpansionTile(
-              title: Text('Inventory Management'),
+              title: Text('Inventory Management', style: styleItem,),
               children: <Widget>[
                 ListTile(
                   enabled: userAccount.isSignedIn,
                   dense: true,
-                  title: Text('Create New Inventory'),
+                  title: Text('Create New Inventory', style: styleItem,),
                   onTap: () {
                     Navigator.popUntil(context, ModalRoute.withName('/'));
                     Navigator.push(context, MaterialPageRoute(builder: (context) => InventoryDetailsPage(null)));
@@ -73,7 +75,7 @@ class UserDrawer extends StatelessWidget {
                 ListTile(
                   enabled: userAccount.isSignedIn,
                   dense: true,
-                  title: Text('Scan Existing Inventory Code'),
+                  title: Text('Scan Existing Inventory Code', style: styleItem,),
                   onTap: () {
                     Navigator.popUntil(context, ModalRoute.withName('/'));
                     Navigator.push(context, MaterialPageRoute(builder: (context) => ScanPage())).then((code) {
@@ -84,7 +86,7 @@ class UserDrawer extends StatelessWidget {
                 ListTile(
                   enabled: userAccount.isSignedIn,
                   dense: true,
-                  title: Text('Edit/share Current Inventory'),
+                  title: Text('Edit/share Current Inventory', style: styleItem,),
                   onTap: () {
                     Navigator.popUntil(context, ModalRoute.withName('/'));
                     _repo.getInventoryDetailFuture(userAccount.currentInventoryId).then((toEdit) {
@@ -95,7 +97,7 @@ class UserDrawer extends StatelessWidget {
                 ListTile(
                   enabled: true,
                   dense: true,
-                  title: Text('Logs'),
+                  title: Text('Logs', style: styleItem,),
                   onTap: () {
                     Navigator.popUntil(context, ModalRoute.withName('/'));
                     Navigator.push(context, MaterialPageRoute(builder: (context) => LoggingPage()));
@@ -104,7 +106,7 @@ class UserDrawer extends StatelessWidget {
               ],
             );
             case 3: return ListTile(
-              title: Text('All Items'),
+              title: Text('All Items', style: styleItem,),
               onTap: () {
                 Navigator.popUntil(context, ModalRoute.withName('/'));
                 Navigator.push(context, MaterialPageRoute(builder: (context) => AllItemsPage()));
@@ -120,8 +122,8 @@ class UserDrawer extends StatelessWidget {
                 ..isSelected = false,
               builder: (context, snap) {
                 return ListTile(
-                  title: Text('${snap.data?.name ?? 'Inventory $index'}'),
-                  subtitle: Text('${snap.data?.currentCount ?? 0} items'),
+                  title: Text('${snap.data?.name ?? 'Inventory $index'}', style: styleItem,),
+                  subtitle: Text('${snap.data?.currentCount ?? 0} items', style: styleSubTitle,),
                   selected: snap.data?.isSelected ?? false,
                   onTap: () {
                     Navigator.popUntil(context, ModalRoute.withName('/'));

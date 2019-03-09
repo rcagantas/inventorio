@@ -27,7 +27,6 @@ dependencies:
   flutter_simple_dependency_injection: ^1.0.0
   rxdart: ^0.20.0
   font_awesome_flutter: ^8.2.0
-  flutter_auth_buttons: ^0.3.1
   flutter_native_image:
     git: https://github.com/btastic/flutter_native_image.git
   qr_flutter:

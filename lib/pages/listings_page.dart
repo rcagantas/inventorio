@@ -1,6 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_auth_buttons/flutter_auth_buttons.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
@@ -80,28 +78,6 @@ class ListingsPage extends StatelessWidget {
     );
   }
 
-  Widget loginWidget(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black12.withOpacity(0.7),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            WidgetFactory.imageLogo(context),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: GoogleSignInButton(
-                darkMode: true,
-                onPressed: () { _repo.signIn(); }
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _scanBarcode(BuildContext context) async {
     Navigator.of(context).push<String>(MaterialPageRoute(builder: (context) => ScanPage())).then((code) {
       if (code == null) return;
@@ -111,14 +87,22 @@ class ListingsPage extends StatelessWidget {
   }
 
   Widget _fabFactory(BuildContext context, UserAccount userAccount) {
+    return userAccount.isSignedIn ? _scanFab(context) : _loginFab(context);
+  }
+
+  Widget _loginFab(BuildContext context) {
+     return FloatingActionButton.extended(
+       onPressed: () => _repo.signIn(),
+       icon: Icon(FontAwesomeIcons.google),
+       label: Text('Sign In With Google', style: TextStyle(fontWeight: FontWeight.bold)),
+     );
+  }
+
+  Widget _scanFab(BuildContext context) {
     return FloatingActionButton.extended(
-      onPressed: userAccount.isSignedIn
-        ? () => _scanBarcode(context)
-        : () => _repo.signIn(),
+      onPressed: () => _scanBarcode(context),
       icon: Icon(FontAwesomeIcons.barcode),
-      label: userAccount.isSignedIn
-        ? Text('Scan Barcode')
-        : Text('Sign In With Google')
+      label: Text('Scan Barcode', style: TextStyle(fontWeight: FontWeight.bold),)
     );
   }
 
@@ -153,7 +137,9 @@ class ListingsPage extends StatelessWidget {
           },
         ),
       ),
-      body: WidgetFactory.buildList(context, WidgetFactory.buildWelcome, _bloc.selectedStream),
+      body: !userAccount.isSignedIn
+        ? WidgetFactory.buildWelcome(withInstructions: false)
+        : WidgetFactory.buildList(context, WidgetFactory.buildWelcome, _bloc.selectedStream),
       floatingActionButton: _fabFactory(context, userAccount),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       drawer: !userAccount.isSignedIn? null: UserDrawer(),
