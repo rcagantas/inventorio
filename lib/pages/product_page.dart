@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
+import 'package:inventorio/widgets/app_constants.dart';
 import 'package:inventorio/widgets/item_card.dart';
 
 class ProductPage extends StatefulWidget {
@@ -71,7 +72,7 @@ class _ProductPageState extends State<ProductPage> {
 
   TextFormField _fieldBuilder(TextEditingController controller, String labelText, Function clearCallback) {
     return TextFormField(
-      style: TextStyle(fontFamily: 'OpenSans'),
+      style: TextStyle(fontFamily: AppConstants.ITEM_FONT),
       maxLength: 60,
       controller: controller,
       keyboardType: TextInputType.text,
@@ -88,7 +89,7 @@ class _ProductPageState extends State<ProductPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.item.code}', style: TextStyle(fontFamily: 'Raleway'),)),
+      appBar: AppBar(title: Text('${widget.item.code}', style: TextStyle(fontFamily: AppConstants.NUMERIC_FONT),)),
       body: Form(
         key: _formKey,
         child: ListView(

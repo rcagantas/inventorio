@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:inventorio/bloc/logger_bloc.dart';
 import 'package:inventorio/bloc/scheduling_bloc.dart';
+import 'package:inventorio/widgets/app_constants.dart';
 import 'package:logging/logging.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
@@ -42,7 +43,7 @@ class _InventoryApp2State extends State<InventoryApp2> {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
-        fontFamily: 'Montserrat',
+        fontFamily: AppConstants.APP_FONT,
         primaryColor: Colors.blue.shade700,
         accentColor: Colors.blue.shade600,
       ),

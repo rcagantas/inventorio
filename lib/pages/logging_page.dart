@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/bloc/logger_bloc.dart';
+import 'package:inventorio/widgets/app_constants.dart';
 import 'package:logging/logging.dart';
 
 class _LoggingPageSearchDelegate extends SearchDelegate<LogRecord> {
@@ -56,7 +57,7 @@ class LoggingPage extends StatelessWidget {
       itemCount: list.length,
       itemExtent: 80.0 * textScaleFactor,
       itemBuilder: (context, index) {
-        TextStyle style = new TextStyle(fontFamily: 'OpenSans', fontSize: 11.0);
+        TextStyle style = new TextStyle(fontFamily: AppConstants.ITEM_FONT, fontSize: 11.0);
         String date = list[index].time.toIso8601String().substring(0, 10);
         String time = list[index].time.toIso8601String().substring(11, 19);
         String message = list[index].message;

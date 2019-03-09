@@ -6,6 +6,7 @@ import 'package:inventorio/data/definitions.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/pages/item_add_page.dart';
 import 'package:inventorio/pages/product_page.dart';
+import 'package:inventorio/widgets/app_constants.dart';
 import 'package:quiver/strings.dart' as qString;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -66,7 +67,9 @@ class ProductLabel extends StatelessWidget {
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItem item;
   final double width;
+
   static const align = TextAlign.center;
+  static const fontFamily = AppConstants.ITEM_FONT;
 
   ProductLabel(this.item, {this.width = 0.0});
 
@@ -93,28 +96,28 @@ class ProductLabel extends StatelessWidget {
     if (product.isInitial || product == null) {
       return Text('Add New Product Information',
         textAlign: TextAlign.center,
-        style: TextStyle(fontSize: 22.0, fontFamily: 'OpenSans'),
+        style: TextStyle(fontSize: 22.0, fontFamily: fontFamily),
       );
     }
 
     List<Text> textLabels = [];
     if (qString.isNotEmpty(product?.brand)) {
       textLabels.add(Text('${product.brand}',
-        style: TextStyle(fontFamily: 'OpenSans'),
+        style: TextStyle(fontFamily: fontFamily),
         softWrap: true, overflow: TextOverflow.fade, textAlign: align,
         key: ObjectKey('product_brand_${item.uuid}'),),);
     }
 
     if (qString.isNotEmpty(product?.name)) {
       textLabels.add(Text('${product?.name}',
-        style: TextStyle(fontFamily: 'OpenSans', fontWeight: FontWeight.bold),
+        style: TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.bold),
         softWrap: true, overflow: TextOverflow.fade, textAlign: align,
         key: ObjectKey('product_name_${item.uuid}'),),);
     }
 
     if (qString.isNotEmpty(product?.variant)) {
       textLabels.add(Text('${product?.variant}',
-        style: TextStyle(fontFamily: 'OpenSans'),
+        style: TextStyle(fontFamily: fontFamily),
         softWrap: true, overflow: TextOverflow.fade, textAlign: align,
         key: ObjectKey('product_variant_${item.uuid}'),),);
     }
@@ -130,7 +133,7 @@ class ProductLabel extends StatelessWidget {
 class ItemExpiry extends StatelessWidget {
   final InventoryItem item;
   final double width;
-  static const style = TextStyle(inherit: true, fontFamily: 'Raleway', fontWeight: FontWeight.bold);
+  static const style = TextStyle(inherit: true, fontFamily: AppConstants.NUMERIC_FONT, fontWeight: FontWeight.bold);
   static const align = TextAlign.center;
 
   ItemExpiry(this.item, {this.width});

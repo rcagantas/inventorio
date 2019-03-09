@@ -152,6 +152,7 @@ class InventoryBloc {
 
     // update the list when selecting all items
     var allInventories = userAccount.knownInventories.map((inventoryId) => _repo.getItemListObservable(inventoryId)).toList();
+    if (allInventories.length == 1) allInventories.add(Observable<List<InventoryItem>>.empty());
     Observable.combineLatest(allInventories, (List<List<InventoryItem>> listOfItems) => listOfItems.expand((l) => l).toList())
       .listen((items) {
         if (_selectAllItems) {

@@ -14,7 +14,7 @@ and anything else that needs to have a date tracked against it as long as it has
 * Share inventories with other account holders. 
 
 ## Credits
-* App Icon by Sophie Liverman
 * Application framework by [Flutter.io](https://flutter.dev)
 * Written in [Dart](http://dartlang.org)
+* App Icon by Sophie Liverman
 

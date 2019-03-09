@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:inventorio/data/definitions.dart';
+import 'package:inventorio/widgets/app_constants.dart';
 import 'package:inventorio/widgets/item_card.dart';
 
 class WidgetFactory {
@@ -62,7 +63,7 @@ class WidgetFactory {
 
   static TextStyle styleOverride({double size, FontWeight weight}) {
     weight = weight == null? FontWeight.normal: weight;
-    if (size == null) return TextStyle(fontFamily: 'Montserrat', fontWeight: weight);
-    return TextStyle(fontFamily: 'Montserrat', fontSize: size, fontWeight: weight);
+    if (size == null) return TextStyle(fontFamily: AppConstants.APP_FONT, fontWeight: weight);
+    return TextStyle(fontFamily: AppConstants.APP_FONT, fontSize: size, fontWeight: weight);
   }
 }

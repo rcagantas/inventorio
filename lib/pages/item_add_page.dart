@@ -4,6 +4,7 @@ import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
+import 'package:inventorio/widgets/app_constants.dart';
 import 'package:inventorio/widgets/item_card.dart';
 import 'package:inventorio/pages/product_page.dart';
 
@@ -36,7 +37,12 @@ class _ItemAddPageState extends State<ItemAddPage> {
       appBar: AppBar(title: Text('Set Expiry Date'),),
       body: ListView(
         children: <Widget>[
-          ListTile(title: Text('${widget.item.code}', textAlign: TextAlign.center, style: TextStyle(fontFamily: 'Raleway'),),),
+          ListTile(
+            title: Text('${widget.item.code}',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontFamily: AppConstants.NUMERIC_FONT),
+            ),
+          ),
           FlatButton(
             padding: EdgeInsets.zero,
             onPressed: () {
