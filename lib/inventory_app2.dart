@@ -42,7 +42,7 @@ class _InventoryApp2State extends State<InventoryApp2> {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
-        fontFamily: 'NotoSans',
+        fontFamily: 'OpenSans',
         primaryColor: Colors.blue.shade700,
         accentColor: Colors.blue.shade600,
       ),

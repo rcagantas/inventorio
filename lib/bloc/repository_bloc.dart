@@ -37,6 +37,9 @@ class RepositoryBloc {
   Observable<UserAccount> get userUpdateStream => _userUpdate.stream;
   Function(UserAccount) get userUpdateSink => _userUpdate.sink.add;
 
+  Observable<UserAccount> get userLoginStream => _userUpdate.stream
+    .where((userAccount) => userAccount.isSignedIn == true && _currentUser.email != userAccount.email);
+
   UserAccount _currentUser = unsetUser;
 
   final _productSubject = BehaviorSubject<Product>();

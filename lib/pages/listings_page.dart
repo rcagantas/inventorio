@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_auth_buttons/flutter_auth_buttons.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
@@ -80,26 +81,50 @@ class ListingsPage extends StatelessWidget {
   }
 
   Widget loginWidget(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          WidgetFactory.imageLogo(),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: GoogleSignInButton(onPressed: () {
-              _repo.signIn();
-            }),
-          ),
-        ],
+    return Scaffold(
+      backgroundColor: Colors.black12.withOpacity(0.7),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            WidgetFactory.imageLogo(context),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: GoogleSignInButton(
+                darkMode: true,
+                onPressed: () { _repo.signIn(); }
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget mainScaffold(BuildContext context) {
+  void _scanBarcode(BuildContext context) async {
+    Navigator.of(context).push<String>(MaterialPageRoute(builder: (context) => ScanPage())).then((code) {
+      if (code == null) return;
+      code = code.contains('/')? code.replaceAll('/', '#') : code;
+      Navigator.of(context).push(MaterialPageRoute(builder: (context) => ItemAddPage(_repo.buildItem(code))));
+    });
+  }
+
+  Widget _fabFactory(BuildContext context, UserAccount userAccount) {
+    return FloatingActionButton.extended(
+      onPressed: userAccount.isSignedIn
+        ? () => _scanBarcode(context)
+        : () => _repo.signIn(),
+      icon: Icon(FontAwesomeIcons.barcode),
+      label: userAccount.isSignedIn
+        ? Text('Scan Barcode')
+        : Text('Sign In With Google')
+    );
+  }
+
+  Widget mainScaffold(BuildContext context, UserAccount userAccount) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: !userAccount.isSignedIn? null: AppBar(
         actions: <Widget>[
           StreamBuilder<SortType>(
             initialData: SortType.DateExpiry,
@@ -119,50 +144,29 @@ class ListingsPage extends StatelessWidget {
             onPressed:() async { showSearch(context: context, delegate: _searchDelegate); }
           )
         ],
-        title: StreamBuilder<UserAccount>(
-          stream: _repo.userUpdateStream,
-          builder: (context, userSnapshot) {
-            if (!userSnapshot.hasData) return Text('Current Inventory');
-            return StreamBuilder<InventoryDetails>(
-              stream: _repo.getInventoryDetailObservable(userSnapshot.data.currentInventoryId),
-              builder: (context, detailSnapshot) {
-                return detailSnapshot.hasData
-                  ? Text('${detailSnapshot.data.name}')
-                  : Text('Current Inventory');
-              },
-            );
+        title: StreamBuilder<InventoryDetails>(
+          stream: _repo.getInventoryDetailObservable(userAccount.currentInventoryId),
+          builder: (context, detailSnapshot) {
+            return detailSnapshot.hasData
+              ? Text('${detailSnapshot.data.name}')
+              : Text('Current Inventory');
           },
         ),
       ),
       body: WidgetFactory.buildList(context, WidgetFactory.buildWelcome, _bloc.selectedStream),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          Navigator.of(context).push<String>(MaterialPageRoute(builder: (context) => ScanPage())).then((code) {
-            if (code == null) return;
-            code = code.contains('/')? code.replaceAll('/', '#') : code;
-            Navigator.of(context).push(MaterialPageRoute(builder: (context) => ItemAddPage(_repo.buildItem(code))));
-          });
-        },
-        icon: Icon(FontAwesomeIcons.barcode),
-        label: Text('Scan Barcode')
-      ),
+      floatingActionButton: _fabFactory(context, userAccount),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      drawer: UserDrawer(),
+      drawer: !userAccount.isSignedIn? null: UserDrawer(),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<UserAccount>(
+      initialData: RepositoryBloc.unsetUser,
       stream: _repo.userUpdateStream,
       builder: (context, snap) {
-        if (snap.hasData && snap.data.isSignedIn) {
-          return mainScaffold(context);
-        }
-        return Scaffold(
-          backgroundColor: Colors.blueAccent,
-          body: loginWidget(context),
-        );
+        return mainScaffold(context, snap.data);
       },
     );
   }
