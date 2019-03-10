@@ -1,5 +1,6 @@
 name: inventorio
 description: Basic home inventory in Flutter
+version: 1.0.2+52
 
 dependencies:
   flutter:
@@ -28,6 +29,7 @@ dependencies:
   rxdart: ^0.20.0
   font_awesome_flutter: ^8.2.0
   url_launcher: ^5.0.1
+  package_info: ^0.4.0+1
   flutter_native_image:
     git: https://github.com/btastic/flutter_native_image.git
   qr_flutter:

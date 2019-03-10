@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart' as launcher;
+import 'package:package_info/package_info.dart';
 
 class AboutPage extends StatelessWidget {
   void _launchUrl(String url) async {
@@ -57,7 +58,16 @@ class AboutPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            ListTile(title: Text('Inventorio', style: titleStyle, textAlign: TextAlign.center,),),
+            ListTile(
+              title: Text('Inventorio', style: titleStyle, textAlign: TextAlign.center,),
+              subtitle: FutureBuilder<PackageInfo>(
+                future: PackageInfo.fromPlatform(),
+                builder: (context, snap) {
+                  var version = snap.hasData? 'version ${snap.data.version} build ${snap.data.buildNumber}': '';
+                  return Text('$version', textAlign: TextAlign.center,);
+                },
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Image.asset('resources/icons/icon_transparent.png', width: 150.0, height: 150.0,),
