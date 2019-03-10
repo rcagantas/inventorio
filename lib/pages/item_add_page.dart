@@ -90,7 +90,7 @@ class _ItemAddPageState extends State<ItemAddPage> {
             await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(widget.item)));
           }
           Navigator.pop(context);
-          Future.delayed(Duration(milliseconds: 30), () {
+          Future.delayed(Duration(milliseconds: 300), () {
             _bloc.actionSink(Action(Act.AddUpdateItem, stagingItem));
           });
         }
