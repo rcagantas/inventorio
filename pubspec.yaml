@@ -1,6 +1,6 @@
 name: inventorio
 description: Basic home inventory in Flutter
-version: 1.0.2+52
+version: 1.0.2+53
 
 dependencies:
   flutter:
