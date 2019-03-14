@@ -51,6 +51,7 @@ class UserDrawer extends StatelessWidget {
         accountName: Text('${userAccount.displayName}'),
         accountEmail: Text('${userAccount.email}'),
         currentAccountPicture: CircleAvatar(
+            key: ObjectKey('${userAccount.email}_avatar'),
           backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           backgroundImage:
           userAccount.imageUrl == null
@@ -102,8 +103,8 @@ class UserDrawer extends StatelessWidget {
 
 
     return Drawer(
-      key: ObjectKey('drawer_${userAccount.email}'),
       child: ListView.builder(
+        key: ObjectKey('${userAccount.email}_drawer_list'),
         padding: EdgeInsets.zero,
         itemCount: PRE_ITEMS + inventoryLength + POST_ITEMS,
         itemBuilder: (context, index) {
@@ -111,16 +112,18 @@ class UserDrawer extends StatelessWidget {
             return drawerItems[index];
           } else if (PRE_ITEMS <= index && index < PRE_ITEMS + inventoryLength) {
             return StreamBuilder<InventoryDetails>(
-              key: ObjectKey('detail_stream_${userAccount.email}'),
+              key: ObjectKey('${userAccount.email}_detail_stream_$index'),
               stream: _repo.getInventoryDetailObservable(userAccount.knownInventories[index - PRE_ITEMS]),
               initialData: InventoryDetails(uuid: userAccount.knownInventories[index - PRE_ITEMS], name: 'Inventory $index')
                 ..currentCount = 0
                 ..isSelected = false,
               builder: (context, snap) {
+                var title = '${snap.data?.name ?? 'Inventory $index'}';
+                var subTitle = '${snap.data?.currentCount ?? 0} items';
                 return ListTile(
-                  key: ObjectKey('detail_item_${snap.data.uuid}'),
-                  title: Text('${snap.data?.name ?? 'Inventory $index'}', style: styleItem,),
-                  subtitle: Text('${snap.data?.currentCount ?? 0} items', style: styleSubTitle,),
+                  key: ObjectKey('${snap.data.uuid}_detail_item_$index'),
+                  title: Text(title, style: styleItem,),
+                  subtitle: Text(subTitle, style: styleSubTitle,),
                   selected: snap.data?.isSelected ?? false,
                   onTap: () {
                     Navigator.popUntil(context, ModalRoute.withName('/'));

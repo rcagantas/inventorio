@@ -34,11 +34,12 @@ class ProductImage extends StatelessWidget {
         widget = Image.file(snap.data.imageFile, fit: boxFit, width: width, height: height,);
       } else if (qString.isNotEmpty(snap.data.imageUrl)) {
         widget = CachedNetworkImage(
+          key: ObjectKey('${this.item.uuid}_image_cache'),
           width: width,
           height: height,
           imageUrl: snap.data.imageUrl,
           fit: boxFit,
-          placeholder: (context, url) => Center(child: Icon(Icons.camera_enhance, color: Colors.grey, size: pWidth,)),
+          placeholder: (context, url) => Center(child: Icon(Icons.camera_enhance, color: Colors.grey, size: pWidth, key: ObjectKey('icon_loading'),),),
           errorWidget: (context, url, error) => Center(child: Icon(Icons.error_outline, color: Colors.grey, size: pWidth)),
         );
       }

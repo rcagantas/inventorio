@@ -19,15 +19,8 @@ class RepositoryBloc {
   final _log = Logger('InventoryRepository');
   static final Uuid _uuid = Uuid();
   static String generateUuid() => _uuid.v4();
-  static const UNSET = '---';
 
   static const DURATION_SHORT = Duration(milliseconds: 30);
-
-  static final unsetUser = UserAccount(UNSET, UNSET)
-    ..displayName = ''
-    ..email = ''
-    ..isSignedIn = false
-  ;
 
   final _fireUsers = Firestore.instance.collection('users');
   final _fireInventory = Firestore.instance.collection('inventory');
@@ -40,7 +33,7 @@ class RepositoryBloc {
   Observable<UserAccount> get userLoginStream => _userUpdate.stream
     .where((userAccount) => userAccount.isSignedIn == true && _currentUser.email != userAccount.email);
 
-  UserAccount _currentUser = unsetUser;
+  UserAccount _currentUser = UserAccount.userLoading();
 
   final _productSubject = BehaviorSubject<Product>();
   Observable<Product> get productStream => _productSubject.stream;
@@ -79,7 +72,7 @@ class RepositoryBloc {
       _loadUserAccount(gAccount.id, gAccount.displayName, gAccount.photoUrl, gAccount.email);
     } else {
       _log.info('No account signed in.');
-      userUpdateSink(unsetUser);
+      userUpdateSink(UserAccount.userUnset());
     }
   }
 
@@ -92,10 +85,11 @@ class RepositoryBloc {
 
   void _loadUserAccount(String id, String displayName, String imageUrl, String email) {
     _fireUsers.document(id).snapshots().listen((doc) {
+      var userAccount = UserAccount.userLoading();
       if (!doc.exists) {
-        _createNewUserAccount(id);
+        userAccount = _createNewUserAccount(id);
       } else {
-        var userAccount = UserAccount.fromJson(doc.data)
+        userAccount = UserAccount.fromJson(doc.data)
           ..displayName = displayName
           ..email = email
           ..imageUrl = imageUrl
@@ -106,13 +100,13 @@ class RepositoryBloc {
           userAccount.currentInventoryId = userAccount.knownInventories[0];
         }
 
-        userUpdateSink(userAccount);
       }
+      userUpdateSink(userAccount);
     });
   }
 
   UserAccount _createNewUserAccount(String userId) {
-    if (userId == null) return unsetUser;
+    if (userId == null) return UserAccount.userUnset();
 
     _log.info('Attempting to create user account for $userId');
     UserAccount userAccount = UserAccount(userId, generateUuid());
@@ -241,7 +235,7 @@ class RepositoryBloc {
     return _updateFireUser(_currentUser);
   }
 
-  UserAccount getCachedUser() { return _currentUser == null ? unsetUser : _currentUser; }
+  UserAccount getCachedUser() { return _currentUser == null ? UserAccount.userLoading() : _currentUser; }
 
   void removeItem(InventoryItem item) {
     _log.info('Removing item: ${item.uuid}');
@@ -322,7 +316,7 @@ class RepositoryBloc {
       uuid: generateUuid(),
       code: code,
       dateAdded: DateTime.now().toIso8601String(),
-      inventoryId: _currentUser?.currentInventoryId ?? UNSET
+      inventoryId: _currentUser?.currentInventoryId ?? UserAccount.UNSET
     );
   }
 

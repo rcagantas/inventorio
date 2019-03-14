@@ -1,14 +1,89 @@
 import 'package:flutter/material.dart';
 import 'package:inventorio/data/definitions.dart';
-import 'package:inventorio/widgets/app_constants.dart';
 import 'package:inventorio/widgets/item_card.dart';
+import 'package:flutter_simple_dependency_injection/injector.dart';
+import 'package:inventorio/bloc/inventory_bloc.dart';
+import 'package:package_info/package_info.dart';
 
 class WidgetFactory {
-  static Widget buildList(BuildContext context, Function() whenEmpty, Stream<List<InventoryItem>> stream) {
+  static var titleStyle = TextStyle(fontSize: 30.0, fontWeight: FontWeight.bold);
+
+  static Widget titleCard() {
+    return ListTile(
+      title: Text('Inventorio', style: titleStyle, textAlign: TextAlign.center,),
+      subtitle: FutureBuilder<PackageInfo>(
+        future: PackageInfo.fromPlatform(),
+        builder: (context, snap) {
+          var version = snap.hasData? 'version ${snap.data.version} build ${snap.data.buildNumber}': '';
+          return Text('$version', textAlign: TextAlign.center,);
+        },
+      ),
+    );
+  }
+
+  static Widget buildWelcome(List<Widget> header, List<Widget> tail) {
+    header.add(titleCard());
+    List<Widget> children = <Widget>[
+      Expanded(
+        flex: 3,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: header,
+        ),
+      ),
+      Expanded(
+        flex: 3,
+        child: Center(
+          child: Image.asset('resources/icons/icon_transparent.png', width: 150.0, height: 150.0, key: ObjectKey('inventorio_logo'),),
+        ),
+      ),
+      Expanded(
+        flex: 6,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: tail,
+        ),
+      )
+    ];
+    return Column(
+      key: ObjectKey('inventorio_welcome'),
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: children,
+    );
+  }
+
+  static Widget _buildWelcomeInstructions(BuildContext context) {
+    List<Widget> header = <Widget>[];
+    List<Widget> tail = <Widget>[
+      ListTile(title: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text('Welcome To Inventorio', textAlign: TextAlign.center,),
+      ),),
+      ListTile(title: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text('Scanned items and expiration dates will appear here.', textAlign: TextAlign.center,),
+      ),),
+      ListTile(title: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text('Scan new items by tapping the button below.', textAlign: TextAlign.center,),
+      ),),
+
+    ];
+    return buildWelcome(header, tail);
+  }
+
+  static Widget buildList(BuildContext context, {bool showInstructions = true}) {
+    var _bloc = Injector.getInjector().get<InventoryBloc>();
     return StreamBuilder<List<InventoryItem>>(
-      stream: stream,
+      stream: _bloc.selectedStream,
       builder: (context, snap) {
-        if (!snap.hasData || snap.data.length == 0) return whenEmpty();
+        if (!snap.hasData || snap.data.length == 0) {
+          return _buildWelcomeInstructions(context);
+        }
+
         return ListView.builder(
           padding: EdgeInsets.zero,
           addAutomaticKeepAlives: false,
@@ -18,52 +93,5 @@ class WidgetFactory {
         );
       },
     );
-  }
-
-  static Widget _welcomeItem(String text) {
-    return ListTile(title: Text(text, textAlign: TextAlign.center,),);
-  }
-
-  static Widget buildWelcome({bool withInstructions = true}) {
-    List<Widget> textList = [
-      ListTile(
-        title: Text('Welcome to Inventorio',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22.0),
-        ),
-      ),
-    ];
-    if (withInstructions) {
-      textList.addAll([
-        _welcomeItem('Scanned items and expiration dates will appear here.'),
-        _welcomeItem('Scan new items by clicking the button below.'),
-      ]);
-    } else {
-      textList.add(_welcomeItem('Maximize your inventory'));
-    }
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Image.asset('resources/icons/icon_transparent.png', width: 180.0, height: 180.0,),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(children: textList),
-          ),
-        ],
-      ),
-    );
-  }
-
-
-  static TextStyle styleOverride({double size, FontWeight weight}) {
-    weight = weight == null? FontWeight.normal: weight;
-    if (size == null) return TextStyle(fontFamily: AppConstants.APP_FONT, fontWeight: weight);
-    return TextStyle(fontFamily: AppConstants.APP_FONT, fontSize: size, fontWeight: weight);
   }
 }

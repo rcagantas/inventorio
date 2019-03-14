@@ -133,16 +133,27 @@ class InventoryDetails {
 
 @JsonSerializable()
 class UserAccount {
+  static const UNSET = '---';
+
   List<String> knownInventories = List();
   String userId;
   String currentInventoryId;
   @JsonKey(ignore: true) String displayName;
   @JsonKey(ignore: true) String email;
   @JsonKey(ignore: true) String imageUrl;
+  @JsonKey(ignore: true) bool isLoading;
   @JsonKey(ignore: true) bool isSignedIn;
 
-  UserAccount(this.userId, this.currentInventoryId) { knownInventories.add(this.currentInventoryId);}
-  factory UserAccount.fromJson(Map<String, dynamic> json) => _$UserAccountFromJson(json);
+  UserAccount(this.userId, this.currentInventoryId) {
+    knownInventories.add(this.currentInventoryId);
+    isLoading = false;
+    isSignedIn = true;
+  }
+
+  factory UserAccount.fromJson(Map<String, dynamic> json) => _$UserAccountFromJson(json)
+    ..isSignedIn = true
+    ..isLoading = false
+  ;
   Map<String, dynamic> toJson() => _$UserAccountToJson(this);
 
   @override int get hashCode => hashObjects(toJson().values);
@@ -154,6 +165,25 @@ class UserAccount {
       userId == other.userId &&
       currentInventoryId == other.currentInventoryId;
   }
+
+  factory UserAccount.userUnset() {
+    return UserAccount(UNSET, UNSET)
+      ..displayName = ''
+      ..email = ''
+      ..isSignedIn = false
+      ..isLoading = false
+    ;
+  }
+
+  factory UserAccount.userLoading() {
+    return UserAccount(UNSET, UNSET)
+      ..displayName = ''
+      ..email = ''
+      ..isSignedIn = false
+      ..isLoading = true
+    ;
+  }
+
 }
 
 class InventorySet {

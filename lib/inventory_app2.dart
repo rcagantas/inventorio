@@ -37,6 +37,7 @@ class _InventoryApp2State extends State<InventoryApp2> {
     Logger.root.onRecord.listen((rec) => _logger.addMessage(rec));
 
     _injector.get<SchedulingBloc>(); // start notification scheduling
+    _injector.get<InventoryBloc>(); // start the rest of the app
   }
 
   @override

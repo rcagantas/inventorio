@@ -35,7 +35,7 @@ class AllItemsPage extends StatelessWidget {
         title: Text('All Items'),
       ),
       body: WillPopScope(
-        child: WidgetFactory.buildList(context, () => Container(), _bloc.selectedStream),
+        child: WidgetFactory.buildList(context),
         onWillPop: () async {
           Future.delayed(Duration(milliseconds: 300), () {
             _bloc.actionSink(Action(Act.SelectAll, false));

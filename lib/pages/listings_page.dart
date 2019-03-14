@@ -40,13 +40,13 @@ class InventoryItemSearchDelegate extends SearchDelegate<InventoryItem> {
 
   @override
   Widget buildResults(BuildContext context) {
-    return WidgetFactory.buildList(context, () => Container(), _bloc.selectedStream);
+    return WidgetFactory.buildList(context);
   }
 
   @override
   Widget buildSuggestions(BuildContext context) {
     _bloc.actionSink(Action(Act.SetSearchFilter, query));
-    return WidgetFactory.buildList(context, () => Container(), _bloc.selectedStream);
+    return WidgetFactory.buildList(context);
   }
 }
 
@@ -86,29 +86,30 @@ class ListingsPage extends StatelessWidget {
     });
   }
 
-  Widget _fabFactory(BuildContext context, UserAccount userAccount) {
-    return userAccount.isSignedIn ? _scanFab(context) : _loginFab(context);
-  }
+
+  final bold = const TextStyle(fontWeight: FontWeight.bold);
+  final boldItalic = const TextStyle(fontWeight: FontWeight.bold, fontStyle: FontStyle.italic);
 
   Widget _loginFab(BuildContext context) {
      return FloatingActionButton.extended(
        onPressed: () => _repo.signIn(),
        icon: Icon(FontAwesomeIcons.google),
-       label: Text('Sign In With Google', style: TextStyle(fontWeight: FontWeight.bold)),
+       label: Text('Sign In With Google', style: bold),
      );
   }
 
   Widget _scanFab(BuildContext context) {
     return FloatingActionButton.extended(
+      key: ObjectKey('scan_fab'),
       onPressed: () => _scanBarcode(context),
-      icon: Icon(FontAwesomeIcons.barcode),
-      label: Text('Scan Barcode', style: TextStyle(fontWeight: FontWeight.bold),)
+      icon: Icon(FontAwesomeIcons.barcode, key: ObjectKey('scan_fab_icon'),),
+      label: Text('Scan Barcode', style: bold, key: ObjectKey('scan_fab_text'),)
     );
   }
 
-  Widget mainScaffold(BuildContext context, UserAccount userAccount) {
+  Widget _mainScaffold(BuildContext context, UserAccount userAccount) {
     return Scaffold(
-      appBar: !userAccount.isSignedIn? null: AppBar(
+      appBar: AppBar(
         actions: <Widget>[
           StreamBuilder<SortType>(
             initialData: SortType.DateExpiry,
@@ -137,22 +138,62 @@ class ListingsPage extends StatelessWidget {
           },
         ),
       ),
-      body: !userAccount.isSignedIn
-        ? WidgetFactory.buildWelcome(withInstructions: false)
-        : WidgetFactory.buildList(context, WidgetFactory.buildWelcome, _bloc.selectedStream),
-      floatingActionButton: _fabFactory(context, userAccount),
+      body: WidgetFactory.buildList(context),
+      floatingActionButton: _scanFab(context),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      drawer: !userAccount.isSignedIn? null: UserDrawer(),
+      drawer: UserDrawer(),
+    );
+  }
+
+  Widget _signInScaffold(BuildContext context) {
+    var header = <Widget>[];
+    var tail = <Widget>[
+      ListTile(
+        title: Text('Maximize Your Inventory',
+          style: TextStyle(fontSize: 20.0),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    ];
+    return Scaffold(
+      body: WidgetFactory.buildWelcome(header, tail),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: _loginFab(context),
+    );
+  }
+
+  Widget _loadingScaffold(BuildContext context) {
+    var header = <Widget>[];
+    var tail = <Widget>[];
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0.0,
+      ),
+      body: WidgetFactory.buildWelcome(header, tail),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: Colors.grey,
+        onPressed: null,
+        icon: Icon(FontAwesomeIcons.google),
+        label: Text('Loading...', style: boldItalic),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<UserAccount>(
-      initialData: RepositoryBloc.unsetUser,
+      initialData: _repo.getCachedUser(),
       stream: _repo.userUpdateStream,
       builder: (context, snap) {
-        return mainScaffold(context, snap.data);
+        if (snap.hasData && !snap.data.isLoading) {
+          return snap.data.isSignedIn
+              ? _mainScaffold(context, snap.data)
+              : _signInScaffold(context);
+        }
+        return _loadingScaffold(context);
       },
     );
   }

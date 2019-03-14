@@ -54,7 +54,7 @@ void main() {
     reset(_mockRepo);
 
     when(_mockRepo.signIn()).thenAnswer((inv) {
-      _mockRepo.userUpdateSink(withUser == null? RepositoryBloc.unsetUser: userData[withUser]);
+      _mockRepo.userUpdateSink(withUser == null? UserAccount.userUnset(): userData[withUser]);
     });
 
     when(_mockRepo.getItemListObservable(any)).thenAnswer((inv) {
