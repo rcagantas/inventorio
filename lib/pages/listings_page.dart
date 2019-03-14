@@ -92,18 +92,24 @@ class ListingsPage extends StatelessWidget {
 
   Widget _loginFab(BuildContext context) {
      return FloatingActionButton.extended(
+       key: ObjectKey('login_fab'),
        onPressed: () => _repo.signIn(),
        icon: Icon(FontAwesomeIcons.google),
        label: Text('Sign In With Google', style: bold),
      );
   }
 
-  Widget _scanFab(BuildContext context) {
+  Widget _scanFab(BuildContext context, {bool loading = false}) {
     return FloatingActionButton.extended(
       key: ObjectKey('scan_fab'),
-      onPressed: () => _scanBarcode(context),
-      icon: Icon(FontAwesomeIcons.barcode, key: ObjectKey('scan_fab_icon'),),
-      label: Text('Scan Barcode', style: bold, key: ObjectKey('scan_fab_text'),)
+      backgroundColor: loading ? Colors.grey : Theme.of(context).accentColor,
+      onPressed: () => loading ? null : _scanBarcode(context),
+      icon: loading
+        ? Icon(FontAwesomeIcons.google, key: ObjectKey('loading_fab_icon'))
+        : Icon(FontAwesomeIcons.barcode, key: ObjectKey('scan_fab_icon'),),
+      label: loading
+        ? Text('Loading...', style: boldItalic)
+        : Text('Scan Barcode', style: bold, key: ObjectKey('scan_fab_text'),),
     );
   }
 
@@ -139,7 +145,7 @@ class ListingsPage extends StatelessWidget {
         ),
       ),
       body: WidgetFactory.buildList(context),
-      floatingActionButton: _scanFab(context),
+      floatingActionButton: _scanFab(context, loading: userAccount.isLoading),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       drawer: UserDrawer(),
     );
@@ -154,8 +160,10 @@ class ListingsPage extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
       ),
+      WidgetFactory.link(context, 'Privacy Policy', 'https://rcagantas.github.io/inventorio/inventorio_privacy_policy.html'),
     ];
     return Scaffold(
+      appBar: AppBar(backgroundColor: Theme.of(context).scaffoldBackgroundColor, elevation: 0.0,),
       body: WidgetFactory.buildWelcome(header, tail),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: _loginFab(context),
@@ -167,18 +175,10 @@ class ListingsPage extends StatelessWidget {
     var tail = <Widget>[];
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0.0,
-      ),
+      appBar: AppBar(backgroundColor: Theme.of(context).scaffoldBackgroundColor, elevation: 0.0,),
       body: WidgetFactory.buildWelcome(header, tail),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: Colors.grey,
-        onPressed: null,
-        icon: Icon(FontAwesomeIcons.google),
-        label: Text('Loading...', style: boldItalic),
-      ),
+      floatingActionButton: _scanFab(context, loading: true),
     );
   }
 

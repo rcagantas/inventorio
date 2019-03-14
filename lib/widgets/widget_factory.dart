@@ -4,6 +4,7 @@ import 'package:inventorio/widgets/item_card.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:package_info/package_info.dart';
+import 'package:url_launcher/url_launcher.dart' as launcher;
 
 class WidgetFactory {
   static var titleStyle = TextStyle(fontSize: 30.0, fontWeight: FontWeight.bold);
@@ -54,6 +55,31 @@ class WidgetFactory {
       children: children,
     );
   }
+
+  static void launchUrl(String url) async {
+    if (await launcher.canLaunch(url)) {
+      await launcher.launch(url);
+    } else {
+      print('Cannot launch $url');
+    }
+  }
+
+
+  static Widget link(BuildContext context, String text, String url) {
+    var width = MediaQuery.of(context).size.width * .70;
+    var urlStyle = TextStyle(fontSize: 16.0, color: Colors.blueAccent);
+
+    return SizedBox(
+      width: width,
+      height: 25.0,
+      child: FlatButton(
+        padding: EdgeInsets.zero,
+        child: Text(text, textAlign: TextAlign.center, style: urlStyle,),
+        onPressed: () => launchUrl(url),
+      ),
+    );
+  }
+
 
   static Widget _buildWelcomeInstructions(BuildContext context) {
     List<Widget> header = <Widget>[];
