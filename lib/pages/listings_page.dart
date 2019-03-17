@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:connectivity/connectivity.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
@@ -65,7 +66,7 @@ class ListingsPage extends StatelessWidget {
     return Icon(Icons.sort);
   }
 
-  static showSnackBar(BuildContext context, SortType sortType) {
+  static showSortingSnackBar(BuildContext context, SortType sortType) {
     String message = '';
     switch(sortType) {
       case SortType.DateExpiry: message = 'Sorting by expiration date.'; break;
@@ -90,26 +91,27 @@ class ListingsPage extends StatelessWidget {
   final bold = const TextStyle(fontWeight: FontWeight.bold);
   final boldItalic = const TextStyle(fontWeight: FontWeight.bold, fontStyle: FontStyle.italic);
 
-  Widget _loginFab(BuildContext context) {
-     return FloatingActionButton.extended(
-       key: ObjectKey('login_fab'),
-       onPressed: () => _repo.signIn(),
-       icon: Icon(FontAwesomeIcons.google),
-       label: Text('Sign In With Google', style: bold),
-     );
+  Widget _loadingText(bool loading, bool unset) {
+    if (loading) return Text('Loading...', style: boldItalic);
+    else if (unset) return Text('Sign In With Google', style: bold);
+    return Text('Scan Barcode', style: bold, key: ObjectKey('scan_fab_text'),);
   }
 
-  Widget _scanFab(BuildContext context, {bool loading = false}) {
+  Widget _fabFactory(BuildContext context, UserAccount userAccount) {
+    bool loading = userAccount.isLoading;
+    bool unset = userAccount.email == '';
     return FloatingActionButton.extended(
       key: ObjectKey('scan_fab'),
       backgroundColor: loading ? Colors.grey : Theme.of(context).accentColor,
-      onPressed: () => loading ? null : _scanBarcode(context),
-      icon: loading
+      onPressed: () async {
+        if (loading) return;
+        else if (unset) _repo.signIn();
+        else _scanBarcode(context);
+      },
+      icon: loading || unset
         ? Icon(FontAwesomeIcons.google, key: ObjectKey('loading_fab_icon'))
         : Icon(FontAwesomeIcons.barcode, key: ObjectKey('scan_fab_icon'),),
-      label: loading
-        ? Text('Loading...', style: boldItalic)
-        : Text('Scan Barcode', style: bold, key: ObjectKey('scan_fab_text'),),
+      label: _loadingText(loading, unset),
     );
   }
 
@@ -124,7 +126,7 @@ class ListingsPage extends StatelessWidget {
               return IconButton(
                 icon: iconToggle(snap.data),
                 onPressed: () async {
-                  showSnackBar(context, _bloc.nextSortType());
+                  showSortingSnackBar(context, _bloc.nextSortType());
                   _bloc.actionSink(Action(Act.ToggleSort, null));
                 },
               );
@@ -145,7 +147,7 @@ class ListingsPage extends StatelessWidget {
         ),
       ),
       body: WidgetFactory.buildList(context),
-      floatingActionButton: _scanFab(context, loading: userAccount.isLoading),
+      floatingActionButton: _fabFactory(context, userAccount),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       drawer: UserDrawer(),
     );
@@ -161,12 +163,21 @@ class ListingsPage extends StatelessWidget {
         ),
       ),
       WidgetFactory.link(context, 'Privacy Policy', 'https://rcagantas.github.io/inventorio/inventorio_privacy_policy.html'),
+      StreamBuilder<ConnectivityResult>(
+        stream: Connectivity().onConnectivityChanged,
+        builder: (context, snap) {
+          if (snap.hasData && snap.data == ConnectivityResult.none) {
+            return ListTile(title: Text('OFFLINE', style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold), textAlign: TextAlign.center,),);
+          }
+          return SizedBox.shrink();
+        },
+      ),
     ];
     return Scaffold(
       appBar: AppBar(backgroundColor: Theme.of(context).scaffoldBackgroundColor, elevation: 0.0,),
       body: WidgetFactory.buildWelcome(header, tail),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: _loginFab(context),
+      floatingActionButton: _fabFactory(context, UserAccount.userUnset())
     );
   }
 
@@ -178,7 +189,7 @@ class ListingsPage extends StatelessWidget {
       appBar: AppBar(backgroundColor: Theme.of(context).scaffoldBackgroundColor, elevation: 0.0,),
       body: WidgetFactory.buildWelcome(header, tail),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: _scanFab(context, loading: true),
+      floatingActionButton: _fabFactory(context, UserAccount.userLoading()),
     );
   }
 

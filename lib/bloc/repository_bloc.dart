@@ -12,6 +12,7 @@ import 'package:path/path.dart';
 import 'package:uuid/uuid.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:connectivity/connectivity.dart';
 import 'package:inventorio/data/definitions.dart';
 
 class RepositoryBloc {
@@ -43,16 +44,32 @@ class RepositoryBloc {
   RepositoryBloc() {
     _googleSignIn.onCurrentUserChanged.listen((gAccount) => _accountFromSignIn(gAccount));
     userUpdateStream.listen((userAccount) => _currentUser = userAccount);
+    Connectivity().checkConnectivity().then((connection) {
+      if (connection == ConnectivityResult.none) {
+        Connectivity().onConnectivityChanged.listen((connection) {
+          if (connection != ConnectivityResult.none) signIn();
+        });
+      }
+    });
   }
 
   Future<GoogleSignInAccount> signIn() async {
+    var connection = await Connectivity().checkConnectivity();
+    if (connection == ConnectivityResult.none) {
+      _loadFromPreferences();
+      return null;
+    }
+    return _signInGoogle();
+  }
+
+  Future<GoogleSignInAccount> _signInGoogle() async {
     try {
       if (_googleSignIn.currentUser == null) await _googleSignIn.signInSilently(suppressErrors: true);
       if (_googleSignIn.currentUser == null) await _googleSignIn.signIn();
       _log.info('Signed in with ${_googleSignIn.currentUser.displayName}.');
     } catch (error) {
       _log.severe('Something wrong with sign-in', error);
-      _loadFromPreferences();
+      userUpdateSink(UserAccount.userUnset());
     }
 
     return _googleSignIn.currentUser;
@@ -61,6 +78,7 @@ class RepositoryBloc {
   void signOut() {
     _log.info('Signing out from ${_googleSignIn.currentUser.displayName}.');
     _googleSignIn.signOut();
+    _saveToPreferences(null);
   }
 
   void _accountFromSignIn(GoogleSignInAccount gAccount) async {
@@ -69,9 +87,11 @@ class RepositoryBloc {
         _log.info('Firebase sign-in with Google: ${gAccount.id.substring(0, 10)}...');
         FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
       });
+      _saveToPreferences(gAccount.id);
       _loadUserAccount(gAccount.id, gAccount.displayName, gAccount.photoUrl, gAccount.email);
     } else {
       _log.info('No account signed in.');
+      _saveToPreferences(null);
       userUpdateSink(UserAccount.userUnset());
     }
   }
@@ -79,7 +99,14 @@ class RepositoryBloc {
   void _loadFromPreferences() {
     SharedPreferences.getInstance().then((pref) {
       String id = pref.getString('inventorio.userId');
+      _log.info('Loaded from last login: $id');
       _loadUserAccount(id, 'Cached Data', null, 'Not connected');
+    });
+  }
+
+  void _saveToPreferences(String id) {
+    SharedPreferences.getInstance().then((pref) {
+      pref.setString('inventorio.userId', id);
     });
   }
 

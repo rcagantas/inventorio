@@ -21,7 +21,7 @@ class AllItemsPage extends StatelessWidget {
               return IconButton(
                 icon: ListingsPage.iconToggle(snap.data),
                 onPressed: () async {
-                  ListingsPage.showSnackBar(context, _bloc.nextSortType());
+                  ListingsPage.showSortingSnackBar(context, _bloc.nextSortType());
                   _bloc.actionSink(Action(Act.ToggleSort, null));
                 },
               );

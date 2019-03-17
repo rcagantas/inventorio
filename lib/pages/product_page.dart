@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:connectivity/connectivity.dart';
 import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
@@ -98,14 +99,24 @@ class _ProductPageState extends State<ProductPage> {
             _fieldBuilder(_brandCtrl,   'Brand', () { _brandCtrl.clear(); }),
             _fieldBuilder(_nameCtrl,    'Product Name', () { _nameCtrl.clear(); }),
             _fieldBuilder(_variantCtrl, 'Variant/Flavor/Volume', () { _variantCtrl.clear(); }),
-            FlatButton(
-              onPressed: () {
-                ImagePicker.pickImage(source: ImageSource.camera).then((file) {
-                  if (file == null) return;
-                  setState(() { _stagingImage = file; });
-                });
-              },
-              child: ProductImage(widget.item, width: imageSize, height: imageSize, stagingImage: _stagingImage,),
+            Builder(
+              builder: (context) => FlatButton(
+                onPressed: () async {
+                  var connection = await Connectivity().checkConnectivity();
+                  print('$connection');
+                  if (connection == ConnectivityResult.none) {
+                    Scaffold.of(context).showSnackBar(
+                      SnackBar(content: Text('Image upload is not available while offline'),)
+                    );
+                  } else {
+                    ImagePicker.pickImage(source: ImageSource.camera).then((file) {
+                      if (file == null) return;
+                      setState(() { _stagingImage = file; });
+                    });
+                  }
+                },
+                child: ProductImage(widget.item, width: imageSize, height: imageSize, stagingImage: _stagingImage,),
+              ),
             ),
             ListTile(title: Text('Tap to change image', textAlign: TextAlign.center,),),
           ],
