@@ -21,7 +21,7 @@ class SchedulingBloc {
   SchedulingBloc() {
     _notifier.initialize(
       InitializationSettings(
-        AndroidInitializationSettings('icon'),
+        AndroidInitializationSettings('app_icon'),
         IOSInitializationSettings()
       ),
       onSelectNotification: (inventoryId) {
@@ -88,6 +88,8 @@ class SchedulingBloc {
       _notifier.schedule(notifiedItem.scheduleId, '$title', '$message',
           notificationDate, _notificationDetails, payload: item.inventoryId).then((_) {
         _log.info('Alerting [${notifiedItem.scheduleId}] $title on $notificationDate');
+      }, onError: (error) {
+        _log.severe('Failed to schedule [${notifiedItem.scheduleId}] $title on $notificationDate.', error);
       });
       return notifiedItem;
     });

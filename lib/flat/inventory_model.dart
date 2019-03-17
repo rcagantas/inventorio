@@ -122,8 +122,7 @@ class InventoryModel extends Model {
 
     account.authentication.then((auth) {
       log.fine('Firebase sign-in with Google: ${account.id}');
-      FirebaseAuth.instance.signInWithGoogle(
-          idToken: auth.idToken, accessToken: auth.accessToken);
+      //FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
     });
 
     SharedPreferences.getInstance()

@@ -112,7 +112,7 @@ packages:
       name: cloud_firestore
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.2+3"
+    version: "0.9.7"
   code_builder:
     dependency: transitive
     description:
@@ -191,28 +191,28 @@ packages:
       name: firebase_analytics
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.2.0+1"
+    version: "2.0.3"
   firebase_auth:
     dependency: "direct main"
     description:
       name: firebase_auth
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.6.6"
+    version: "0.8.1+4"
   firebase_core:
     dependency: transitive
     description:
       name: firebase_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.5+1"
+    version: "0.3.1+1"
   firebase_storage:
     dependency: "direct main"
     description:
       name: firebase_storage
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.0+1"
+    version: "2.1.0+1"
   fixnum:
     dependency: transitive
     description:
@@ -245,7 +245,7 @@ packages:
       name: flutter_local_notifications
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.5"
+    version: "0.5.2"
   flutter_native_image:
     dependency: "direct main"
     description:
@@ -301,7 +301,7 @@ packages:
       name: google_sign_in
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.3.0+1"
+    version: "4.0.1+1"
   graphs:
     dependency: transitive
     description:
@@ -350,7 +350,7 @@ packages:
       name: image_picker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.12+1"
+    version: "0.5.0+6"
   intl:
     dependency: "direct main"
     description:
@@ -455,7 +455,7 @@ packages:
       name: native_device_orientation
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.0.4"
+    version: "0.1.2"
   node_preamble:
     dependency: transitive
     description:
@@ -476,7 +476,7 @@ packages:
       name: package_info
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.0+1"
+    version: "0.4.0+2"
   package_resolver:
     dependency: transitive
     description:
@@ -569,7 +569,7 @@ packages:
       name: qr_mobile_vision
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.0"
+    version: "0.2.2"
   quiver:
     dependency: transitive
     description:
@@ -604,7 +604,7 @@ packages:
       name: shared_preferences
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.3"
+    version: "0.5.1+2"
   shelf:
     dependency: transitive
     description:
@@ -756,7 +756,7 @@ packages:
       name: url_launcher
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.1"
+    version: "5.0.2"
   utf:
     dependency: transitive
     description:

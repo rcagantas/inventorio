@@ -5,6 +5,7 @@
 -keep class io.flutter.view.**  { *; }
 -keep class io.flutter.**  { *; }
 -keep class io.flutter.plugins.**  { *; }
+-keep class com.dexterous.** { *; }
 
 -keep class com.firebase.** { *; }
 -keep class org.apache.** { *; }

@@ -85,8 +85,12 @@ class RepositoryBloc {
     if (gAccount != null) {
       gAccount.authentication.then((auth) {
         _log.info('Firebase sign-in with Google: ${gAccount.id.substring(0, 10)}...');
-        FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
+//        FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
+
+        AuthCredential credential = GoogleAuthProvider.getCredential(idToken: auth.idToken, accessToken: auth.accessToken);
+        FirebaseAuth.instance.signInWithCredential(credential);
       });
+
       _saveToPreferences(gAccount.id);
       _loadUserAccount(gAccount.id, gAccount.displayName, gAccount.photoUrl, gAccount.email);
     } else {
