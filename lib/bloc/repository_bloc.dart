@@ -56,6 +56,7 @@ class RepositoryBloc {
   Future<GoogleSignInAccount> signIn() async {
     var connection = await Connectivity().checkConnectivity();
     if (connection == ConnectivityResult.none) {
+      _log.info('No internet connection');
       _loadFromPreferences();
       return null;
     }
@@ -68,7 +69,7 @@ class RepositoryBloc {
       if (_googleSignIn.currentUser == null) await _googleSignIn.signIn();
       _log.info('Signed in with ${_googleSignIn.currentUser.displayName}.');
     } catch (error) {
-      _log.severe('Something wrong with sign-in', error);
+      _log.severe('Something wrong with sign-in: $error');
       userUpdateSink(UserAccount.userUnset());
     }
 
@@ -103,8 +104,10 @@ class RepositoryBloc {
   void _loadFromPreferences() {
     SharedPreferences.getInstance().then((pref) {
       String id = pref.getString('inventorio.userId');
-      _log.info('Loaded from last login: $id');
-      _loadUserAccount(id, 'Cached Data', null, 'Not connected');
+      if (id != null) {
+        _log.info('Loaded from last login: $id');
+        _loadUserAccount(id, 'Cached Data', null, 'Not connected');
+      }
     });
   }
 
@@ -115,6 +118,7 @@ class RepositoryBloc {
   }
 
   void _loadUserAccount(String id, String displayName, String imageUrl, String email) {
+    if (id == UserAccount.UNSET) return;
     _fireUsers.document(id).snapshots().listen((doc) {
       var userAccount = UserAccount.userLoading();
       if (!doc.exists) {

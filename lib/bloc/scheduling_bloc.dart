@@ -21,7 +21,7 @@ class SchedulingBloc {
   SchedulingBloc() {
     _notifier.initialize(
       InitializationSettings(
-        AndroidInitializationSettings('app_icon'),
+        AndroidInitializationSettings('ic_alert'),
         IOSInitializationSettings()
       ),
       onSelectNotification: (inventoryId) {
