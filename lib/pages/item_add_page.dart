@@ -55,7 +55,7 @@ class _ItemAddPageState extends State<ItemAddPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: <Widget>[
                     ProductImage(widget.item, height: 150.0, width: 150.0,),
-                    ProductLabel(widget.item, width: 200.0,),
+                    Expanded(flex: 1, child: ProductLabel(widget.item)),
                   ],
                 ),
               ),

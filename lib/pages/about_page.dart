@@ -26,9 +26,7 @@ class AboutPage extends StatelessWidget {
       _nonLink('• Icon by Sophie Liverman'),
     ];
 
-    List<Widget> header = <Widget>[
-
-    ];
+    List<Widget> header = <Widget>[];
 
     List<Widget> tail = <Widget>[
       ListTile(

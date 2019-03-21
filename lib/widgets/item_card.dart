@@ -67,16 +67,14 @@ class ProductLabel extends StatelessWidget {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItem item;
-  final double width;
 
   static const align = TextAlign.center;
   static const fontFamily = AppConstants.ITEM_FONT;
 
-  ProductLabel(this.item, {this.width = 0.0});
+  ProductLabel(this.item);
 
   @override
   Widget build(BuildContext context) {
-    double calculatedWidth = width == 0.0? MediaQuery.of(context).size.width * 0.3: width;
 
     return StreamBuilder<Product>(
       key: ObjectKey('label_${item.uuid}'),
@@ -84,7 +82,6 @@ class ProductLabel extends StatelessWidget {
       stream: _repo.getProductObservable(item.inventoryId, item.code),
       builder: (context, snap) {
         return Container(
-          width: calculatedWidth,
           child: snap.hasData && !snap.data.isLoading
             ? _buildLabel(snap.data)
             : Center(child: CircularProgressIndicator()),
@@ -192,7 +189,6 @@ class ItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var widgetHeight = _computeHeight(context);
-    var width = MediaQuery.of(context).size.width;
     var sideWidth = widgetHeight > _MAX_SIDE_WIDTH? _MAX_SIDE_WIDTH: widgetHeight;
 
     return Container(
@@ -242,7 +238,7 @@ class ItemCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
                 ProductImage(item, width: sideWidth, height: widgetHeight,),
-                ProductLabel(item, width: width * 0.50,),
+                Expanded(flex: 1, child: ProductLabel(item)),
                 ItemExpiry(item, width: sideWidth,),
               ],
             ),
