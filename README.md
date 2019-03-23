@@ -1,8 +1,4 @@
 # inventorio
+[Site](https://rcagantas.github.io/inventorio/)
 
-Basic home inventory in Flutter
-
-## Getting Started
-
-For help getting started with Flutter, view our online
-[documentation](https://flutter.io/).
+Basic home inventory in Flutter for IOS and Android. Written using [Dart](https://www.dartlang.org) and [Flutter](https://flutter.dev)
