@@ -11,6 +11,7 @@ class WidgetFactory {
 
   static Widget titleCard() {
     return ListTile(
+      contentPadding: EdgeInsets.all(20.0),
       title: Text('Inventorio', style: titleStyle, textAlign: TextAlign.center,),
       subtitle: FutureBuilder<PackageInfo>(
         future: PackageInfo.fromPlatform(),
@@ -23,35 +24,30 @@ class WidgetFactory {
   }
 
   static Widget buildWelcome(List<Widget> header, List<Widget> tail) {
-    header.add(titleCard());
     List<Widget> children = <Widget>[
-      Expanded(
-        flex: 3,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: header,
-        ),
+      Container(height: 100.0,),
+      Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: header,
       ),
-      Expanded(
-        flex: 3,
-        child: Center(
-          child: Image.asset('resources/icons/icon_transparent.png', width: 150.0, height: 150.0, key: ObjectKey('inventorio_logo'),),
-        ),
+      Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          titleCard(),
+          Image.asset('resources/icons/icon_transparent.png', width: 150.0, height: 150.0, key: ObjectKey('inventorio_logo'),),
+        ],
       ),
-      Expanded(
-        flex: 6,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: tail,
-        ),
+      Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: tail,
       )
     ];
-    return Column(
+
+    return ListView(
       key: ObjectKey('inventorio_welcome'),
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: children,
     );
   }
@@ -63,7 +59,6 @@ class WidgetFactory {
       print('Cannot launch $url');
     }
   }
-
 
   static Widget link(BuildContext context, String text, String url) {
     var width = MediaQuery.of(context).size.width * .70;
