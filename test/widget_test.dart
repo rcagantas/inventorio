@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:inventorio/flat/inventory_app.dart';
+import 'package:inventorio/inventory_app2.dart';
 import 'package:mockito/mockito.dart';
 
 class MockGoogleSignIn extends Mock implements GoogleSignIn {}
@@ -17,7 +17,7 @@ class MockGoogleSignInAccount extends Mock implements GoogleSignInAccount {}
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(new InventoryApp());
+    await tester.pumpWidget(new InventoryApp2());
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);

@@ -11,7 +11,7 @@ class WidgetFactory {
 
   static Widget titleCard() {
     return ListTile(
-      contentPadding: EdgeInsets.all(20.0),
+      contentPadding: EdgeInsets.all(15.0),
       title: Text('Inventorio', style: titleStyle, textAlign: TextAlign.center,),
       subtitle: FutureBuilder<PackageInfo>(
         future: PackageInfo.fromPlatform(),
@@ -25,7 +25,7 @@ class WidgetFactory {
 
   static Widget buildWelcome(List<Widget> header, List<Widget> tail) {
     List<Widget> children = <Widget>[
-      Container(height: 100.0,),
+      Container(height: 50.0,),
       Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -79,18 +79,9 @@ class WidgetFactory {
   static Widget _buildWelcomeInstructions(BuildContext context) {
     List<Widget> header = <Widget>[];
     List<Widget> tail = <Widget>[
-      ListTile(title: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text('Welcome To Inventorio', textAlign: TextAlign.center,),
-      ),),
-      ListTile(title: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text('Scanned items and expiration dates will appear here.', textAlign: TextAlign.center,),
-      ),),
-      ListTile(title: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text('Scan new items by tapping the button below.', textAlign: TextAlign.center,),
-      ),),
+      ListTile(title: Text('Welcome To Inventorio', textAlign: TextAlign.center,),),
+      ListTile(title: Text('Scanned items and expiration dates will appear here.', textAlign: TextAlign.center,),),
+      //ListTile(title: Text('Scan new items by tapping the button below.', textAlign: TextAlign.center,),),
 
     ];
     return buildWelcome(header, tail);
