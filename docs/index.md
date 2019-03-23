@@ -4,8 +4,9 @@
 
 ![Feature Image]({{ site.baseurl }}/assets/feature.jpg)
 
-[Apple App Store](https://itunes.apple.com/sg/app/inventorio/id1409086817?mt=8)
-[Google Play Store](https://play.google.com/store/apps/details?id=com.rcagantas.inventorio)
+[![IOS App Store]({{ site.baseurl }}/assets/app_store.png)](https://itunes.apple.com/sg/app/inventorio/id1409086817?mt=8)
+
+[![Google Play Store]({{ site.baseurl }}/assets/google_play.png)](https://play.google.com/store/apps/details?id=com.rcagantas.inventorio)
 
 Inventorio is a home inventory system that manages collections of items against their expiration dates.
 
