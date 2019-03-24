@@ -23,9 +23,9 @@ class RepositoryBloc {
 
   static const DURATION_SHORT = Duration(milliseconds: 30);
 
-  final _fireUsers = Firestore.instance.collection('users');
-  final _fireInventory = Firestore.instance.collection('inventory');
-  final _fireDictionary = Firestore.instance.collection('productDictionary');
+  CollectionReference get _fireUsers => Firestore.instance.collection('users');
+  CollectionReference get _fireInventory => Firestore.instance.collection('inventory');
+  CollectionReference get _fireDictionary => Firestore.instance.collection('productDictionary');
 
   final _userUpdate = BehaviorSubject<UserAccount>();
   Observable<UserAccount> get userUpdateStream => _userUpdate.stream;
@@ -84,21 +84,24 @@ class RepositoryBloc {
 
   void _accountFromSignIn(GoogleSignInAccount gAccount) async {
     if (gAccount != null) {
-      gAccount.authentication.then((auth) {
-        _log.info('Firebase sign-in with Google: ${gAccount.id.substring(0, 10)}...');
-//        FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
-
-        AuthCredential credential = GoogleAuthProvider.getCredential(idToken: auth.idToken, accessToken: auth.accessToken);
-        FirebaseAuth.instance.signInWithCredential(credential);
-      });
-
+      _log.info('Google sign-in: ${gAccount.id.substring(0, 10)}...');
       _saveToPreferences(gAccount.id);
       _loadUserAccount(gAccount.id, gAccount.displayName, gAccount.photoUrl, gAccount.email);
+      gAccount.authentication.then((auth) => _firebaseAuth(auth));
+
     } else {
       _log.info('No account signed in.');
       _saveToPreferences(null);
       userUpdateSink(UserAccount.userUnset());
     }
+  }
+  
+  void _firebaseAuth(GoogleSignInAuthentication auth) {
+    _log.info('Attempting Firebase authentication. ');
+//    FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
+    AuthCredential credential = GoogleAuthProvider.getCredential(idToken: auth.idToken, accessToken: auth.accessToken);
+    FirebaseAuth.instance.signInWithCredential(credential);
+    _log.info('Authenticated Firebase.');
   }
 
   void _loadFromPreferences() {
@@ -118,26 +121,33 @@ class RepositoryBloc {
   }
 
   void _loadUserAccount(String id, String displayName, String imageUrl, String email) {
-    if (id == UserAccount.UNSET) return;
-    _fireUsers.document(id).snapshots().listen((doc) {
-      var userAccount = UserAccount.userLoading();
-      if (!doc.exists) {
-        userAccount = _createNewUserAccount(id);
-      } else {
-        userAccount = UserAccount.fromJson(doc.data)
-          ..displayName = displayName
-          ..email = email
-          ..imageUrl = imageUrl
-          ..isSignedIn = true;
+    if (id == UserAccount.UNSET) {
+      return;
+    }
 
-        if (userAccount.currentInventoryId == '') {
-          // Guard against blank current inventory
-          userAccount.currentInventoryId = userAccount.knownInventories[0];
-        }
+    _log.info('Listening for changes to $displayName');
+    _fireUsers.document(id).snapshots().listen((doc) => _userLoad(doc, id, displayName, imageUrl, email));
+  }
 
+  void _userLoad(DocumentSnapshot doc, String id, String displayName, String imageUrl, String email) {
+    var userAccount = UserAccount.userLoading();
+    if (!doc.exists) {
+      userAccount = _createNewUserAccount(id);
+    } else {
+      _log.info('Attempting to load user account for $displayName');
+      userAccount = UserAccount.fromJson(doc.data)
+        ..displayName = displayName
+        ..email = email
+        ..imageUrl = imageUrl
+        ..isSignedIn = true;
+
+      if (userAccount.currentInventoryId == '') {
+        // Guard against blank current inventory
+        userAccount.currentInventoryId = userAccount.knownInventories[0];
       }
-      userUpdateSink(userAccount);
-    });
+
+    }
+    userUpdateSink(userAccount);
   }
 
   UserAccount _createNewUserAccount(String userId) {
