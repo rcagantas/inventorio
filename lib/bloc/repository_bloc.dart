@@ -17,6 +17,8 @@ import 'package:inventorio/data/definitions.dart';
 
 class RepositoryBloc {
   final _googleSignIn = GoogleSignIn();
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+
   final _log = Logger('InventoryRepository');
   static final Uuid _uuid = Uuid();
   static String generateUuid() => _uuid.v4();
@@ -85,9 +87,14 @@ class RepositoryBloc {
   void _accountFromSignIn(GoogleSignInAccount gAccount) async {
     if (gAccount != null) {
       _log.info('Google sign-in: ${gAccount.id.substring(0, 10)}...');
-      _saveToPreferences(gAccount.id);
-      _loadUserAccount(gAccount.id, gAccount.displayName, gAccount.photoUrl, gAccount.email);
-      gAccount.authentication.then((auth) => _firebaseAuth(auth));
+      gAccount.authentication.then((auth) => _authenticate(auth))
+        .then((fBaseUser) {
+          _log.info('Authenticated Firebase.');
+          _saveToPreferences(gAccount.id);
+          _loadUserAccount(gAccount.id, gAccount.displayName, gAccount.photoUrl, gAccount.email);
+        }).catchError((error) {
+          _log.severe('Failed to authenticate firebase $error');
+        });
 
     } else {
       _log.info('No account signed in.');
@@ -96,12 +103,11 @@ class RepositoryBloc {
     }
   }
   
-  void _firebaseAuth(GoogleSignInAuthentication auth) {
+  Future<FirebaseUser> _authenticate(GoogleSignInAuthentication auth) {
     _log.info('Attempting Firebase authentication. ');
 //    FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
     AuthCredential credential = GoogleAuthProvider.getCredential(idToken: auth.idToken, accessToken: auth.accessToken);
-    FirebaseAuth.instance.signInWithCredential(credential);
-    _log.info('Authenticated Firebase.');
+    return _firebaseAuth.signInWithCredential(credential);
   }
 
   void _loadFromPreferences() {
