@@ -118,6 +118,8 @@ class UserDrawer extends StatelessWidget {
                 ..currentCount = 0
                 ..isSelected = false,
               builder: (context, snap) {
+                if (!snap.hasData) return SizedBox.shrink();
+
                 var title = '${snap.data?.name ?? 'Inventory $index'}';
                 var subTitle = '${snap.data?.currentCount ?? 0} items';
                 return ListTile(
