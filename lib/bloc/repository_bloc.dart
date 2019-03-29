@@ -17,6 +17,8 @@ import 'package:inventorio/data/definitions.dart';
 
 class RepositoryBloc {
   final _googleSignIn = GoogleSignIn();
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+
   final _log = Logger('InventoryRepository');
   static final Uuid _uuid = Uuid();
   static String generateUuid() => _uuid.v4();
@@ -44,22 +46,23 @@ class RepositoryBloc {
   RepositoryBloc() {
     _googleSignIn.onCurrentUserChanged.listen((gAccount) => _accountFromSignIn(gAccount));
     userUpdateStream.listen((userAccount) => _currentUser = userAccount);
-    Connectivity().checkConnectivity().then((connection) {
-      if (connection == ConnectivityResult.none) {
-        Connectivity().onConnectivityChanged.listen((connection) {
-          if (connection != ConnectivityResult.none) signIn();
-        });
-      }
+    Connectivity().onConnectivityChanged.listen((connection) {
+      _log.info('Connection state changed: $connection');
+      if (connection != ConnectivityResult.none) signIn();
     });
   }
 
-  Future<GoogleSignInAccount> signIn() async {
+
+  Future<GoogleSignInAccount> attemptSignIn() async {
+    loadFromPreferences();
     var connection = await Connectivity().checkConnectivity();
-    if (connection == ConnectivityResult.none) {
-      _log.info('No internet connection');
-      _loadFromPreferences();
-      return null;
+    if (connection != ConnectivityResult.none) {
+      return signIn();
     }
+    return null;
+  }
+
+  Future<GoogleSignInAccount> signIn() async {
     return _signInGoogle();
   }
 
@@ -67,7 +70,6 @@ class RepositoryBloc {
     try {
       if (_googleSignIn.currentUser == null) await _googleSignIn.signInSilently(suppressErrors: true);
       if (_googleSignIn.currentUser == null) await _googleSignIn.signIn();
-      _log.info('Signed in with ${_googleSignIn.currentUser.displayName}.');
     } catch (error) {
       _log.severe('Something wrong with sign-in: $error');
       userUpdateSink(UserAccount.userUnset());
@@ -77,18 +79,23 @@ class RepositoryBloc {
   }
 
   void signOut() {
-    _log.info('Signing out from ${_googleSignIn.currentUser.displayName}.');
+    _log.info('Signing out from ${_googleSignIn.currentUser?.displayName}.');
     _googleSignIn.signOut();
     _saveToPreferences(null);
   }
 
-  void _accountFromSignIn(GoogleSignInAccount gAccount) async {
+  Future<void> _accountFromSignIn(GoogleSignInAccount gAccount) async {
     if (gAccount != null) {
       _log.info('Google sign-in: ${gAccount.id.substring(0, 10)}...');
-      _saveToPreferences(gAccount.id);
-      _loadUserAccount(gAccount.id, gAccount.displayName, gAccount.photoUrl, gAccount.email);
-      gAccount.authentication.then((auth) => _firebaseAuth(auth));
-
+      try {
+        var auth = await gAccount.authentication;
+        await _authenticate(auth);
+        _log.info('Authenticated Firebase.');
+        _saveToPreferences(gAccount.id);
+        _loadUserAccount(gAccount.id, gAccount.displayName, gAccount.photoUrl, gAccount.email);
+      } catch (error) {
+        _log.severe('Failed to authenticate firebase $error');
+      }
     } else {
       _log.info('No account signed in.');
       _saveToPreferences(null);
@@ -96,15 +103,14 @@ class RepositoryBloc {
     }
   }
   
-  void _firebaseAuth(GoogleSignInAuthentication auth) {
+  Future<FirebaseUser> _authenticate(GoogleSignInAuthentication auth) {
     _log.info('Attempting Firebase authentication. ');
 //    FirebaseAuth.instance.signInWithGoogle(idToken: auth.idToken, accessToken: auth.accessToken);
     AuthCredential credential = GoogleAuthProvider.getCredential(idToken: auth.idToken, accessToken: auth.accessToken);
-    FirebaseAuth.instance.signInWithCredential(credential);
-    _log.info('Authenticated Firebase.');
+    return _firebaseAuth.signInWithCredential(credential);
   }
 
-  void _loadFromPreferences() {
+  void loadFromPreferences() {
     SharedPreferences.getInstance().then((pref) {
       String id = pref.getString('inventorio.userId');
       if (id != null) {
@@ -134,7 +140,10 @@ class RepositoryBloc {
     if (!doc.exists) {
       userAccount = _createNewUserAccount(id);
     } else {
-      _log.info('Attempting to load user account for $displayName');
+      if (_currentUser.userId != id) {
+        _log.info('Attempting to load user account for $displayName');
+      }
+
       userAccount = UserAccount.fromJson(doc.data)
         ..displayName = displayName
         ..email = email

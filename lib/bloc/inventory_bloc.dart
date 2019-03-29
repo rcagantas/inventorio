@@ -90,7 +90,7 @@ class InventoryBloc {
       }
     });
 
-    _repo.signIn();
+    _repo.attemptSignIn();
   }
 
   int _productComparator(InventoryItem item1, InventoryItem item2) {

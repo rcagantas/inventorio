@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
+import 'package:connectivity/connectivity.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:logging/logging.dart';
@@ -29,19 +30,30 @@ class SchedulingBloc {
       },
     );
 
+    Connectivity().checkConnectivity().then((connection) {
+      if (connection != ConnectivityResult.none) _reloadSchedules();
+    });
+
+    Connectivity().onConnectivityChanged.listen((connection) {
+      if (connection != ConnectivityResult.none) _reloadSchedules();
+    });
+
+  }
+
+  void _reloadSchedules() {
     _notifier.cancelAll().then((_) {
       _log.info('Resetting schedules.');
       _notifiedItems.clear();
       _repo.userUpdateStream
-        .debounce(Duration(milliseconds: 30))
-        .listen((userAccount) {
-          var notifiedCountBefore = _notifiedItems.length;
-          Future.delayed(Duration(seconds: userAccount.knownInventories.length), () {
-            if (notifiedCountBefore != _notifiedItems.length) {
-              _log.info('Scheduled ${_notifiedItems.length} items.');
-            }
-          });
-          _scheduleItemIfNeeded(userAccount);
+          .debounce(Duration(milliseconds: 30))
+          .listen((userAccount) {
+        var notifiedCountBefore = _notifiedItems.length;
+        Future.delayed(Duration(seconds: userAccount.knownInventories.length), () {
+          if (notifiedCountBefore != _notifiedItems.length) {
+            _log.info('Scheduled ${_notifiedItems.length} items.');
+          }
+        });
+        _scheduleItemIfNeeded(userAccount);
       });
     });
   }
