@@ -4,8 +4,8 @@
 
 ![Feature Image]({{ site.baseurl }}/assets/feature.jpg)
 
-[<img src="https://github.com/rcagantas/inventorio/blob/master/docs/assets/app_store.png?raw=true" alt="App Store" width="169" height="50">](https://itunes.apple.com/sg/app/inventorio/id1409086817?mt=8)
-[<img src="https://github.com/rcagantas/inventorio/blob/master/docs/assets/google_play.png?raw=true" alt="Play Store" width="168" height="50">](https://play.google.com/store/apps/details?id=com.rcagantas.inventorio)
+[ ![App Store]({{ site.baseurl }}/assets/app_store.png) ](https://itunes.apple.com/sg/app/inventorio/id1409086817?mt=8)
+[ ![Play Store]({{ site.baseurl }}/assets/google_play.png) ](https://play.google.com/store/apps/details?id=com.rcagantas.inventorio)
 
 Inventorio is a home inventory system that manages collections of items against their expiration dates.
 
@@ -16,7 +16,9 @@ and anything else that needs to have a date tracked against it as long as it has
 * Get notified 30 days and 7 days before expiry dates. 
 * Set product details with a photo.
 * Create and label several inventories.
-* Share inventories with other account holders. 
+* Share inventories with other household members.
+
+Requires a Google account. 
 
 ## Credits
 * Application framework by [Flutter.io](https://flutter.dev)
