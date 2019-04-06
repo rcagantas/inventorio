@@ -62,6 +62,9 @@ class UserDrawer extends StatelessWidget {
       ListTile(
         leading: Icon(Icons.exit_to_app),
         title: Text('Log out', style: TextStyle(fontWeight: FontWeight.bold),),
+        enabled: !userAccount.isLoading
+            && userAccount.isSignedIn
+            && userAccount.displayName != RepositoryBloc.CACHED_DATA,
         onTap: () async {
           Navigator.popUntil(context, ModalRoute.withName('/'));
           var confirmed = await DialogFactory.sureDialog(context, 'Are you sure you want to log out', 'Log out', 'Cancel');
