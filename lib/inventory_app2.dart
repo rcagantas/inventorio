@@ -21,15 +21,15 @@ class _InventoryApp2State extends State<InventoryApp2> {
     _injector.map<LoggerBloc>((_) => LoggerBloc(), isSingleton: true);
     _injector.map<RepositoryBloc>((_) => RepositoryBloc(), isSingleton: true);
     _injector.map<InventoryBloc>((_) => InventoryBloc(), isSingleton: true);
-    _injector.map<FlutterLocalNotificationsPlugin>((_) => FlutterLocalNotificationsPlugin(), isSingleton: true);
     _injector.map<SchedulingBloc>((_) => SchedulingBloc(), isSingleton: true);
+    _injector.map<FlutterLocalNotificationsPlugin>((_) => FlutterLocalNotificationsPlugin(), isSingleton: true);
     _injector.map<NotificationDetails>((_) => NotificationDetails(
-      AndroidNotificationDetails(
-        'com.rcagantas.inventorio.scheduled.notifications',
-        'Inventorio Expiration Notification',
-        'Notification 7 and 30 days before expiry'
-      ),
-      IOSNotificationDetails()
+        AndroidNotificationDetails(
+            'com.rcagantas.inventorio.scheduled.notifications',
+            'Inventorio Expiration Notification',
+            'Notification 7 and 30 days before expiry'
+        ),
+        IOSNotificationDetails()
     ), isSingleton: true);
 
     var _logger = _injector.get<LoggerBloc>();
@@ -37,8 +37,9 @@ class _InventoryApp2State extends State<InventoryApp2> {
     Logger.root.onRecord.listen((rec) => _logger.addMessage(rec));
 
     _injector.get<NotificationDetails>(); // initialize the notification
-    _injector.get<SchedulingBloc>(); // start notification scheduling
+    _injector.get<FlutterLocalNotificationsPlugin>();
     _injector.get<InventoryBloc>(); // start the rest of the app
+    _injector.get<SchedulingBloc>();
   }
 
   @override

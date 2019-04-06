@@ -24,6 +24,7 @@ class RepositoryBloc {
   static String generateUuid() => _uuid.v4();
 
   static const DURATION_SHORT = Duration(milliseconds: 30);
+  static const CACHED_DATA = 'Cached Data';
 
   CollectionReference get _fireUsers => Firestore.instance.collection('users');
   CollectionReference get _fireInventory => Firestore.instance.collection('inventory');
@@ -55,11 +56,17 @@ class RepositoryBloc {
 
   Future<GoogleSignInAccount> attemptSignIn() async {
     loadFromPreferences();
+
+    GoogleSignInAccount _gAccount;
     var connection = await Connectivity().checkConnectivity();
     if (connection != ConnectivityResult.none) {
-      return signIn();
+      _gAccount = await signIn();
     }
-    return null;
+
+    if (_gAccount == null) {
+      userUpdateSink(UserAccount.userUnset());
+    }
+    return _gAccount;
   }
 
   Future<GoogleSignInAccount> signIn() async {
@@ -115,7 +122,7 @@ class RepositoryBloc {
       String id = pref.getString('inventorio.userId');
       if (id != null) {
         _log.info('Loaded from last login: $id');
-        _loadUserAccount(id, 'Cached Data', null, 'Not connected');
+        _loadUserAccount(id, CACHED_DATA, null, 'Not connected');
       }
     });
   }

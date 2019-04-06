@@ -1,6 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
-import 'package:connectivity/connectivity.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:logging/logging.dart';
@@ -18,6 +19,7 @@ class SchedulingBloc {
   final _notifier = Injector.getInjector().get<FlutterLocalNotificationsPlugin>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final _notifiedItems = Map<int, NotifiedItem>();
+  var lastKnownUserId = 'unset_user';
 
   SchedulingBloc() {
     _notifier.initialize(
@@ -29,33 +31,38 @@ class SchedulingBloc {
         _repo.changeCurrentInventory(inventoryId);
       },
     );
-
-    Connectivity().checkConnectivity().then((connection) {
-      if (connection != ConnectivityResult.none) _reloadSchedules();
-    });
-
-    Connectivity().onConnectivityChanged.listen((connection) {
-      if (connection != ConnectivityResult.none) _reloadSchedules();
-    });
-
+    reloadOnUserConnect();
   }
 
-  void _reloadSchedules() {
-    _notifier.cancelAll().then((_) {
-      _log.info('Resetting schedules.');
-      _notifiedItems.clear();
-      _repo.userUpdateStream
-          .debounce(Duration(milliseconds: 30))
-          .listen((userAccount) {
-        var notifiedCountBefore = _notifiedItems.length;
-        Future.delayed(Duration(seconds: userAccount.knownInventories.length), () {
-          if (notifiedCountBefore != _notifiedItems.length) {
-            _log.info('Scheduled ${_notifiedItems.length} items.');
+  void reloadOnUserConnect() {
+    _repo.userUpdateStream
+      .debounce(Duration(milliseconds: 30))
+      .listen((userAccount) {
+        var delay = Duration(seconds: 6 + (1 * userAccount.knownInventories.length));
+        if (userAccount.isLoading) return;
+        else if (userAccount.isSignedIn) {
+          if (userAccount.displayName == RepositoryBloc.CACHED_DATA) {
+            _log.info('Scheduler: Keeping alerts. Still cached.');
+          } else if (userAccount.userId == lastKnownUserId) {
+            _scheduleItemIfNeeded(userAccount);
+            return;
+          } else {
+            lastKnownUserId = userAccount.userId;
+            _log.info('Scheduler: Signed in. Cancelling notifications and rescheduling');
+            _notifier.cancelAll().then((_) {
+              _scheduleItemIfNeeded(userAccount);
+            });
           }
+        } else if (!userAccount.isSignedIn) {
+          lastKnownUserId = userAccount.userId;
+          _log.info('Scheduler: Signed out. Cancelling notifications');
+          _notifier.cancelAll();
+        }
+
+        Future.delayed(delay, () {
+        _log.info('Scheduler: Scheduled ${_notifiedItems.length} items.');
         });
-        _scheduleItemIfNeeded(userAccount);
       });
-    });
   }
 
   void _scheduleItemIfNeeded(UserAccount userAccount) {
@@ -66,7 +73,7 @@ class SchedulingBloc {
           _notifiedItems.removeWhere((index, notified) {
             if (notified.item.inventoryId == inventoryId && !items.contains(notified.item)) {
               _repo.getProductFuture(notified.item.inventoryId, notified.item.code).then((product) {
-                _log.info('Cancelling [${notified.scheduleId}] '
+                _log.info('Scheduler: Cancelling [${notified.scheduleId}] '
                     '${notified.modifier}-day notification for ${product.brand ?? ''} ${product.name ?? ''}');
                 _notifier.cancel(notified.scheduleId);
               });
