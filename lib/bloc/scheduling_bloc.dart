@@ -28,7 +28,9 @@ class SchedulingBloc {
         IOSInitializationSettings()
       ),
       onSelectNotification: (inventoryId) {
-        _repo.changeCurrentInventory(inventoryId);
+        _repo.signIn().then((_) {
+          _repo.changeCurrentInventory(inventoryId);
+        });
       },
     );
     reloadOnUserConnect();
