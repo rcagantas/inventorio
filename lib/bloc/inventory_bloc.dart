@@ -109,11 +109,7 @@ class InventoryBloc {
   int _expiryComparator(InventoryItem item1, InventoryItem item2) {
     int compare = item1.compareTo(item2);
     if (compare != 0) return compare;
-
-    Product product1 = _repo.getCachedProduct(item1.inventoryId, item1.code);
-    Product product2 = _repo.getCachedProduct(item2.inventoryId, item2.code);
-
-    return product1.compareTo(product2);
+    return _productComparator(item1, item2);
   }
 
   SortType nextSortType() {

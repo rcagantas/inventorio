@@ -70,6 +70,7 @@ class _ItemAddPageState extends State<ItemAddPage> {
                   fontSize: 22.0,
                 ),
                 child: CupertinoDatePicker(
+                  minimumDate: DateTime.now(),
                   mode: CupertinoDatePickerMode.date,
                   initialDateTime: _initialDateTime(),
                   onDateTimeChanged: (dateTime) async {
