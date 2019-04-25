@@ -1,6 +1,6 @@
 name: inventorio
 description: Basic home inventory in Flutter
-version: 1.0.4+66
+version: 1.0.4+67
 
 dependencies:
   flutter:
@@ -8,7 +8,7 @@ dependencies:
   scoped_model: ^0.3.0
   uuid: ^2.0.0
   qr_mobile_vision: ^0.2.2
-  image_picker: ^0.5.4
+  image_picker: ^0.5.4+3
   path_provider: ^0.5.0+1
   quiver_hashcode: ^2.0.0
   google_sign_in: ^4.0.1+1
@@ -30,7 +30,6 @@ dependencies:
   url_launcher: ^5.0.2
   package_info: ^0.4.0+2
   connectivity: ^0.4.2
-  permission_handler: ^3.0.0
   flutter_native_image:
     git: https://github.com/btastic/flutter_native_image.git
   qr_flutter:

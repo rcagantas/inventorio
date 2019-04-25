@@ -336,7 +336,7 @@ packages:
       name: image_picker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.5.4"
+    version: "0.5.4+3"
   intl:
     dependency: "direct main"
     description:
@@ -491,13 +491,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.5.0"
-  permission_handler:
-    dependency: "direct main"
-    description:
-      name: permission_handler
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "3.0.0"
   petitparser:
     dependency: transitive
     description:

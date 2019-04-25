@@ -9,7 +9,6 @@ import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:inventorio/widgets/app_constants.dart';
 import 'package:inventorio/widgets/item_card.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class ProductPage extends StatefulWidget {
   static final _repo = Injector.getInjector().get<RepositoryBloc>();
@@ -88,17 +87,6 @@ class _ProductPageState extends State<ProductPage> {
     );
   }
 
-  Future<PermissionStatus> checkAndRequestPermissionForCamera() async {
-    PermissionStatus permission = await PermissionHandler().checkPermissionStatus(PermissionGroup.camera);
-    if (permission != PermissionStatus.granted) {
-      Map<PermissionGroup, PermissionStatus> permissions = await PermissionHandler().requestPermissions([PermissionGroup.camera]);
-      if (permissions.containsKey(PermissionGroup.camera)) {
-        return permissions[PermissionGroup.camera];
-      }
-    }
-    return permission;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,12 +109,9 @@ class _ProductPageState extends State<ProductPage> {
                       SnackBar(content: Text('Image upload is not available while offline'),)
                     );
                   } else {
-                    var permission = await checkAndRequestPermissionForCamera();
-                    if (permission == PermissionStatus.granted) {
-                      ImagePicker.pickImage(source: ImageSource.camera).then((file) {
-                        if (file == null) return;
-                        setState(() { _stagingImage = file; });
-                      });
+                    var file = await ImagePicker.pickImage(source: ImageSource.camera);
+                    if (file != null) {
+                      setState(() { _stagingImage = file; });
                     }
                   }
                 },
