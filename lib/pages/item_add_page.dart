@@ -5,6 +5,7 @@ import 'package:inventorio/bloc/inventory_bloc.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 import 'package:inventorio/data/definitions.dart';
 import 'package:inventorio/widgets/app_constants.dart';
+import 'package:inventorio/widgets/custom_date_picker.dart';
 import 'package:inventorio/widgets/item_card.dart';
 import 'package:inventorio/pages/product_page.dart';
 
@@ -35,7 +36,7 @@ class _ItemAddPageState extends State<ItemAddPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Set Expiry Date'),),
-      body: ListView(
+      body: Column(
         children: <Widget>[
           ListTile(
             title: Text('${widget.item.code}',
@@ -69,7 +70,7 @@ class _ItemAddPageState extends State<ItemAddPage> {
                   color: CupertinoColors.black,
                   fontSize: 22.0,
                 ),
-                child: CupertinoDatePicker(
+                child: CustomDatePicker(
                   minimumDate: DateTime.now(),
                   mode: CupertinoDatePickerMode.date,
                   initialDateTime: _initialDateTime(),

@@ -1,6 +1,6 @@
 name: inventorio
 description: Basic home inventory in Flutter
-version: 1.0.4+67
+version: 1.0.4+68
 
 dependencies:
   flutter:
@@ -19,8 +19,8 @@ dependencies:
   json_annotation: ^2.0.0
   intl: ^0.15.7
   shared_preferences: ^0.5.1+2
-  date_utils: ^0.1.0+2
-  flutter_local_notifications: ^0.6.0
+#  date_utils: ^0.1.0+2
+  flutter_local_notifications: ^0.7.0
   flutter_slidable: ^0.4.9
   logging: ^0.11.3+2
   cached_network_image: ^0.6.0+1

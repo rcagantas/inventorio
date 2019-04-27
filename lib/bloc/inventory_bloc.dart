@@ -47,7 +47,6 @@ class InventoryBloc {
 
     selectedStream.listen((items) {
       _snapshot = items;
-      print('Updated list of ${items.length}');
     });
 
     _mutator = (List<InventoryItem> itemList) {
