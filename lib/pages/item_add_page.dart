@@ -89,12 +89,16 @@ class _ItemAddPageState extends State<ItemAddPage> {
         onPressed: () async {
           Product product = await _repo.getProductFuture(widget.item.inventoryId, widget.item.code);
           if (product.isInitial) {
-            await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(widget.item)));
+            product = await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(widget.item)));
           }
-          Navigator.pop(context);
-          Future.delayed(Duration(milliseconds: 300), () {
-            _bloc.actionSink(Action(Act.AddUpdateItem, stagingItem));
-          });
+
+          if (product != null && !product.isInitial) {
+            // only navigate out if the product is actually set.
+            Navigator.pop(context);
+            Future.delayed(Duration(milliseconds: 300), () {
+              _bloc.actionSink(Action(Act.AddUpdateItem, stagingItem));
+            });
+          }
         }
       ),
     );
