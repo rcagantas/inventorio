@@ -81,10 +81,13 @@ class ProductLabel extends StatelessWidget {
       initialData: _repo.getCachedProduct(item.inventoryId, item.code),
       stream: _repo.getProductObservable(item.inventoryId, item.code),
       builder: (context, snap) {
-        return Container(
-          child: snap.hasData && !snap.data.isLoading
-            ? _buildLabel(snap.data)
-            : Center(child: CircularProgressIndicator()),
+        return Padding(
+          padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+          child: Container(
+            child: snap.hasData && !snap.data.isLoading
+              ? _buildLabel(snap.data)
+              : Center(child: CircularProgressIndicator()),
+          ),
         );
       },
     );
