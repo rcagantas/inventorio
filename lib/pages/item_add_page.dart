@@ -20,22 +20,16 @@ class _ItemAddPageState extends State<ItemAddPage> {
   final _bloc = Injector.getInjector().get<InventoryBloc>();
 
   InventoryItem stagingItem;
-  DateTime _dateEdit;
 
   @override
   void initState() {
     stagingItem = InventoryItem.fromJson(widget.item.toJson())
       ..inventoryId = widget.item.inventoryId;
-    _dateEdit = widget.item.expiryDate;
     super.initState();
   }
 
   DateTime _initialDateTime() {
     return widget.item.expiryDate;
-  }
-
-  bool _isUnModified() {
-    return widget.item.expiryDate.difference(_dateEdit).inDays == 0;
   }
 
   @override
@@ -82,7 +76,6 @@ class _ItemAddPageState extends State<ItemAddPage> {
                   initialDateTime: _initialDateTime(),
                   onDateTimeChanged: (dateTime) async {
                     setState(() {
-                      _dateEdit = dateTime;
                       stagingItem.dateAdded = DateTime.now().toIso8601String();
                       stagingItem.expiry = _repo.setExpiryString(dateTime);
                     });
@@ -95,9 +88,7 @@ class _ItemAddPageState extends State<ItemAddPage> {
       ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
-        backgroundColor: _isUnModified() ? Colors.grey : Theme.of(context).accentColor,
         onPressed: () async {
-          if (_isUnModified()) return;
           Product product = await _repo.getProductFuture(widget.item.inventoryId, widget.item.code);
           if (product.isInitial) {
             product = await Navigator.push(context, MaterialPageRoute(builder: (context) => ProductPage(widget.item)));
