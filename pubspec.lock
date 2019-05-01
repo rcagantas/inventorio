@@ -543,11 +543,9 @@ packages:
   qr_flutter:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "2.0.0-dev"
-      resolved-ref: db670e5137b792afeb26a90b081f070a53c68bca
-      url: "git://github.com/lukef/qr.flutter.git"
-    source: git
+      name: qr_flutter
+      url: "https://pub.dartlang.org"
+    source: hosted
     version: "2.0.0+51"
   qr_mobile_vision:
     dependency: "direct main"

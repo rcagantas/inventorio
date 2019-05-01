@@ -24,8 +24,8 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
   void initState() {
     var date = widget.initialDateTime == null ? DateTime.now() : widget.initialDateTime;
     _selectedDate = date;
-    _startingYear = DateTime.now().year;
-    _yearIndex = date.year - DateTime.now().year; _monthIndex = date.month - 1; _dayIndex = date.day - 1;
+    _startingYear = date.year > DateTime.now().year? DateTime.now().year : date.year;
+    _yearIndex = date.year - _startingYear; _monthIndex = date.month - 1; _dayIndex = date.day - 1;
     _yearController   = FixedExtentScrollController(initialItem: _yearIndex);
     _monthController  = FixedExtentScrollController(initialItem: _monthIndex);
     _dayController    = FixedExtentScrollController(initialItem: _dayIndex);
@@ -115,7 +115,7 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
           offAxisFraction: -0.8,
           scrollController: _yearController,
           children: List<Widget>.generate(100, (index) {
-            var selected = index + DateTime.now().year;
+            var selected = index + _startingYear;
             return _buildPickerItem(context, '$selected',);
           }),
           onSelectedItemChanged: (index) {
