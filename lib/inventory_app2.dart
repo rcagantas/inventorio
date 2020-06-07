@@ -45,6 +45,7 @@ class _InventoryApp2State extends State<InventoryApp2> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      //debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: AppConstants.APP_FONT,
         primaryColor: Colors.blue.shade700,

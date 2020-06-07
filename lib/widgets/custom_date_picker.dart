@@ -78,7 +78,7 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
         height: 200.0,
         child: CupertinoPicker(
           offAxisFraction: offAxisFraction,
-          backgroundColor: Theme.of(context).primaryTextTheme.body1.backgroundColor,
+          backgroundColor: Theme.of(context).primaryTextTheme.bodyText1.backgroundColor,
           itemExtent: _getHeight(context),
           scrollController: scrollController,
           children: children,
@@ -95,7 +95,7 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
         child: Text('$string',
           style: TextStyle(
             fontSize: _kFontSize,
-            fontFamily: Theme.of(context).primaryTextTheme.body1.fontFamily
+            fontFamily: Theme.of(context).primaryTextTheme.bodyText1.fontFamily
           ),
         ),
       )

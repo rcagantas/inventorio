@@ -20,7 +20,7 @@ class InventoryItemSearchDelegate extends SearchDelegate<InventoryItem> {
         icon: const Icon(Icons.clear),
         onPressed: () {
           query = '';
-          _bloc.actionSink(Action(Act.SetSearchFilter, null));
+          _bloc.actionSink(InvAction(Act.SetSearchFilter, null));
           showSuggestions(context);
         },
       ),
@@ -33,7 +33,7 @@ class InventoryItemSearchDelegate extends SearchDelegate<InventoryItem> {
       tooltip: 'Back',
       icon: Icon(Icons.arrow_back),
       onPressed: () {
-        _bloc.actionSink(Action(Act.SetSearchFilter, null));
+        _bloc.actionSink(InvAction(Act.SetSearchFilter, null));
         close(context, null);
       },
     );
@@ -46,7 +46,7 @@ class InventoryItemSearchDelegate extends SearchDelegate<InventoryItem> {
 
   @override
   Widget buildSuggestions(BuildContext context) {
-    _bloc.actionSink(Action(Act.SetSearchFilter, query));
+    _bloc.actionSink(InvAction(Act.SetSearchFilter, query));
     return WidgetFactory.buildList(context);
   }
 }
@@ -127,7 +127,7 @@ class ListingsPage extends StatelessWidget {
                 icon: iconToggle(snap.data),
                 onPressed: () async {
                   showSortingSnackBar(context, _bloc.nextSortType());
-                  _bloc.actionSink(Action(Act.ToggleSort, null));
+                  _bloc.actionSink(InvAction(Act.ToggleSort, null));
                 },
               );
             },

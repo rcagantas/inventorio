@@ -13,7 +13,6 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
 
 class ProductImage extends StatelessWidget {
-  final _bloc = Injector.getInjector().get<InventoryBloc>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItem item;
   final double width;
@@ -64,7 +63,6 @@ class ProductImage extends StatelessWidget {
 
 
 class ProductLabel extends StatelessWidget {
-  final _bloc = Injector.getInjector().get<InventoryBloc>();
   final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItem item;
 
@@ -215,13 +213,13 @@ class ItemCard extends StatelessWidget {
             icon: Icons.delete,
             onTap: () {
               Product productNameOfDeletedItem = _repo.getCachedProduct(item.inventoryId, item.code);
-              _bloc.actionSink(Action(Act.RemoveItem, item));
+              _bloc.actionSink(InvAction(Act.RemoveItem, item));
               Scaffold.of(context).showSnackBar(
                 SnackBar(
                   content: Text('Removed item ${productNameOfDeletedItem.name}'),
                   action: SnackBarAction(
                     label: 'UNDO',
-                    onPressed: () => _bloc.actionSink(Action(Act.AddUpdateItem, item)),
+                    onPressed: () => _bloc.actionSink(InvAction(Act.AddUpdateItem, item)),
                   ),
                 )
               );

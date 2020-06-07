@@ -13,18 +13,18 @@ enum Act {
 
 enum SortType { DateAdded, Alpha, DateExpiry }
 
-class Action {
+class InvAction {
   final Act act;
   final dynamic payload;
-  Action(this.act, this.payload);
+  InvAction(this.act, this.payload);
 }
 
 class InventoryBloc {
   final _log = Logger('InventoryBloc');
   final _repo = Injector.getInjector().get<RepositoryBloc>();
 
-  final _actions = BehaviorSubject<Action>();
-  Function(Action) get actionSink => _actions.sink.add;
+  final _actions = BehaviorSubject<InvAction>();
+  Function(InvAction) get actionSink => _actions.sink.add;
 
   final _sortAction = BehaviorSubject<SortType>();
   Function(SortType) get sortTypeSink => _sortAction.sink.add;

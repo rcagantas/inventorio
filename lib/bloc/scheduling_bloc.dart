@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_simple_dependency_injection/injector.dart';
 import 'package:inventorio/bloc/repository_bloc.dart';
@@ -31,6 +29,7 @@ class SchedulingBloc {
         _repo.signIn().then((_) {
           _repo.changeCurrentInventory(inventoryId);
         });
+        return;
       },
     );
     reloadOnUserConnect();

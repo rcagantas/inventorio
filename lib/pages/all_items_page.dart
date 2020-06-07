@@ -22,7 +22,7 @@ class AllItemsPage extends StatelessWidget {
                 icon: ListingsPage.iconToggle(snap.data),
                 onPressed: () async {
                   ListingsPage.showSortingSnackBar(context, _bloc.nextSortType());
-                  _bloc.actionSink(Action(Act.ToggleSort, null));
+                  _bloc.actionSink(InvAction(Act.ToggleSort, null));
                 },
               );
             },
@@ -38,7 +38,7 @@ class AllItemsPage extends StatelessWidget {
         child: WidgetFactory.buildList(context),
         onWillPop: () async {
           Future.delayed(Duration(milliseconds: 300), () {
-            _bloc.actionSink(Action(Act.SelectAll, false));
+            _bloc.actionSink(InvAction(Act.SelectAll, false));
           });
           return true;
         },

@@ -11,7 +11,6 @@ import 'package:inventorio/widgets/app_constants.dart';
 import 'package:inventorio/widgets/item_card.dart';
 
 class ProductPage extends StatefulWidget {
-  static final _repo = Injector.getInjector().get<RepositoryBloc>();
   final InventoryItem item;
   ProductPage(this.item);
   @override _ProductPageState createState() => _ProductPageState();
@@ -138,7 +137,7 @@ class _ProductPageState extends State<ProductPage> {
             imageFile: _stagingImage,
             inventoryId: widget.item.inventoryId
           );
-          _bloc.actionSink(Action(Act.AddUpdateProduct, product));
+          _bloc.actionSink(InvAction(Act.AddUpdateProduct, product));
           Navigator.pop(context, product);
         },
       ),

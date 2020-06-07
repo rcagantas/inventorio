@@ -55,6 +55,7 @@ void main() {
 
     when(_mockRepo.signIn()).thenAnswer((inv) {
       _mockRepo.userUpdateSink(withUser == null? UserAccount.userUnset(): userData[withUser]);
+      return null;
     });
 
     when(_mockRepo.getItemListObservable(any)).thenAnswer((inv) {
@@ -71,6 +72,7 @@ void main() {
       InventoryDetails detail = inv.positionalArguments[0];
       userData[withUser].currentInventoryId = detail.uuid;
       _mockRepo.userUpdateSink(userData[withUser]);
+      return null;
     });
 
     _bloc = InventoryBloc();
@@ -88,7 +90,7 @@ void main() {
 
   test('User 999 selects inventory inv_2', () {
     setup();
-    _bloc.actionSink(Action(Act.ChangeInventory, inventoryDetail['inv_2'].uuid));
+    _bloc.actionSink(InvAction(Act.ChangeInventory, inventoryDetail['inv_2'].uuid));
     expect(_bloc.selectedStream, emitsInOrder([
       inventoryData['inv_1'],
       inventoryData['inv_2']

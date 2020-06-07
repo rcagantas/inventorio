@@ -68,7 +68,7 @@ class UserDrawer extends StatelessWidget {
         onTap: () async {
           Navigator.popUntil(context, ModalRoute.withName('/'));
           var confirmed = await DialogFactory.sureDialog(context, 'Are you sure you want to log out', 'Log out', 'Cancel');
-          if (confirmed) { _bloc.actionSink(Action(Act.SignOut, null)); }
+          if (confirmed) { _bloc.actionSink(InvAction(Act.SignOut, null)); }
         },
       ),
       ExpansionTile(
@@ -79,7 +79,7 @@ class UserDrawer extends StatelessWidget {
           }),
           _expansionItem(context, userAccount, 'Scan Existing Inventory Code', () {
             Navigator.push(context, MaterialPageRoute(builder: (context) => ScanPage())).then((code) {
-              _bloc.actionSink(Action(Act.AddInventory, code));
+              _bloc.actionSink(InvAction(Act.AddInventory, code));
             });
           }),
           _expansionItem(context, userAccount, 'Edit/share Current Inventory', () {
@@ -98,7 +98,7 @@ class UserDrawer extends StatelessWidget {
           Navigator.popUntil(context, ModalRoute.withName('/'));
           Navigator.push(context, MaterialPageRoute(builder: (context) => AllItemsPage()));
           Future.delayed(Duration(milliseconds: 300), () {
-            _bloc.actionSink(Action(Act.SelectAll, true));
+            _bloc.actionSink(InvAction(Act.SelectAll, true));
           });
         },
       ),
@@ -133,7 +133,7 @@ class UserDrawer extends StatelessWidget {
                   onTap: () {
                     Navigator.popUntil(context, ModalRoute.withName('/'));
                     Future.delayed(Duration(milliseconds: 300), () {
-                      _bloc.actionSink(Action(Act.ChangeInventory, snap.data.uuid));
+                      _bloc.actionSink(InvAction(Act.ChangeInventory, snap.data.uuid));
                     });
                   },
                 );

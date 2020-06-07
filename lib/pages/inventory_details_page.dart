@@ -67,7 +67,7 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
                       var confirmed = await DialogFactory.sureDialog(context,
                           'Unsubscribing would remove this inventory and all its items from your list', 'Unsubscribe', 'Cancel');
                       if (confirmed) {
-                        _bloc.actionSink(Action(Act.UnsubscribeInventory, staging));
+                        _bloc.actionSink(InvAction(Act.UnsubscribeInventory, staging));
                       }
                       Navigator.pop(context, null);
                     }
@@ -81,7 +81,7 @@ class _InventoryDetailsState extends State<InventoryDetailsPage> {
         child: Icon(Icons.input),
         onPressed: () {
           staging.name = _name.text;
-          _bloc.actionSink(Action(Act.UpdateInventory, staging));
+          _bloc.actionSink(InvAction(Act.UpdateInventory, staging));
           Navigator.pop(context, staging);
         },
       ),

@@ -98,7 +98,7 @@ class _ItemAddPageState extends State<ItemAddPage> {
             // only navigate out if the product is actually set.
             Navigator.pop(context);
             Future.delayed(Duration(milliseconds: 300), () {
-              _bloc.actionSink(Action(Act.AddUpdateItem, stagingItem));
+              _bloc.actionSink(InvAction(Act.AddUpdateItem, stagingItem));
             });
           }
         }
