@@ -23,7 +23,7 @@ Requires a Google account.
 ## Credits
 * Application framework by [Flutter.io](https://flutter.dev)
 * Written in [Dart](http://dartlang.org)
-* App Icon by Sophie Liverman
+* App Icon by Geri Nicole Dy
 * Android Feature Graphic by Geri Nicole Dy 
 * IOS testing by Harmony, Renan
 * Android testing by Gilda, Alex
