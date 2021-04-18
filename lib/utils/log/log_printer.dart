@@ -13,11 +13,15 @@ class SimpleLogPrinter extends LogPrinter {
 
   SimpleLogPrinter(this.className);
 
-  @override
-  void log(LogEvent event) {
+  void logWithColor(LogEvent event) {
     var color = PrettyPrinter.levelColors[event.level];
     var text = LEVEL_TEXT[event.level];
 
     println('$color$text $className - ${event.message}');
+  }
+
+  @override
+  void log(LogEvent event) {
+    println('$className - ${event.message}');
   }
 }

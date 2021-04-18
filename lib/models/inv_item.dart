@@ -46,7 +46,7 @@ class InvItem {
 
     return InvItem(
       uuid: this.uuid,
-      code: this.code,
+      code: this.code.replaceAll('/', '#'),
       expiry: expiry,
       dateAdded: dateAdded,
       inventoryId: inventoryId
@@ -156,6 +156,8 @@ class InvItemBuilder {
         'InvItemBuilder cannot build with code $code and inventoryId $inventoryId'
       );
     }
+
+    code = code.replaceAll('/', '#');
 
     DateTime now = InvItem.clock.now();
     dateAdded = dateAdded == null

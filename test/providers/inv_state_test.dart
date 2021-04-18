@@ -335,7 +335,7 @@ void main() {
       storeServiceMock.itemFactory(3,  4, clockMock.now(), 'inv_1');
       await invState.userStateChange(status: InvStatus.Authenticated, auth: InvAuth(uid: 'user_1'));
 
-      verify(schedulerServiceMock.clearScheduledTasks()).called(1);
+      verify(schedulerServiceMock.clearScheduledTasks()).called(greaterThan(0));
       verify(schedulerServiceMock.delayedScheduleNotification(any, any)).called(greaterThan(0));
     });
   });

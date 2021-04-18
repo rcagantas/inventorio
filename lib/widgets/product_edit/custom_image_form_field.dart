@@ -4,7 +4,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dart_extensions_methods/dart_extensions_methods.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_native_image/flutter_native_image.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -13,12 +12,14 @@ class CustomImageFormField extends StatefulWidget {
   final String initialUrl;
   final String imageAttribute;
   final String resizedAttribute;
+  final Function(File, Future<File>) onChanged;
 
   CustomImageFormField({
     @required this.imageAttribute,
     @required this.resizedAttribute,
     @required this.heroCode,
     @required this.initialUrl,
+    @required this.onChanged
   });
 
   @override
@@ -32,8 +33,6 @@ class _CustomImageFormFieldState extends State<CustomImageFormField> {
 
   @override
   Widget build(BuildContext context) {
-
-    var formState = FormBuilder.of(context);
 
     var placeHolder = Image.asset(
       'resources/icons/icon_small.png',
@@ -69,13 +68,12 @@ class _CustomImageFormFieldState extends State<CustomImageFormField> {
                 child: InkWell(
                   onTap: () async {
                     var pickedFile = await imagePicker.getImage(source: ImageSource.camera);
-                    imageFile = File(pickedFile.path);
-                    if (imageFile != null) {
+                    if (pickedFile != null) {
+                      imageFile = File(pickedFile.path);
                       Future<File> resizedFuture = FlutterNativeImage
                               .compressImage(imageFile.path, percentage: 25, quality: 80);
                       setState(() {
-                        formState.setAttributeValue(widget.imageAttribute, imageFile);
-                        formState.setAttributeValue(widget.resizedAttribute, resizedFuture);
+                        widget.onChanged(imageFile, resizedFuture);
                       });
                     }
                   },

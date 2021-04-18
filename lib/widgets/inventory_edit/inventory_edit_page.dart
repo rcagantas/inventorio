@@ -1,7 +1,6 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:inventorio/models/inv_meta.dart';
 import 'package:inventorio/providers/inv_state.dart';
 import 'package:provider/provider.dart';
@@ -16,8 +15,9 @@ class InventoryEditPage extends StatefulWidget {
 
 class _InventoryEditPageState extends State<InventoryEditPage> {
   InvMetaBuilder invMetaBuilder;
+  String _inventoryName;
 
-  final _fbKey = GlobalKey<FormBuilderState>();
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
@@ -40,11 +40,13 @@ class _InventoryEditPageState extends State<InventoryEditPage> {
         floatingActionButton: FloatingActionButton(
           child: Icon(Icons.cloud_upload),
           onPressed: () async {
-            if (_fbKey.currentState.saveAndValidate()) {
-              invMetaBuilder.name = _fbKey.currentState.value['inventoryName'];
-              await invState.updateInvMeta(invMetaBuilder);
-              Navigator.pop(context);
+
+            if (_formKey.currentState.validate()) {
+                invMetaBuilder.name = _inventoryName;
+                await invState.updateInvMeta(invMetaBuilder);
+                Navigator.pop(context);
             }
+
           },
         ),
         body: Padding(
@@ -52,17 +54,16 @@ class _InventoryEditPageState extends State<InventoryEditPage> {
           child: ListView(
 
             children: <Widget>[
-              FormBuilder(
-                key: _fbKey,
-                initialValue: {
-                  'inventoryName': invMetaBuilder.name ?? 'Inventory',
-                },
-                child: FormBuilderTextField(
-                  attribute: 'inventoryName',
-                  decoration: InputDecoration(labelText: 'Inventory Name'),
+              Form(
+                key: _formKey,
+                child: TextFormField(
+                  initialValue: invMetaBuilder.name ?? 'Inventory',
                   textCapitalization: TextCapitalization.words,
                   style: Theme.of(context).textTheme.headline6,
                   textAlign: TextAlign.center,
+                  onChanged: (value) => setState(() {
+                      _inventoryName = value;
+                  }),
                 ),
               ),
               Center(
@@ -87,7 +88,7 @@ class _InventoryEditPageState extends State<InventoryEditPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: <Widget>[
-                    OutlineButton(
+                    OutlinedButton(
                       child: Text('Unsubscribe'),
                       onPressed: () async {
                         var result = await showOkCancelAlertDialog(

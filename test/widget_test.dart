@@ -15,6 +15,7 @@ import 'package:inventorio/providers/user_state.dart';
 import 'package:inventorio/services/inv_auth_service.dart';
 import 'package:inventorio/services/inv_scheduler_service.dart';
 import 'package:inventorio/services/inv_store_service.dart';
+import 'package:inventorio/widgets/inv_key.dart';
 import 'package:mockito/mockito.dart';
 
 import 'mocks.dart';
@@ -109,7 +110,7 @@ void main() {
     testWidgets('should show splash screen on entry', (tester) async {
       await tester.pumpWidget(MyApp());
 
-      expect(find.byKey(ObjectKey('inv_icon_splash')), findsOneWidget);
+      expect(find.byKey(InvKey.SPLASH_PAGE), findsOneWidget);
     });
 
     testWidgets('should show login screen when current login is unset', (tester) async {
@@ -118,8 +119,8 @@ void main() {
 
       await tester.pumpWidget(MyApp());
       await tester.pumpAndSettle();
-      expect(find.byKey(ObjectKey('google_sign_in')), findsOneWidget);
-      expect(find.byKey(ObjectKey('apple_sign_in')), findsOneWidget);
+      expect(find.byKey(InvKey.GOOGLE_SIGN_IN_BUTTON), findsOneWidget);
+      expect(find.byKey(InvKey.APPLE_SIGN_IN_BUTTON), findsOneWidget);
     });
 
     testWidgets('should not show apple_sign_in in Android', (tester) async {
@@ -128,8 +129,8 @@ void main() {
 
       await tester.pumpWidget(MyApp());
       await tester.pump();
-      expect(find.byKey(ObjectKey('google_sign_in')), findsOneWidget);
-      expect(find.byKey(ObjectKey('apple_sign_in')), findsNothing);
+      expect(find.byKey(InvKey.GOOGLE_SIGN_IN_BUTTON), findsOneWidget);
+      expect(find.byKey(InvKey.APPLE_SIGN_IN_BUTTON), findsNothing);
       debugDefaultTargetPlatformOverride = null;
     });
 
@@ -140,8 +141,8 @@ void main() {
 
       await tester.pumpWidget(MyApp());
       await tester.pumpAndSettle();
-      expect(find.byKey(ObjectKey('google_sign_in')), findsOneWidget);
-      expect(find.byKey(ObjectKey('apple_sign_in')), findsNothing);
+      expect(find.byKey(InvKey.GOOGLE_SIGN_IN_BUTTON), findsOneWidget);
+      expect(find.byKey(InvKey.APPLE_SIGN_IN_BUTTON), findsNothing);
       debugDefaultTargetPlatformOverride = null;
     });
 

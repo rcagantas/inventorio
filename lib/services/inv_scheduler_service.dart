@@ -11,6 +11,8 @@ class InvSchedulerService {
   IOSNotificationDetails iosNotificationDetails;
   NotificationDetails notificationDetails;
 
+  List<int> _scheduleIds = [];
+
   InvSchedulerService({
     this.notificationsPlugin
   });
@@ -51,12 +53,15 @@ class InvSchedulerService {
 
   Future<void> delayedScheduleNotification(InvExpiry expiry, int delayMs) async {
     await Future.delayed(Duration(milliseconds: delayMs), () {
-      scheduleNotification(expiry);
+      if (!_scheduleIds.contains(expiry.scheduleId)) {
+        scheduleNotification(expiry);
+      }
     });
   }
 
   Future<void> scheduleNotification(InvExpiry expiry) async {
     Stopwatch stopwatch = Stopwatch()..start();
+    _scheduleIds.add(expiry.scheduleId);
     await notificationsPlugin.schedule(
       expiry.scheduleId,
       expiry.title,

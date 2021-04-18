@@ -45,6 +45,8 @@ class InvStoreService {
     PackageInfo.fromPlatform().then((value) => _currentVersion = '${value.version} build ${value.buildNumber}');
   }
 
+  static String sanitizeCode(String code) => code.replaceAll('/', '#');
+
   Stream<InvUser> listenToUser(String uid) {
     return _users.doc(uid).snapshots()
         .map((event) {
@@ -85,41 +87,41 @@ class InvStoreService {
   }
 
   Stream<InvProduct> listenToProduct(String code) {
-    return _products.doc(code).snapshots()
+    return _products.doc(sanitizeCode(code)).snapshots()
         .map((event) {
           return event.exists
               ? InvProduct.fromJson(event.data())
-              : InvProduct.unset(code: code);
+              : InvProduct.unset(code: sanitizeCode(code));
         });
   }
 
   Future<InvProduct> fetchProduct(String code) async {
-    return await _products.doc(code).get().then((value) {
+    return await _products.doc(sanitizeCode(code)).get().then((value) {
       return value.exists
           ? InvProduct.fromJson(value.data())
-          : InvProduct.unset(code: code);
+          : InvProduct.unset(code: sanitizeCode(code));
     });
   }
 
   Stream<InvProduct> listenToLocalProduct(String invMetaId, String code) {
     return _inventory.doc(invMetaId).collection(PRODUCTS)
-        .doc(code)
+        .doc(sanitizeCode(code))
         .snapshots()
         .map((event) {
           return event.exists
               ? InvProduct.fromJson(event.data())
-              : InvProduct.unset(code: code);
+              : InvProduct.unset(code: sanitizeCode(code));
         });
   }
 
   Future<InvProduct> fetchLocalProduct(String invMetaId, String code) async {
     return _inventory.doc(invMetaId).collection(PRODUCTS)
-        .doc(code)
+        .doc(sanitizeCode(code))
         .get()
         .then((value) {
           return value.exists
               ? InvProduct.fromJson(value.data())
-              : InvProduct.unset(code: code);
+              : InvProduct.unset(code: sanitizeCode(code));
         });
   }
 

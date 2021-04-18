@@ -1,9 +1,9 @@
 import 'package:dart_extensions_methods/dart_extensions_methods.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:inventorio/models/inv_product.dart';
 import 'package:inventorio/providers/inv_state.dart';
+import 'package:inventorio/utils/forms/form_ext_validator.dart';
 import 'package:inventorio/widgets/product_edit/custom_image_form_field.dart';
 import 'package:provider/provider.dart';
 
@@ -19,7 +19,7 @@ class _ProductEditPageState extends State<ProductEditPage> {
 
   InvProductBuilder productBuilder;
 
-  final _fbKey = GlobalKey<FormBuilderState>();
+  final _formKey = GlobalKey<FormState>();
   bool _validFab;
 
   final _brandFocus = FocusNode();
@@ -32,13 +32,21 @@ class _ProductEditPageState extends State<ProductEditPage> {
 
   void checkValidity() {
     var productValid = productBuilder.name.isNotNullOrEmpty();
-    _validFab = _fbKey.currentState?.validate() ?? productValid;
+    _validFab = _formKey.currentState?.validate() ?? productValid;
   }
 
   @override
   void initState() {
     productBuilder = InvProductBuilder();
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _brandFocus.dispose();
+    _nameFocus.dispose();
+    _variantFocus.dispose();
+    super.dispose();
   }
 
   @override
@@ -57,14 +65,8 @@ class _ProductEditPageState extends State<ProductEditPage> {
               : Theme.of(context).disabledColor,
 
           onPressed: () async {
-            if (_fbKey.currentState.saveAndValidate()) {
-              productBuilder
-                ..name = _fbKey.currentState.value['name']
-                ..brand = _fbKey.currentState.value['brand']
-                ..variant = _fbKey.currentState.value['variant']
-                ..imageFile = _fbKey.currentState.value['imageFile']
-                ..resizedImageFileFuture = _fbKey.currentState.value['resizedImageFileFuture']
-              ;
+            if (_formKey.currentState.validate()) {
+              _formKey.currentState.save();
 
               invState.updateProduct(productBuilder);
               Navigator.of(context).pop();
@@ -73,16 +75,9 @@ class _ProductEditPageState extends State<ProductEditPage> {
           },
           child: Icon(Icons.cloud_upload),
         ),
-        body: FormBuilder(
-          key: _fbKey,
+        body: Form(
+          key: _formKey,
           autovalidateMode: AutovalidateMode.onUserInteraction,
-          initialValue: {
-            'name': productBuilder.name,
-            'brand': productBuilder.brand,
-            'variant': productBuilder.variant,
-            'imageFile': null,
-            'resizedImageFileFuture': null,
-          },
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: LayoutBuilder(
@@ -96,6 +91,10 @@ class _ProductEditPageState extends State<ProductEditPage> {
                     resizedAttribute: 'resizedImageFileFuture',
                     heroCode: productBuilder.heroCode,
                     initialUrl: productBuilder.imageUrl,
+                    onChanged: (imageFile, resizedImageFileFuture) => setState(() {
+                      productBuilder.imageFile = imageFile;
+                      productBuilder.resizedImageFileFuture = resizedImageFileFuture;
+                    }),
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -104,44 +103,46 @@ class _ProductEditPageState extends State<ProductEditPage> {
                         style: Theme.of(context).textTheme.caption,
                         textAlign: TextAlign.center,
                       ),
-                      FormBuilderTextField(
-                        attribute: 'brand',
+                      TextFormField(
+                        initialValue: productBuilder.brand,
                         focusNode: _brandFocus,
                         decoration: InputDecoration(labelText: 'Brand name'),
                         textCapitalization: TextCapitalization.words,
                         textInputAction: TextInputAction.next,
                         onFieldSubmitted: (value) => FocusScope.of(context).requestFocus(_nameFocus),
-                        validators: [
-                          FormBuilderValidators.maxLength(MAX_LEN, errorText: TOO_LONG),
-                        ],
+                        onChanged: (value) => setState(() { productBuilder.brand = value; }),
+                        validator: FormExtValidator.buildValidator([
+                          FormExtValidator.maxLength(MAX_LEN, errorText: TOO_LONG),
+                        ]),
                       ),
-                      FormBuilderTextField(
-                        attribute: 'name',
+                      TextFormField(
+                        initialValue: productBuilder.name,
                         focusNode: _nameFocus,
                         decoration: InputDecoration(labelText: 'Product Name'),
-                        onChanged: (value) {
-                          setState(() => checkValidity());
-                        },
+                        onChanged: (value) => setState(() {
+                          productBuilder.name = value;
+                          checkValidity();
+                        }),
                         textCapitalization: TextCapitalization.words,
                         autovalidateMode: AutovalidateMode.onUserInteraction,
                         textInputAction: TextInputAction.next,
                         onFieldSubmitted: (value) => FocusScope.of(context).requestFocus(_variantFocus),
-                        validators: [
-                          FormBuilderValidators.required(errorText: 'Please set a product name'),
-                          FormBuilderValidators.maxLength(MAX_LEN, errorText: TOO_LONG),
-                          FormBuilderValidators.required(errorText: REQUIRED),
-                        ],
+                        validator: FormExtValidator.buildValidator([
+                          FormExtValidator.maxLength(MAX_LEN, errorText: TOO_LONG),
+                          FormExtValidator.required(errorText: REQUIRED),
+                        ]),
                       ),
-                      FormBuilderTextField(
-                        attribute: 'variant',
+                      TextFormField(
+                        initialValue: productBuilder.variant,
                         focusNode: _variantFocus,
                         decoration: InputDecoration(labelText: 'Variant/Flavor/Volume'),
                         textCapitalization: TextCapitalization.words,
                         autovalidateMode: AutovalidateMode.onUserInteraction,
                         textInputAction: TextInputAction.next,
-                        validators: [
-                          FormBuilderValidators.maxLength(MAX_LEN, errorText: TOO_LONG),
-                        ],
+                        onChanged: (value) => setState(() { productBuilder.variant = value; }),
+                        validator: FormExtValidator.buildValidator([
+                          FormExtValidator.maxLength(MAX_LEN, errorText: TOO_LONG),
+                        ]),
                       ),
                     ],
                   )

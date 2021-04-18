@@ -55,6 +55,8 @@ class InvState with ChangeNotifier {
     return metaList;
   }
 
+  Timer _schedulerTimer;
+
   InvState() :
     _clock = GetIt.instance<Clock>(),
     _invStoreService = GetIt.instance<InvStoreService>(),
@@ -68,6 +70,12 @@ class InvState with ChangeNotifier {
       InvSort.PRODUCT: productSort
     };
 
+    addListener(() {
+      if (_schedulerTimer != null) {
+        _schedulerTimer.cancel();
+      }
+      _schedulerTimer = Timer(Duration(milliseconds: 100), () => _runSchedulerWhenListComplete());
+    });
   }
 
   Future<void> onSelectNotification(String metaId) async {
@@ -247,8 +255,6 @@ class InvState with ChangeNotifier {
   }
 
   Future<InvProduct> fetchProduct(String code) async {
-    code = sanitizeCode(code);
-
     if (getProduct(code).unset) {
       _subscribeToProduct(invUser.currentInventoryId, code);
       String invMetaId = invUser.currentInventoryId;
@@ -298,13 +304,7 @@ class InvState with ChangeNotifier {
     return _invItemMap[invUser.currentInventoryId] == null;
   }
 
-  static String sanitizeCode(String code) {
-    return code.replaceAll('/', '#');
-  }
-
-
   InvProduct getProduct(String code) {
-    code = sanitizeCode(code);
     InvProduct defaultProduct = InvProduct.unset(code: code);
     InvProduct master = _invProductMap.containsKey(code) ? _invProductMap[code] : defaultProduct;
     InvProduct local = _invLocalProductMap.containsKey(code) ? _invLocalProductMap[code] : defaultProduct;

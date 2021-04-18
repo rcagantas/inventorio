@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:quiver/core.dart';
 
 part 'inv_user.g.dart';
 
@@ -53,6 +54,10 @@ class InvUserBuilder {
       ..currentInventoryId = invUser.currentInventoryId
       ..currentVersion = invUser.currentVersion
       ..unset = invUser.unset;
+
+    if (!knownInventories.contains(this.currentInventoryId)) {
+      this.currentInventoryId = knownInventories[0];
+    }
   }
 
   void validate() {
@@ -85,4 +90,8 @@ class InvUserBuilder {
   bool operator ==(Object other) {
     return other is InvUserBuilder && this.toJson().toString() == other.toJson().toString();
   }
+
+  @override
+  int get hashCode => hashObjects([knownInventories, userId, currentInventoryId, currentVersion, unset]);
+
 }
