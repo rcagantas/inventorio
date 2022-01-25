@@ -240,6 +240,8 @@ class InvState with ChangeNotifier {
         _subscribeToProduct(invMetaId, invItem.code);
       }
     }
+
+    notifyListeners();
   }
 
   void _subscribeToProduct(String invMetaId, String code) {

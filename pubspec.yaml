@@ -11,7 +11,7 @@ description: Basic home inventory in Flutter
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 2.0.6+84
+version: 2.0.7+87
 
 environment:
   sdk: ">=2.7.0 <3.0.0"
@@ -19,53 +19,53 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  adaptive_dialog: ^0.6.3+1
-  animations: ^1.1.2
-  cached_network_image: ^2.2.0+1
-  clock: ^1.0.1
-  cloud_firestore: ^0.14.0+2
-  dart_extensions_methods: ^1.0.5
-  device_preview: ^0.4.5
-  firebase_auth: ^0.18.4+1
-  firebase_core: ^0.5.0
-  firebase_storage: ^4.0.0
-  firebase_storage_mocks: ^0.2.1
-  flutter_local_notifications: ^1.4.3
-  flutter_native_image: ^0.0.5+3
-  flutter_slidable: ^0.5.4
-  font_awesome_flutter: ^8.8.1
-  get_it: ^4.0.1
-  google_sign_in: 4.4.1
-  image_picker: ^0.6.6+1
-  intl: ^0.16.1
-  json_annotation: ^3.0.0
-  logger: ^0.7.0
-  logger_flutter: ^0.7.1
-  package_info: ^0.4.0+16
-  permission_handler: ^5.0.1+1
-  provider: ^4.3.2+3
-  qr_flutter: ^3.2.0
-  qr_mobile_vision: ^2.0.0
-  quiver: ^2.1.3
-  rxdart: ^0.23.1
-  sign_in_with_apple: ^2.5.0
-  url_launcher: ^5.4.5
-  uuid: ^2.0.4
+  adaptive_dialog: 0.6.3+1
+  animations: 1.1.2
+  cached_network_image: 3.0.0
+  clock: 1.1.0
+  cloud_firestore: 1.0.6
+  dart_extensions_methods: 1.0.5
+  device_preview: 0.7.1
+  firebase_auth: 1.1.0
+  firebase_core: 1.0.4
+  firebase_storage: 8.0.3
+  flutter_local_notifications: 5.0.0+1
+  flutter_native_image: 0.0.5+3
+  flutter_slidable: 0.6.0
+  font_awesome_flutter: 9.0.0-nullsafety
+  get_it: 4.0.1
+  google_sign_in: 5.0.0
+  image_picker: 0.7.4
+  intl: any
+  json_annotation: 4.0.1
+  logger: 0.7.0
+  logger_flutter: 0.7.1
+  package_info: 0.4.0+16
+  permission_handler: 6.1.3
+  provider: 5.0.0
+  qr_flutter: 3.2.0
+  qr_mobile_vision: 2.0.0
+  quiver: 3.0.0
+  rxdart: 0.26.0
+  sign_in_with_apple: 2.5.0
+  url_launcher: 6.0.3
+  uuid: 3.0.4
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^0.1.3
+  cupertino_icons: 1.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   build_runner: any
-  cloud_firestore_mocks: ^0.5.2+1
-  firebase_auth_mocks: ^0.3.2
-  flutter_launcher_icons: ^0.7.4
-  google_sign_in_mocks: ^0.1.1
-  json_serializable: ^3.2.0
-  mockito: ^4.1.1
+#  cloud_firestore_mocks: any
+#  firebase_auth_mocks: any
+#  firebase_storage_mocks: any
+#  flutter_launcher_icons: any
+  #google_sign_in_mocks: any
+  json_serializable: ^4.1.0
+  mockito: any
   test: any
 
 flutter_icons:

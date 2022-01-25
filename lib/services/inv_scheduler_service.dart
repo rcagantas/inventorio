@@ -22,17 +22,16 @@ class InvSchedulerService {
     void Function(String payload) onSelectNotification,
   }) {
 
-    this.notificationsPlugin.initialize(
-      InitializationSettings(
-        AndroidInitializationSettings('@mipmap/ic_launcher'),
-        IOSInitializationSettings(
-          requestSoundPermission: true,
-          requestBadgePermission: true,
-          requestAlertPermission: true,
-          onDidReceiveLocalNotification: onDidReceiveLocalNotification
-        )
-      ), onSelectNotification: onSelectNotification
+    // initialise the plugin. app_icon needs to be a added as a drawable resource to the Android head project
+    const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+    final IOSInitializationSettings initializationSettingsIOS = IOSInitializationSettings(onDidReceiveLocalNotification: onDidReceiveLocalNotification);
+    final InitializationSettings initializationSettings = InitializationSettings(
+        android: initializationSettingsAndroid,
+        iOS: initializationSettingsIOS
     );
+
+    this.notificationsPlugin.initialize(initializationSettings,
+        onSelectNotification: onSelectNotification);
 
     this.androidNotificationDetails = AndroidNotificationDetails(
       'com.rcagantas.inventorio.scheduled.notifications',
@@ -42,8 +41,8 @@ class InvSchedulerService {
 
     this.iosNotificationDetails = IOSNotificationDetails();
     this.notificationDetails = NotificationDetails(
-      androidNotificationDetails,
-      iosNotificationDetails
+      android: androidNotificationDetails,
+      iOS: iosNotificationDetails
     );
   }
 

@@ -2,14 +2,11 @@ import 'dart:core';
 import 'dart:io';
 
 import 'package:clock/clock.dart';
-import 'package:cloud_firestore_mocks/cloud_firestore_mocks.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
-import 'package:firebase_storage_mocks/firebase_storage_mocks.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-import 'package:google_sign_in_mocks/google_sign_in_mocks.dart';
 import 'package:inventorio/models/inv_item.dart';
 import 'package:inventorio/models/inv_meta.dart';
 import 'package:inventorio/models/inv_product.dart';
@@ -91,7 +88,8 @@ class MockPluginsManager {
   static const String CHANNEL_LOCAL_NOTIFICATIONS = 'dexterous.com/flutter/local_notifications';
 
   void setMock(String channelName, Future<dynamic> Function(MethodCall call) handler) {
-    MethodChannel(channelName).setMockMethodCallHandler(handler);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(MethodChannel(channelName), handler);
   }
 
   void setupDefaultMockValues() {
@@ -132,6 +130,7 @@ ClockMock mockClock(String frozenDateTime) {
   return clockMock;
 }
 
+class MockFirebaseAuth extends Mock implements FirebaseAuth {}
 
 class InvAuthServiceMock extends Mock implements InvAuthService {
   InvAuthService delegate;
@@ -140,7 +139,7 @@ class InvAuthServiceMock extends Mock implements InvAuthService {
   InvAuthServiceMock() {
     delegate = InvAuthService(
         auth: MockFirebaseAuth(),
-        googleSignIn: MockGoogleSignIn(),
+        //googleSignIn: MockGoogleSignIn(),
     );
 
     when(onAuthStateChanged).thenAnswer((r) => delegate.onAuthStateChanged);
@@ -159,8 +158,8 @@ class InvStoreServiceMock extends Mock implements InvStoreService {
 
   InvStoreServiceMock() {
     _delegate = InvStoreService(
-      store: MockFirestoreInstance(),
-      storage: MockFirebaseStorage()
+      //store: MockFirestoreInstance(),
+      //storage: MockFirebaseStorage()
     );
 
     when(migrateUserFromGoogleIdIfPossible(any)).thenAnswer((r) => _delegate.migrateUserFromGoogleIdIfPossible(r.pos[0]));

@@ -222,7 +222,7 @@ class InvStoreService {
     var storageReference = storage.ref().child(IMAGES).child(fileName);
     var uploadTask = storageReference.putData(image.readAsBytesSync());
 
-    await uploadTask.onComplete;
+    await uploadTask;
     String url = await storageReference.getDownloadURL();
 
     logger.i('Uploaded ${image.path} to $url with $uploadTask');

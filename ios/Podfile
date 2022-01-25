@@ -1,5 +1,8 @@
+# uses legacy style pod repo master
+source 'https://github.com/CocoaPods/Specs.git'
+
 # Uncomment this line to define a global platform for your project
-platform :ios, '11.0'
+platform :ios, '12.1'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -74,7 +77,10 @@ post_install do |installer|
         'PERMISSION_MEDIA_LIBRARY=0',
 
         ## dart: PermissionGroup.sensors
-        'PERMISSION_SENSORS=0'
+        'PERMISSION_SENSORS=0',
+
+        ## dart: PermissionGroup.bluetooth
+        'PERMISSION_BLUETOOTH=0'
       ]
     end
   end
